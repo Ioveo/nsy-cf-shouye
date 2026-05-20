@@ -521,16 +521,25 @@ function animate() {
       const baseScale = 0.94;
       const baseFloat = 0;
 
-      // --- Dynamic Motion Layout (Scroll/Drag) ---
-      const motionFold = motion * (22 + proximity * 34 + Math.min(speed * 0.06, 12));
-      const motionRotateY = -sideOfCenter * direction * motionFold;
-      const motionRotateX = -motion * proximity * (4 + speed * 0.012);
-      const motionRotateZ = clamp(Math.sin(phase) * motion * 2.2, -3.5, 3.5);
-
+      // --- Spherical 3D speed-distortion bulge (Aristide Benoist Inspired) ---
+      const speedFactor = motion; // ranges from 0 to 1 based on velocity
+      
+      // Center card bulges forward (positive depth), side cards fold back (negative depth)
+      const motionDepth = speedFactor * (proximity * 220 - (1 - proximity) * 160);
+      
+      // Center card scales up (positive scale), side cards shrink down (negative scale)
+      const motionScale = speedFactor * (proximity * 0.16 - (1 - proximity) * 0.14);
+      
+      // Side cards rotate on Y axis to look like they wrap around a sphere
+      const motionRotateY = -sideOfCenter * (1 - proximity) * 38 * speedFactor;
+      
+      // Center card floats slightly up, side cards curve down slightly
+      const motionFloat = speedFactor * (proximity * -24 + (1 - proximity) * 12);
+      
+      // Subtle Z tilt ripple wave and rotation
+      const motionRotateZ = clamp(Math.sin(phase) * speedFactor * 3.2, -4.5, 4.5);
+      const motionRotateX = -speedFactor * proximity * 6;
       const motionLag = clamp(state.wavePower * 0.09, -24, 24) * (1 - proximity * 0.35);
-      const motionFloat = -motion * proximity * (12 + speed * 0.04);
-      const motionDepth = motion * proximity * (80 + speed * 0.25);
-      const motionScale = motion * proximity * 0.04;
 
       // --- Blend Base, Motion, Hover, and Expand ---
       const rotateY = (baseRotateY + motionRotateY) * (1 - hp * 0.15) * (1 - globalEp);
