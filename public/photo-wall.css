@@ -222,22 +222,30 @@ a {
   right: clamp(20px, 4vw, 54px);
   width: 48px;
   height: 48px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 50%;
   color: #fff;
   background: rgba(255, 255, 255, 0.08);
   font-size: 28px;
-  line-height: 46px;
+  line-height: 44px;
   text-align: center;
   cursor: pointer;
   pointer-events: auto;
-  transition: background 240ms ease, border-color 240ms ease, transform 240ms ease;
+  opacity: 0;
+  transform: scale(0.6) rotate(-45deg);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), background 240ms ease, border-color 240ms ease;
+}
+
+.photo-wall-lightbox.is-active .photo-wall-lightbox__close {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+  transition-delay: 0.65s;
 }
 
 .photo-wall-lightbox__close:hover {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.45);
-  transform: scale(1.05);
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05) rotate(90deg);
 }
 
 .photo-wall-lightbox__meta {
@@ -246,27 +254,91 @@ a {
   right: clamp(24px, 4vw, 68px);
   bottom: clamp(24px, 5vh, 54px);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 13px;
-  font-weight: 900;
+  gap: clamp(20px, 4vw, 60px);
   pointer-events: auto;
 }
 
+.photo-wall-lightbox__info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: clamp(280px, 50vw, 700px);
+}
+
+.photo-wall-lightbox__meta strong {
+  display: block;
+  font-family: var(--font-display, "Outfit", sans-serif);
+  font-size: clamp(24px, 4.5vw, 48px);
+  line-height: 1.1;
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.photo-wall-lightbox__meta p {
+  margin: 0;
+  font-family: var(--font-body, "Inter", sans-serif);
+  font-size: clamp(13px, 1.4vw, 16px);
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+}
+
 .photo-wall-lightbox__meta a {
-  color: #ffb5af;
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 36px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 30px;
+  color: #fff;
+  font-family: var(--font-display, "Outfit", sans-serif);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.03);
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
 }
 
-.photo-wall-lightbox:not([hidden]) .photo-wall-lightbox__meta {
-  animation: photoWallFadeIn 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+.photo-wall-lightbox__meta a:hover {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+  transform: scale(1.05);
 }
 
-.photo-wall-lightbox:not([hidden]) .photo-wall-lightbox__close {
-  animation: photoWallFadeIn 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+/* Custom Text Reveal Transitions */
+.photo-wall-reveal-wrap {
+  overflow: hidden;
+  display: block;
+}
+
+.photo-wall-reveal-item {
+  display: inline-block;
+  transform: translateY(102%);
+  transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.photo-wall-lightbox.is-active .photo-wall-reveal-item {
+  transform: translateY(0);
+}
+
+/* Staggered transition delays when active */
+.photo-wall-lightbox.is-active .photo-wall-lightbox__info .photo-wall-reveal-wrap:nth-child(1) .photo-wall-reveal-item {
+  transition-delay: 0.3s;
+}
+
+.photo-wall-lightbox.is-active .photo-wall-lightbox__info .photo-wall-reveal-wrap:nth-child(2) .photo-wall-reveal-item {
+  transition-delay: 0.42s;
+}
+
+.photo-wall-lightbox.is-active .photo-wall-reveal-wrap:last-child .photo-wall-reveal-item {
+  transition-delay: 0.54s;
 }
 
 .photo-wall-bg-title {
@@ -318,6 +390,15 @@ a {
   .photo-wall-footer strong {
     display: none;
   }
+}
+
+.photo-wall-stage.has-selected ~ .photo-wall-footer {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.photo-wall-footer {
+  transition: opacity 0.5s ease;
 }
 
 #photo-wall-canvas {

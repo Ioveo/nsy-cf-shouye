@@ -34,10 +34,19 @@
 
     <div class="photo-wall-lightbox" data-photo-wall-lightbox hidden>
       <button class="photo-wall-lightbox__close" type="button" data-photo-wall-close aria-label="关闭照片">×</button>
-      <img data-photo-wall-lightbox-image alt="" />
+      <img data-photo-wall-lightbox-image alt="" style="display: none;" />
       <div class="photo-wall-lightbox__meta">
-        <strong data-photo-wall-lightbox-title></strong>
-        <a data-photo-wall-lightbox-link href="/gallery.html">OPEN</a>
+        <div class="photo-wall-lightbox__info">
+          <div class="photo-wall-reveal-wrap">
+            <strong data-photo-wall-lightbox-title class="photo-wall-reveal-item"></strong>
+          </div>
+          <div class="photo-wall-reveal-wrap">
+            <p data-photo-wall-lightbox-desc class="photo-wall-reveal-item"></p>
+          </div>
+        </div>
+        <div class="photo-wall-reveal-wrap">
+          <a data-photo-wall-lightbox-link class="photo-wall-reveal-item" href="/gallery.html">OPEN</a>
+        </div>
       </div>
     </div>
 

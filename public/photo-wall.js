@@ -6,6 +6,7 @@ const totalCount = document.querySelector("[data-photo-wall-total]");
 const activeTitle = document.querySelector("[data-photo-wall-title]");
 const lightbox = document.querySelector("[data-photo-wall-lightbox]");
 const lightboxTitle = document.querySelector("[data-photo-wall-lightbox-title]");
+const lightboxDesc = document.querySelector("[data-photo-wall-lightbox-desc]");
 const lightboxLink = document.querySelector("[data-photo-wall-lightbox-link]");
 const closeButton = document.querySelector("[data-photo-wall-close]");
 
@@ -619,13 +620,22 @@ function openItem(index) {
   stage.classList.add("has-selected");
 
   if (lightboxTitle) lightboxTitle.textContent = item.title || "PHOTO";
+  if (lightboxDesc) {
+    lightboxDesc.textContent = item.description || "";
+    const wrap = lightboxDesc.closest(".photo-wall-reveal-wrap");
+    if (wrap) wrap.style.display = item.description ? "block" : "none";
+  }
   if (lightboxLink) {
     lightboxLink.href = item.linkUrl || "/gallery.html";
     lightboxLink.textContent = item.linkText || "OPEN";
-    lightboxLink.hidden = !item.linkUrl;
+    const wrap = lightboxLink.closest(".photo-wall-reveal-wrap");
+    if (wrap) wrap.style.display = item.linkUrl ? "block" : "none";
   }
   if (lightbox) {
     lightbox.hidden = false;
+    requestAnimationFrame(() => {
+      lightbox.classList.add("is-active");
+    });
   }
 
   // Scroll the selected card to center
@@ -648,21 +658,26 @@ function closeLightbox() {
   state.selectedIndex = null;
   stage.classList.remove("has-selected");
   if (lightbox) {
-    lightbox.hidden = true;
+    lightbox.classList.remove("is-active");
+    setTimeout(() => {
+      if (state.selectedIndex === null) {
+        lightbox.hidden = true;
+      }
+    }, 820);
   }
   animate();
 }
 
 function fallbackItems() {
   return [
-    { title: "Gallery 01", imageUrl: "/2.jpg" },
-    { title: "Gallery 02", imageUrl: "/3.jpg" },
-    { title: "Gallery 03", imageUrl: "/4.jpg" },
-    { title: "Gallery 04", imageUrl: "/5.jpg" },
-    { title: "Gallery 05", imageUrl: "/6.jpg" },
-    { title: "Assistant", imageUrl: "/assistant-preview.jpg" },
-    { title: "Datacenter", imageUrl: "/datacenter-preview.jpg" },
-    { title: "App", imageUrl: "/app-preview.png" }
+    { title: "Gallery 01", description: "Creative interactive design direction and high-end WebGL frontend development.", imageUrl: "/2.jpg", linkUrl: "/gallery.html", linkText: "EXPLORE" },
+    { title: "Gallery 02", description: "Immersive visual experiences, real-time graphics, and custom shaders.", imageUrl: "/3.jpg", linkUrl: "/gallery.html", linkText: "EXPLORE" },
+    { title: "Gallery 03", description: "Sleek user interface designs, buttery smooth layout transitions, and micro-animations.", imageUrl: "/4.jpg", linkUrl: "/gallery.html", linkText: "EXPLORE" },
+    { title: "Gallery 04", description: "Dynamic color mapping, premium dark mode styling, and modern glassmorphism.", imageUrl: "/5.jpg", linkUrl: "/gallery.html", linkText: "EXPLORE" },
+    { title: "Gallery 05", description: "Audio visualization, custom media players, and high-performance streaming integrations.", imageUrl: "/6.jpg", linkUrl: "/gallery.html", linkText: "EXPLORE" },
+    { title: "Assistant", description: "Tiancaimao Live Streaming Operational Assistant and dashboard.", imageUrl: "/assistant-preview.jpg", linkUrl: "/download.html", linkText: "GET APP" },
+    { title: "Datacenter", description: "Real-time live streaming statistics analyzer with high-precision OCR.", imageUrl: "/datacenter-preview.jpg", linkUrl: "/download.html", linkText: "GET APP" },
+    { title: "App", description: "Cross-platform workspace management client built for creators.", imageUrl: "/app-preview.png", linkUrl: "/download.html", linkText: "GET APP" }
   ];
 }
 
