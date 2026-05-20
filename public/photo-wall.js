@@ -9,6 +9,99 @@ const lightboxTitle = document.querySelector("[data-photo-wall-lightbox-title]")
 const lightboxLink = document.querySelector("[data-photo-wall-lightbox-link]");
 const closeButton = document.querySelector("[data-photo-wall-close]");
 
+const vsSource = `
+  #ifdef GL_ES
+  precision mediump float;
+  #endif
+
+  attribute vec3 aVertexPosition;
+  attribute vec2 aTextureCoord;
+
+  uniform mat4 uModelViewMatrix;
+  uniform mat4 uProjectionMatrix;
+
+  uniform float uVelocity;
+  uniform float uHoverProgress;
+  uniform float uExpandProgress;
+  uniform float uTime;
+
+  varying vec2 vTextureCoord;
+  varying float vDistortion;
+
+  void main() {
+    vec3 position = aVertexPosition;
+    
+    // Wave warp based on scrolling velocity and mesh coordinates
+    float curve = cos(position.x * 3.141592) * cos(position.y * 3.141592);
+    float velocityEffect = uVelocity * 0.007;
+    
+    // Liquid bend
+    float zDistortion = curve * velocityEffect * 110.0 * (1.0 - uExpandProgress);
+    position.z += zDistortion;
+    
+    float xDistortion = curve * velocityEffect * 0.12 * (1.0 - uExpandProgress);
+    position.x -= xDistortion;
+    
+    // Hover high-frequency ripple
+    float ripple = sin(length(position.xy) * 8.0 - uTime * 0.05) * 0.016 * uHoverProgress * (1.0 - uExpandProgress);
+    position.z += ripple * 35.0;
+    
+    // Expand bounce wave
+    float expandWave = sin(length(position.xy) * 4.0 - uExpandProgress * 6.0) * 0.038 * uExpandProgress * (1.0 - uExpandProgress);
+    position.z += expandWave * 90.0;
+
+    gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(position, 1.0);
+    
+    vTextureCoord = aTextureCoord;
+    vDistortion = zDistortion * 0.012 + ripple + expandWave;
+  }
+`;
+
+const fsSource = `
+  #ifdef GL_ES
+  precision mediump float;
+  #endif
+
+  varying vec2 vTextureCoord;
+  varying float vDistortion;
+
+  uniform sampler2D photoTexture;
+  uniform float uHoverProgress;
+  uniform float uExpandProgress;
+
+  float getGrayscale(vec3 color) {
+    return dot(color, vec3(0.299, 0.587, 0.114));
+  }
+
+  void main() {
+    vec2 uv = vTextureCoord;
+    
+    // Chromatic Aberration (RGB shift based on movement distortion)
+    float shift = vDistortion * 0.08;
+    
+    vec4 colorRed = texture2D(photoTexture, uv + vec2(shift, 0.0));
+    vec4 colorGreen = texture2D(photoTexture, uv);
+    vec4 colorBlue = texture2D(photoTexture, uv - vec2(shift, 0.0));
+    
+    vec3 rgbColor = vec3(colorRed.r, colorGreen.g, colorBlue.b);
+    float gray = getGrayscale(rgbColor);
+    
+    float hp = uHoverProgress;
+    float ep = uExpandProgress;
+    
+    // Blending filters
+    float targetGrayscale = 1.0 - 0.88 * hp - 0.12 * ep;
+    float targetBrightness = 0.48 + 0.48 * hp + 0.52 * ep;
+    float targetContrast = 1.15 - 0.11 * hp - 0.15 * ep;
+    
+    vec3 finalColor = mix(rgbColor, vec3(gray), targetGrayscale);
+    finalColor *= targetBrightness;
+    finalColor = (finalColor - 0.5) * targetContrast + 0.5;
+    
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;
+
 let items = [];
 const state = {
   active: 0,
@@ -33,10 +126,31 @@ const state = {
   baseLength: 8
 };
 
+let curtainsInstance = null;
+let planes = [];
+
 init();
 
 async function init() {
   if (!shell || !stage || !track) return;
+
+  // Initialize Curtains WebGL
+  try {
+    if (typeof window.curtains !== "undefined") {
+      curtainsInstance = new window.curtains.Curtains({
+        container: "photo-wall-canvas",
+        pixelRatio: Math.min(1.5, window.devicePixelRatio),
+        production: true
+      });
+      curtainsInstance.onError(() => {
+        console.warn("WebGL not supported or context lost. Falling back to CSS 3D.");
+        curtainsInstance = null;
+      });
+    }
+  } catch (e) {
+    console.warn("Curtains.js initialization failed:", e);
+  }
+
   bindEvents();
   renderWall(await loadItems());
 }
@@ -162,8 +276,18 @@ function renderWall(source) {
   const repeated = [];
   while (repeated.length < 30) repeated.push(...base);
   items = repeated.slice(0, Math.max(30, base.length));
-  track.replaceChildren();
 
+  // Clean old WebGL planes
+  if (curtainsInstance) {
+    planes.forEach(plane => {
+      try {
+        plane.remove();
+      } catch (e) {}
+    });
+    planes = [];
+  }
+
+  track.replaceChildren();
   state.hoverProgress = new Array(items.length).fill(0);
 
   items.forEach((item, index) => {
@@ -177,6 +301,7 @@ function renderWall(source) {
     const image = document.createElement("img");
     image.src = item.thumbUrl || item.imageUrl;
     image.alt = item.title || "";
+    image.dataset.sampler = "photoTexture"; // match WebGL shader sampler uniform name
     image.decoding = "async";
     image.loading = index < 12 ? "eager" : "lazy";
     image.draggable = false;
@@ -210,6 +335,45 @@ function renderWall(source) {
     });
     track.append(card);
   });
+
+  // Compile WebGL planes once DOM cards are appended
+  if (curtainsInstance && window.curtains) {
+    const cards = [...track.children];
+    cards.forEach((card, index) => {
+      const image = card.querySelector("img");
+      const planeParams = {
+        vertexShader: vsSource,
+        fragmentShader: fsSource,
+        widthSegments: 20,
+        heightSegments: 20,
+        uniforms: {
+          uVelocity: { name: "uVelocity", type: "1f", value: 0 },
+          uHoverProgress: { name: "uHoverProgress", type: "1f", value: 0 },
+          uExpandProgress: { name: "uExpandProgress", type: "1f", value: 0 },
+          uTime: { name: "uTime", type: "1f", value: 0 }
+        }
+      };
+
+      const plane = new window.curtains.Plane(curtainsInstance, card, planeParams);
+      plane.onReady(() => {
+        // Smoothly hide the original HTML img when WebGL renderer compiles successfully
+        image.style.opacity = "0";
+      }).onRender(() => {
+        plane.uniforms.uTime.value += 1.0;
+        
+        const hp = state.hoverProgress[index] || 0;
+        const ep = (index === state.selectedIndex) ? state.expandProgress : 0;
+        
+        plane.uniforms.uHoverProgress.value = hp;
+        plane.uniforms.uExpandProgress.value = ep;
+        
+        // Pass drag velocity wave intensity
+        plane.uniforms.uVelocity.value = state.wavePower;
+      });
+
+      planes.push(plane);
+    });
+  }
 
   setActive(0);
   requestAnimationFrame(() => {
@@ -295,13 +459,9 @@ function animate() {
       const phase = index * 0.48 + state.current * 0.01;
 
       // --- 3D Curve Base Layout (Static Cylinder) ---
-      // Rotate cards inward to face center
       const baseRotateY = -sideOfCenter * (1 - proximity) * 42;
-      // Bring center cards closer to viewer, push outer ones back
       const baseDepth = (proximity * 160) - 100;
-      // Center cards scale up
       const baseScale = 0.88 + proximity * 0.14;
-      // Lift center cards up slightly
       const baseFloat = proximity * -18;
 
       // --- Dynamic Motion Layout (Scroll/Drag) ---
@@ -357,11 +517,15 @@ function animate() {
       const shadowX = Math.round(-sideOfCenter * (1 - proximity) * 12 * (1 - hp) * (1 - globalEp));
       const shadowY = Math.round(14 + proximity * 20 + hp * 28 + ep * 20);
 
-      // --- Blend Grayscale Filters ---
-      const grayscale = 1.0 - 0.88 * hp - 0.12 * ep;
-      const brightness = 0.48 + 0.48 * hp + 0.52 * ep;
-      const contrast = 1.15 - 0.11 * hp - 0.15 * ep;
-      card.style.filter = `grayscale(${grayscale}) brightness(${brightness}) contrast(${contrast}) drop-shadow(${shadowX}px ${shadowY}px ${shadowBlur}px rgba(0,0,0,${shadowOpacity}))`;
+      // WebGL handles filters internally in Fragment Shader, but we keep CSS box shadow and filters as fallback if WebGL is missing
+      if (!curtainsInstance) {
+        const grayscale = 1.0 - 0.88 * hp - 0.12 * ep;
+        const brightness = 0.48 + 0.48 * hp + 0.52 * ep;
+        const contrast = 1.15 - 0.11 * hp - 0.15 * ep;
+        card.style.filter = `grayscale(${grayscale}) brightness(${brightness}) contrast(${contrast}) drop-shadow(${shadowX}px ${shadowY}px ${shadowBlur}px rgba(0,0,0,${shadowOpacity}))`;
+      } else {
+        card.style.filter = `drop-shadow(${shadowX}px ${shadowY}px ${shadowBlur}px rgba(0,0,0,${shadowOpacity}))`;
+      }
 
       // --- Smooth Z-Indexing ---
       const baseZIndex = 100 - Math.round(Math.abs(index - state.active));
@@ -371,6 +535,13 @@ function animate() {
       const opacity = isSelected ? 1 : 1 - 0.82 * globalEp;
       card.style.opacity = String(opacity);
     });
+
+    // Force curtains.js planes to update positions aligned with DOM cards
+    if (curtainsInstance) {
+      planes.forEach(plane => {
+        plane.updatePosition();
+      });
+    }
 
     const settled = Math.abs(state.target - state.current) < 0.35 && 
                     Math.abs(state.velocity) < 0.06 && 
@@ -499,6 +670,7 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+// Cubic bezier or spring interpolation
 function lerp(from, to, amount) {
   return from + (to - from) * amount;
 }
