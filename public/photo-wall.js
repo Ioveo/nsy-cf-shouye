@@ -20,6 +20,7 @@ const vsSource = `
 
   uniform mat4 uModelViewMatrix;
   uniform mat4 uProjectionMatrix;
+  uniform mat4 photoTextureMatrix;
 
   uniform float uVelocity;
   uniform float uHoverProgress;
@@ -53,7 +54,7 @@ const vsSource = `
 
     gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(position, 1.0);
     
-    vTextureCoord = aTextureCoord;
+    vTextureCoord = (photoTextureMatrix * vec4(aTextureCoord, 0.0, 1.0)).xy;
     vDistortion = zDistortion * 0.012 + ripple + expandWave;
   }
 `;
@@ -477,37 +478,39 @@ function animate() {
       const motionScale = motion * proximity * 0.04;
 
       // --- Blend Base, Motion, Hover, and Expand ---
-      const rotateY = (baseRotateY + motionRotateY) * (1 - hp * 0.25) * (1 - globalEp);
-      const rotateX = motionRotateX * (1 - hp * 0.25) * (1 - globalEp);
-      const rotateZ = motionRotateZ * (1 - hp * 0.25) * (1 - globalEp);
+      const rotateY = (baseRotateY + motionRotateY) * (1 - hp * 0.15) * (1 - globalEp);
+      const rotateX = motionRotateX * (1 - hp * 0.15) * (1 - globalEp);
+      const rotateZ = motionRotateZ * (1 - hp * 0.15) * (1 - globalEp);
 
-      const hoverScale = hp * 0.04;
-      const neighborScale = (1 - isSelected) * globalEp * -0.25;
+      // Disable physical hover scaling to focus purely on color/brightness 'light up' feel
+      const hoverScale = 0; 
+      const neighborScale = 0;
 
       let scaleX, scaleY;
       if (isSelected) {
-        const startScaleX = baseScale + motionScale + hoverScale;
-        const startScaleY = baseScale + motionScale + hoverScale;
+        const startScaleX = baseScale + motionScale;
+        const startScaleY = baseScale + motionScale;
         
-        // Target scales when fully expanded: scale width to 65% of screen and height to 1.45x
-        const targetScaleX = (state.stageWidth * 0.65) / cardWidth;
-        const targetScaleY = 1.45;
+        // Target scales when fully expanded: scale width to 72% of viewport and height to 76% of viewport
+        const cardHeight = card.offsetHeight || 450;
+        const targetScaleX = (state.stageWidth * 0.72) / cardWidth;
+        const targetScaleY = (window.innerHeight * 0.76) / cardHeight;
         
         scaleX = lerp(startScaleX, targetScaleX, globalEp);
         scaleY = lerp(startScaleY, targetScaleY, globalEp);
       } else {
-        scaleX = (baseScale + motionScale + hoverScale) * (1 - globalEp) + neighborScale;
-        scaleY = (baseScale + motionScale + hoverScale) * (1 - globalEp) + neighborScale;
+        scaleX = baseScale + motionScale;
+        scaleY = baseScale + motionScale;
       }
       scaleX = Math.max(0.001, scaleX);
       scaleY = Math.max(0.001, scaleY);
 
-      const hoverDepth = hp * 45;
+      // Soft physical 3D lift on hover (extremely subtle to maintain slick feel)
+      const hoverDepth = hp * 16;
       const expandDepth = ep * 320;
-      const neighborDepth = (1 - isSelected) * globalEp * -150;
-      const depth = (baseDepth + motionDepth + hoverDepth) * (1 - globalEp) + expandDepth + neighborDepth;
+      const depth = (baseDepth + motionDepth + hoverDepth) * (1 - globalEp) + expandDepth;
 
-      const hoverFloat = -hp * 12;
+      const hoverFloat = 0;
       const expandFloat = ep * -12;
       const float = (baseFloat + motionFloat + hoverFloat) * (1 - globalEp) + expandFloat;
 
@@ -517,7 +520,7 @@ function animate() {
       let push = 0;
       if (state.selectedIndex !== null && !isSelected) {
         const pushDirection = offset < 0 ? -1 : 1;
-        push = pushDirection * state.stageWidth * 0.42 * globalEp;
+        push = pushDirection * state.stageWidth * 0.8 * globalEp;
       }
 
       // --- Center alignment ---
@@ -551,12 +554,18 @@ function animate() {
       // --- Opacity ---
       const opacity = isSelected ? 1 : 1 - globalEp;
       card.style.opacity = String(opacity);
+
+      // Store visibility status to avoid layout thrashing in updatePosition
+      const isVisible = (C + offset + cardWidth / 2 >= -100) && (C + offset - cardWidth / 2 <= state.stageWidth + 100);
+      card._isVisible = isVisible;
     });
 
-    // Force curtains.js planes to update positions aligned with DOM cards
+    // Force curtains.js planes to update positions aligned with DOM cards (optimized to avoid layout thrashing)
     if (curtainsInstance) {
-      planes.forEach(plane => {
-        plane.updatePosition();
+      planes.forEach((plane, idx) => {
+        if (idx === state.selectedIndex || track.children[idx]?._isVisible) {
+          plane.updatePosition();
+        }
       });
     }
 
