@@ -77,6 +77,7 @@ const fsSource = `
   uniform sampler2D photoTexture;
   uniform float uHoverProgress;
   uniform float uExpandProgress;
+  uniform float uProximity; // dynamic center spotlight proximity uniform
 
   float getGrayscale(vec3 color) {
     return dot(color, vec3(0.299, 0.587, 0.114));
@@ -101,11 +102,17 @@ const fsSource = `
     
     float hp = uHoverProgress;
     float ep = uExpandProgress;
+    float up = uProximity;
+    
+    // Spotlight ambient lighting: active/centered cards are beautifully lit up, side cards fade to elegant dim darkness
+    float spotlight = 0.28 + 0.72 * up;
+    
+    // Grayscale blend: center is fully colorful, flat sides are elegant monochrome grayscale
+    float targetGrayscale = (1.0 - up) * (1.0 - hp) * (1.0 - ep);
     
     // Blending filters
-    float targetGrayscale = 1.0 - 0.88 * hp - 0.12 * ep;
-    float targetBrightness = 0.48 + 0.48 * hp + 0.52 * ep;
-    float targetContrast = 1.15 - 0.11 * hp - 0.15 * ep;
+    float targetBrightness = spotlight * (1.0 - ep) + ep * 1.0;
+    float targetContrast = (1.05 + 0.15 * up) * (1.0 - ep) + ep * 1.0;
     
     vec3 finalColor = mix(rgbColor, vec3(gray), targetGrayscale);
     finalColor *= targetBrightness;
@@ -405,6 +412,7 @@ function renderWall(source) {
           uVelocity: { name: "uVelocity", type: "1f", value: 0 },
           uHoverProgress: { name: "uHoverProgress", type: "1f", value: 0 },
           uExpandProgress: { name: "uExpandProgress", type: "1f", value: 0 },
+          uProximity: { name: "uProximity", type: "1f", value: 0 },
           uTime: { name: "uTime", type: "1f", value: 0 }
         }
       };
@@ -421,9 +429,20 @@ function renderWall(source) {
         
         plane.uniforms.uHoverProgress.value = hp;
         plane.uniforms.uExpandProgress.value = ep;
-        
-        // Pass drag velocity wave intensity
         plane.uniforms.uVelocity.value = state.wavePower;
+        
+        // Compute precise mesh center proximity for spotlight lighting
+        const cardCenter = card._offsetLeft + (card._offsetWidth || card.offsetWidth || 110) / 2;
+        const x = cardCenter + state.current;
+        const C = state.stageWidth / 2;
+        const cardWidth = card._offsetWidth || card.offsetWidth || 110;
+        const gap = parseFloat(window.getComputedStyle(track).gap) || 8;
+        const T = items.length * (cardWidth + gap);
+        const offset = ((x - C + T/2) % T + T) % T - T/2;
+        const distance = Math.abs(offset);
+        const proximity = Math.max(0, 1 - distance / Math.max(1, state.stageWidth * 0.6));
+        
+        plane.uniforms.uProximity.value = proximity;
       });
 
       planes.push(plane);
@@ -516,8 +535,8 @@ function animate() {
       // Proximity to viewport center (ranges 0 to 1)
       const proximity = Math.max(0, 1 - distance / Math.max(1, state.stageWidth * 0.6));
 
-      const speed = Math.min(Math.abs(state.wavePower), 180);
-      const motion = Math.min(speed / 110, 1);
+      const speed = Math.min(Math.abs(state.wavePower), 240);
+      const motion = Math.min(speed / 95, 1.32);
       const hp = state.hoverProgress[index] || 0;
       const ep = isSelected ? globalEp : 0;
 
@@ -531,20 +550,20 @@ function animate() {
       const baseScale = 0.94;
       const baseFloat = 0;
 
-      // --- Spherical 3D speed-distortion bulge (Aristide Benoist Inspired) ---
-      const speedFactor = motion; // ranges from 0 to 1 based on velocity
+      // --- Spherical 3D speed-distortion bulge (Aristide Benoist Inspired - Amplified) ---
+      const speedFactor = motion; 
       
       // Center card bulges forward (positive depth), side cards fold back (negative depth)
-      const motionDepth = speedFactor * (proximity * 220 - (1 - proximity) * 160);
+      const motionDepth = speedFactor * (proximity * 290 - (1 - proximity) * 200);
       
       // Center card scales up (positive scale), side cards shrink down (negative scale)
-      const motionScale = speedFactor * (proximity * 0.16 - (1 - proximity) * 0.14);
+      const motionScale = speedFactor * (proximity * 0.20 - (1 - proximity) * 0.16);
       
       // Side cards rotate on Y axis to look like they wrap around a sphere
-      const motionRotateY = -sideOfCenter * (1 - proximity) * 38 * speedFactor;
+      const motionRotateY = -sideOfCenter * (1 - proximity) * 48 * speedFactor;
       
       // Center card floats slightly up, side cards curve down slightly
-      const motionFloat = speedFactor * (proximity * -24 + (1 - proximity) * 12);
+      const motionFloat = speedFactor * (proximity * -28 + (1 - proximity) * 14);
       
       // Subtle Z tilt ripple wave and rotation
       const motionRotateZ = clamp(Math.sin(phase) * speedFactor * 3.2, -4.5, 4.5);
