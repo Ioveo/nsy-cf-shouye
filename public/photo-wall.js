@@ -233,7 +233,13 @@ function bindEvents() {
   track.addEventListener("dragstart", event => event.preventDefault());
 
   shell.addEventListener("wheel", event => {
-    if (state.selectedIndex !== null) return;
+    if (state.selectedIndex !== null) {
+      // Pull down/scroll wheel down to return/close the lightbox
+      if (event.deltaY > 15) {
+        closeLightbox();
+      }
+      return;
+    }
     event.preventDefault();
     const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
     const push = -delta * 0.85;
@@ -492,10 +498,30 @@ function animate() {
         const startScaleX = baseScale + motionScale;
         const startScaleY = baseScale + motionScale;
         
-        // Target scales when fully expanded: scale width to 72% of viewport and height to 76% of viewport
+        // Dynamically compute target scales matching the image's original aspect ratio (e.g. 9:16 or 16:9)
+        const image = card.querySelector("img");
+        let aspect = 16 / 9;
+        if (image && image.naturalWidth && image.naturalHeight) {
+          aspect = image.naturalWidth / image.naturalHeight;
+        }
+        
+        const maxTargetWidth = state.stageWidth * 0.90;
+        const maxTargetHeight = window.innerHeight * 0.80;
+        
+        let targetWidth, targetHeight;
+        if (aspect > maxTargetWidth / maxTargetHeight) {
+          // Horizontal/Widescreen images (e.g. 16:9) fit to width
+          targetWidth = maxTargetWidth;
+          targetHeight = maxTargetWidth / aspect;
+        } else {
+          // Vertical/Portrait images (e.g. 9:16) fit to height
+          targetHeight = maxTargetHeight;
+          targetWidth = maxTargetHeight * aspect;
+        }
+        
         const cardHeight = card.offsetHeight || 450;
-        const targetScaleX = (state.stageWidth * 0.72) / cardWidth;
-        const targetScaleY = (window.innerHeight * 0.76) / cardHeight;
+        const targetScaleX = targetWidth / cardWidth;
+        const targetScaleY = targetHeight / cardHeight;
         
         scaleX = lerp(startScaleX, targetScaleX, globalEp);
         scaleY = lerp(startScaleY, targetScaleY, globalEp);

@@ -217,10 +217,12 @@ a {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 72vw;
-  height: 76vh;
+  width: auto;
+  height: auto;
+  max-width: 90vw;
+  max-height: 80vh;
   transform: translate(-50%, -50%);
-  object-fit: cover;
+  object-fit: contain;
   box-shadow: 0 35px 90px rgba(0, 0, 0, 0.65);
   pointer-events: none;
   opacity: 0;
