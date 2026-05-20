@@ -49,9 +49,15 @@ const vsSource = `
     float ripple = sin(length(position.xy) * 8.0 - uTime * 0.05) * 0.016 * uHoverProgress * (1.0 - uExpandProgress);
     position.z += ripple * 35.0;
     
-    // Expand bounce wave
-    float expandWave = sin(length(position.xy) * 4.0 - uExpandProgress * 6.0) * 0.038 * uExpandProgress * (1.0 - uExpandProgress);
-    position.z += expandWave * 90.0;
+    // WebGL Liquid Radial Ripple Transition (Aristide Benoist Inspired)
+    // Dynamic glass-water ripple splash when opening or closing
+    float dist = length(position.xy);
+    float expandWave = sin(dist * 16.0 - uExpandProgress * 22.0) * 0.075 * uExpandProgress * (1.0 - uExpandProgress);
+    position.z += expandWave * 150.0;
+    
+    // Organic liquid X/Y refractions
+    position.x += expandWave * sin(position.y * 7.0) * 0.28;
+    position.y += expandWave * cos(position.x * 7.0) * 0.28;
 
     gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(position, 1.0);
     
@@ -79,8 +85,12 @@ const fsSource = `
   void main() {
     vec2 uv = vTextureCoord;
     
+    // Liquid texture UV refraction based on wave distortion
+    uv.x += sin(uv.y * 14.0 + vDistortion * 8.0) * vDistortion * 0.05;
+    uv.y += cos(uv.x * 14.0 + vDistortion * 8.0) * vDistortion * 0.05;
+    
     // Chromatic Aberration (RGB shift based on movement distortion)
-    float shift = vDistortion * 0.08;
+    float shift = vDistortion * 0.12;
     
     vec4 colorRed = texture2D(photoTexture, uv + vec2(shift, 0.0));
     vec4 colorGreen = texture2D(photoTexture, uv);
@@ -389,8 +399,8 @@ function renderWall(source) {
       const planeParams = {
         vertexShader: vsSource,
         fragmentShader: fsSource,
-        widthSegments: 20,
-        heightSegments: 20,
+        widthSegments: 36,
+        heightSegments: 36,
         uniforms: {
           uVelocity: { name: "uVelocity", type: "1f", value: 0 },
           uHoverProgress: { name: "uHoverProgress", type: "1f", value: 0 },
