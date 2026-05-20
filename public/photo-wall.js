@@ -686,6 +686,13 @@ function setActive(index) {
   if (activeIndex) activeIndex.textContent = String(currentNum).padStart(2, "0");
   if (totalCount) totalCount.textContent = String(state.baseLength).padStart(2, "0");
   if (activeTitle && item) activeTitle.textContent = item.title || "NSY Gallery";
+
+  // Update the full-screen blurred background image
+  const bgImage = document.querySelector("[data-photo-wall-bg-image]");
+  if (bgImage && item) {
+    const url = item.imageUrl || item.thumbUrl;
+    bgImage.style.backgroundImage = `url('${url}')`;
+  }
 }
 
 function openItem(index) {

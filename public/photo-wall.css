@@ -154,7 +154,7 @@ a {
   top: 0;
   display: flex;
   align-items: center;
-  gap: clamp(16px, 1.2vw, 24px);
+  gap: clamp(6px, 0.45vw, 10px);
   height: 100%;
   padding-inline: clamp(28px, 3.8vw, 74px);
   transform-style: preserve-3d;
@@ -426,4 +426,16 @@ a {
   height: 100%;
   pointer-events: none;
   z-index: 2;
+}
+
+.photo-wall-bg-image {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(72px) brightness(0.25) saturate(0.85);
+  opacity: 0.68;
+  transition: background-image 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease;
+  z-index: 0;
+  pointer-events: none;
 }
