@@ -505,8 +505,8 @@ function animate() {
           aspect = image.naturalWidth / image.naturalHeight;
         }
         
-        const maxTargetWidth = state.stageWidth * 0.90;
-        const maxTargetHeight = window.innerHeight * 0.80;
+        const maxTargetWidth = state.stageWidth * 0.95;
+        const maxTargetHeight = window.innerHeight * 0.95;
         
         let targetWidth, targetHeight;
         if (aspect > maxTargetWidth / maxTargetHeight) {
