@@ -260,6 +260,30 @@ function bindEvents() {
 
   closeButton?.addEventListener("click", closeLightbox);
   
+  // 3D Parallax Mouse Tilt on Lightbox Open
+  lightbox?.addEventListener("pointermove", event => {
+    if (state.selectedIndex === null || !lightboxImage) return;
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    const dx = (event.clientX - cx) / cx;
+    const dy = (event.clientY - cy) / cy;
+    
+    // Up to 12 degrees X and Y tilt
+    const tiltX = -dy * 12;
+    const tiltY = dx * 12;
+    
+    lightboxImage.style.transform = `translate(-50%, -50%) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(1.02)`;
+    // Dynamic soft light shadow following mouse
+    lightboxImage.style.filter = `brightness(1.04) drop-shadow(${dx * -16}px ${dy * -16}px 38px rgba(0,0,0,0.58))`;
+  });
+
+  lightbox?.addEventListener("pointerleave", () => {
+    if (lightboxImage) {
+      lightboxImage.style.transform = `translate(-50%, -50%) rotateX(0deg) rotateY(0deg) scale(1)`;
+      lightboxImage.style.filter = `drop-shadow(0 35px 90px rgba(0, 0, 0, 0.65))`;
+    }
+  });
+  
   // Back key also closes the lightbox
   document.addEventListener("keydown", event => {
     if (event.key === "Escape") closeLightbox();
@@ -417,15 +441,11 @@ function animate() {
 
     if (isIdle) {
       // 1. Slow Auto-Scroll from right to left (conveyor loop)
-      state.target -= 0.42;
+      state.target -= 0.50;
       
-      // 2. Sequential Highlight (Marquee light up)
-      const idleCycleTime = 1600; // 1.6s per card
-      const idleIndex = Math.floor((idleDuration - 2000) / idleCycleTime) % items.length;
-      if (state.hoveredIndex !== idleIndex) {
-        state.hoveredIndex = idleIndex;
-        setActive(idleIndex);
-      }
+      // 2. Drive active highlights from physical center card to perfectly match speed and keep centered card lit up
+      updateActiveFromCenter();
+      state.hoveredIndex = state.active;
     }
 
     if (!state.dragging) {
@@ -755,6 +775,8 @@ function closeLightbox() {
         lightbox.hidden = true;
         if (lightboxImage) {
           lightboxImage.style.display = "none";
+          lightboxImage.style.transform = `translate(-50%, -50%) rotateX(0deg) rotateY(0deg) scale(1)`;
+          lightboxImage.style.filter = `drop-shadow(0 35px 90px rgba(0, 0, 0, 0.65))`;
         }
       }
     }, 820);
