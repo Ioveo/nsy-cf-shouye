@@ -157,8 +157,8 @@ async function init() {
 
   // Initialize Curtains WebGL
   try {
-    if (typeof window.curtains !== "undefined") {
-      curtainsInstance = new window.curtains.Curtains({
+    if (typeof window.Curtains !== "undefined") {
+      curtainsInstance = new window.Curtains({
         container: "photo-wall-canvas",
         pixelRatio: Math.min(1.5, window.devicePixelRatio),
         production: true
@@ -322,8 +322,6 @@ function finishDrag(event) {
     return;
   }
   state.clickIndex = null;
-  state.target = state.target + state.velocity * 12;
-  state.velocity *= 0.82;
   state.wavePower = state.velocity;
   animate();
 }
@@ -399,7 +397,8 @@ function renderWall(source) {
   });
 
   // Compile WebGL planes once DOM cards are appended
-  if (curtainsInstance && window.curtains) {
+  updateBounds();
+  if (curtainsInstance && window.Curtains) {
     const cards = [...track.children];
     cards.forEach((card, index) => {
       const image = card.querySelector("img");
@@ -417,7 +416,7 @@ function renderWall(source) {
         }
       };
 
-      const plane = new window.curtains.Plane(curtainsInstance, card, planeParams);
+      const plane = new window.Plane(curtainsInstance, card, planeParams);
       plane.onReady(() => {
         // Smoothly hide the original HTML img when WebGL renderer compiles successfully
         image.style.opacity = "0";
@@ -432,15 +431,17 @@ function renderWall(source) {
         plane.uniforms.uVelocity.value = state.wavePower;
         
         // Compute precise mesh center proximity for spotlight lighting
-        const cardCenter = card._offsetLeft + (card._offsetWidth || card.offsetWidth || 110) / 2;
+        const left = card._offsetLeft !== undefined ? card._offsetLeft : card.offsetLeft;
+        const width = card._offsetWidth || card.offsetWidth || 110;
+        const cardCenter = left + width / 2;
         const x = cardCenter + state.current;
-        const C = state.stageWidth / 2;
-        const cardWidth = card._offsetWidth || card.offsetWidth || 110;
+        const C = (state.stageWidth || stage.clientWidth || window.innerWidth) / 2;
         const gap = parseFloat(window.getComputedStyle(track).gap) || 8;
-        const T = items.length * (cardWidth + gap);
+        const T = items.length * (width + gap);
         const offset = ((x - C + T/2) % T + T) % T - T/2;
         const distance = Math.abs(offset);
-        const proximity = Math.max(0, 1 - distance / Math.max(1, state.stageWidth * 0.6));
+        const maxDist = Math.max(1, (state.stageWidth || stage.clientWidth || window.innerWidth) * 0.6);
+        const proximity = Math.max(0, 1 - distance / maxDist);
         
         plane.uniforms.uProximity.value = proximity;
       });
@@ -479,7 +480,7 @@ function animate() {
 
     if (!state.dragging) {
       state.target += state.velocity;
-      state.velocity *= 0.95;
+      state.velocity *= 0.965;
     }
     state.wavePower *= 0.92;
 
@@ -498,6 +499,18 @@ function animate() {
     }
 
     const C = state.stageWidth / 2;
+
+    // --- High-End Magnetic Snapping to Center (Aristide Benoist Inspired Physics) ---
+    // When not dragging and moving slowly, gently pull target to perfectly center the closest active card!
+    if (!state.dragging && Math.abs(state.velocity) < 1.8 && state.selectedIndex === null) {
+      const activeCard = cards[state.active];
+      if (activeCard) {
+        const cardCenter = activeCard._offsetLeft + cardWidth / 2;
+        const x = cardCenter + state.current;
+        const offset = ((x - C + T/2) % T + T) % T - T/2; // Distance from center
+        state.target -= offset * 0.052; // Elegant snap spring constant
+      }
+    }
 
     // Handle expand progress
     const targetExpand = (state.selectedIndex !== null) ? 1 : 0;
