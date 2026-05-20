@@ -770,13 +770,16 @@ function closeLightbox() {
   stage.classList.remove("has-selected");
   if (lightbox) {
     lightbox.classList.remove("is-active");
+    if (lightboxImage) {
+      // Clear inline 3D tilt styles immediately so the CSS scale-down transition takes over beautifully!
+      lightboxImage.style.transform = "";
+      lightboxImage.style.filter = "";
+    }
     setTimeout(() => {
       if (state.selectedIndex === null) {
         lightbox.hidden = true;
         if (lightboxImage) {
           lightboxImage.style.display = "none";
-          lightboxImage.style.transform = `translate(-50%, -50%) rotateX(0deg) rotateY(0deg) scale(1)`;
-          lightboxImage.style.filter = `drop-shadow(0 35px 90px rgba(0, 0, 0, 0.65))`;
         }
       }
     }, 820);
