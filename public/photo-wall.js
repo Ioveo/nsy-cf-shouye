@@ -416,7 +416,7 @@ function animate() {
 
     // Handle expand progress
     const targetExpand = (state.selectedIndex !== null) ? 1 : 0;
-    state.expandProgress = lerp(state.expandProgress, targetExpand, 0.09);
+    state.expandProgress = lerp(state.expandProgress, targetExpand, 0.125);
     const globalEp = state.expandProgress;
 
     let hasActiveHover = false;
@@ -477,23 +477,39 @@ function animate() {
       const motionScale = motion * proximity * 0.04;
 
       // --- Blend Base, Motion, Hover, and Expand ---
-      const rotateY = (baseRotateY + motionRotateY) * (1 - hp) * (1 - globalEp);
-      const rotateX = motionRotateX * (1 - hp) * (1 - globalEp);
-      const rotateZ = motionRotateZ * (1 - hp) * (1 - globalEp);
+      const rotateY = (baseRotateY + motionRotateY) * (1 - hp * 0.25) * (1 - globalEp);
+      const rotateX = motionRotateX * (1 - hp * 0.25) * (1 - globalEp);
+      const rotateZ = motionRotateZ * (1 - hp * 0.25) * (1 - globalEp);
 
-      const hoverScale = hp * 0.26;
-      const expandScale = ep * 2.45;
-      const neighborScale = (1 - isSelected) * globalEp * -0.22;
-      const scale = (baseScale + motionScale) * (1 - hp) * (1 - globalEp) + hoverScale * (1 - globalEp) + expandScale + neighborScale;
+      const hoverScale = hp * 0.04;
+      const neighborScale = (1 - isSelected) * globalEp * -0.25;
 
-      const hoverDepth = hp * 220;
+      let scaleX, scaleY;
+      if (isSelected) {
+        const startScaleX = baseScale + motionScale + hoverScale;
+        const startScaleY = baseScale + motionScale + hoverScale;
+        
+        // Target scales when fully expanded: scale width to 65% of screen and height to 1.45x
+        const targetScaleX = (state.stageWidth * 0.65) / cardWidth;
+        const targetScaleY = 1.45;
+        
+        scaleX = lerp(startScaleX, targetScaleX, globalEp);
+        scaleY = lerp(startScaleY, targetScaleY, globalEp);
+      } else {
+        scaleX = (baseScale + motionScale + hoverScale) * (1 - globalEp) + neighborScale;
+        scaleY = (baseScale + motionScale + hoverScale) * (1 - globalEp) + neighborScale;
+      }
+      scaleX = Math.max(0.001, scaleX);
+      scaleY = Math.max(0.001, scaleY);
+
+      const hoverDepth = hp * 45;
       const expandDepth = ep * 320;
       const neighborDepth = (1 - isSelected) * globalEp * -150;
-      const depth = (baseDepth + motionDepth) * (1 - hp) * (1 - globalEp) + hoverDepth * (1 - globalEp) + expandDepth + neighborDepth;
+      const depth = (baseDepth + motionDepth + hoverDepth) * (1 - globalEp) + expandDepth + neighborDepth;
 
-      const hoverFloat = -hp * 36;
+      const hoverFloat = -hp * 12;
       const expandFloat = ep * -12;
-      const float = (baseFloat + motionFloat) * (1 - hp) * (1 - globalEp) + hoverFloat * (1 - globalEp) + expandFloat;
+      const float = (baseFloat + motionFloat + hoverFloat) * (1 - globalEp) + expandFloat;
 
       const lag = motionLag * (1 - globalEp);
 
@@ -509,7 +525,7 @@ function animate() {
       const tx = C + targetCenterOffset - cardCenter;
 
       card.style.transformOrigin = "center center";
-      card.style.transform = `translate3d(${tx}px, ${float}px, ${depth}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotate(${rotateZ}deg) scale(${scale})`;
+      card.style.transform = `translate3d(${tx}px, ${float}px, ${depth}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotate(${rotateZ}deg) scale(${scaleX}, ${scaleY})`;
 
       // --- Soft Floating Shadows ---
       card.style.boxShadow = "none";
@@ -533,7 +549,7 @@ function animate() {
       card.style.zIndex = isSelected ? "1000" : String(baseZIndex);
 
       // --- Opacity ---
-      const opacity = isSelected ? 1 : 1 - 0.82 * globalEp;
+      const opacity = isSelected ? 1 : 1 - globalEp;
       card.style.opacity = String(opacity);
     });
 
