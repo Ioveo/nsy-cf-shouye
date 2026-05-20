@@ -214,6 +214,22 @@ a {
 
 .photo-wall-lightbox img {
   display: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 72vw;
+  height: 76vh;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  box-shadow: 0 35px 90px rgba(0, 0, 0, 0.65);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 800ms cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1;
+}
+
+.photo-wall-lightbox.is-active img {
+  opacity: 1;
 }
 
 .photo-wall-lightbox__close {

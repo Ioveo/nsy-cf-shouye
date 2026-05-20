@@ -8,6 +8,7 @@ const lightbox = document.querySelector("[data-photo-wall-lightbox]");
 const lightboxTitle = document.querySelector("[data-photo-wall-lightbox-title]");
 const lightboxDesc = document.querySelector("[data-photo-wall-lightbox-desc]");
 const lightboxLink = document.querySelector("[data-photo-wall-lightbox-link]");
+const lightboxImage = document.querySelector("[data-photo-wall-lightbox-image]");
 const closeButton = document.querySelector("[data-photo-wall-close]");
 
 const vsSource = `
@@ -460,11 +461,11 @@ function animate() {
       const direction = state.wavePower < 0 ? -1 : 1;
       const phase = index * 0.48 + state.current * 0.01;
 
-      // --- 3D Curve Base Layout (Static Cylinder) ---
-      const baseRotateY = -sideOfCenter * (1 - proximity) * 42;
-      const baseDepth = (proximity * 160) - 100;
-      const baseScale = 0.88 + proximity * 0.14;
-      const baseFloat = proximity * -18;
+      // --- 3D Curve Base Layout (Static Cylinder - Flattened for straight alignment) ---
+      const baseRotateY = 0;
+      const baseDepth = 0;
+      const baseScale = 0.94;
+      const baseFloat = 0;
 
       // --- Dynamic Motion Layout (Scroll/Drag) ---
       const motionFold = motion * (22 + proximity * 34 + Math.min(speed * 0.06, 12));
@@ -658,6 +659,10 @@ function openItem(index) {
   }
   if (lightbox) {
     lightbox.hidden = false;
+    if (lightboxImage) {
+      lightboxImage.src = item.imageUrl || item.thumbUrl;
+      lightboxImage.style.display = "block";
+    }
     requestAnimationFrame(() => {
       lightbox.classList.add("is-active");
     });
@@ -687,6 +692,9 @@ function closeLightbox() {
     setTimeout(() => {
       if (state.selectedIndex === null) {
         lightbox.hidden = true;
+        if (lightboxImage) {
+          lightboxImage.style.display = "none";
+        }
       }
     }, 820);
   }
