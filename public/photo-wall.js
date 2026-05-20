@@ -126,7 +126,8 @@ const state = {
   selectedIndex: null,
   expandProgress: 0,
   stageWidth: 0,
-  baseLength: 8
+  baseLength: 8,
+  lastInteractionTime: performance.now()
 };
 
 let curtainsInstance = null;
@@ -181,8 +182,13 @@ async function loadItems() {
   return fallbackItems();
 }
 
+function resetIdle() {
+  state.lastInteractionTime = performance.now();
+}
+
 function bindEvents() {
   stage.addEventListener("pointerdown", event => {
+    resetIdle();
     if (state.selectedIndex !== null) {
       // Close if clicking outside the selected card
       const card = event.target.closest?.(".photo-wall-card");
@@ -208,6 +214,7 @@ function bindEvents() {
   });
 
   document.addEventListener("pointermove", event => {
+    resetIdle();
     if (!state.dragging) return;
     event.preventDefault();
     const delta = event.clientX - state.startX;
@@ -233,6 +240,7 @@ function bindEvents() {
   track.addEventListener("dragstart", event => event.preventDefault());
 
   shell.addEventListener("wheel", event => {
+    resetIdle();
     if (state.selectedIndex !== null) {
       // Pull down/scroll wheel down to return/close the lightbox
       if (event.deltaY > 15) {
@@ -317,12 +325,14 @@ function renderWall(source) {
     card.append(image);
 
     card.addEventListener("mouseenter", () => {
+      resetIdle();
       if (state.selectedIndex !== null) return;
       state.hoveredIndex = index;
       setActive(index);
       animate();
     });
     card.addEventListener("mouseleave", () => {
+      resetIdle();
       if (state.selectedIndex !== null) return;
       if (state.hoveredIndex === index) {
         state.hoveredIndex = null;
@@ -330,12 +340,14 @@ function renderWall(source) {
       animate();
     });
     card.addEventListener("focus", () => {
+      resetIdle();
       if (state.selectedIndex !== null) return;
       state.hoveredIndex = index;
       setActive(index);
       animate();
     });
     card.addEventListener("blur", () => {
+      resetIdle();
       if (state.selectedIndex !== null) return;
       if (state.hoveredIndex === index) {
         state.hoveredIndex = null;
@@ -399,6 +411,22 @@ function animate() {
     state.raf = 0;
     const ease = state.dragging ? 0.22 : 0.075;
     state.current += (state.target - state.current) * ease;
+
+    const idleDuration = performance.now() - state.lastInteractionTime;
+    const isIdle = idleDuration > 2000 && state.selectedIndex === null && !state.dragging;
+
+    if (isIdle) {
+      // 1. Slow Auto-Scroll from right to left (conveyor loop)
+      state.target -= 0.42;
+      
+      // 2. Sequential Highlight (Marquee light up)
+      const idleCycleTime = 1600; // 1.6s per card
+      const idleIndex = Math.floor((idleDuration - 2000) / idleCycleTime) % items.length;
+      if (state.hoveredIndex !== idleIndex) {
+        state.hoveredIndex = idleIndex;
+        setActive(idleIndex);
+      }
+    }
 
     if (!state.dragging) {
       state.target += state.velocity;
@@ -601,7 +629,7 @@ function animate() {
                     Math.abs(state.wavePower) < 0.06 && 
                     !hasActiveHover;
                     
-    if (!settled || state.dragging) {
+    if (!settled || state.dragging || state.selectedIndex === null) {
       state.raf = requestAnimationFrame(frame);
     }
   };
