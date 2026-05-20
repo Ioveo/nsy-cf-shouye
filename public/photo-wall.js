@@ -5,7 +5,6 @@ const activeIndex = document.querySelector("[data-photo-wall-index]");
 const totalCount = document.querySelector("[data-photo-wall-total]");
 const activeTitle = document.querySelector("[data-photo-wall-title]");
 const lightbox = document.querySelector("[data-photo-wall-lightbox]");
-const lightboxImage = document.querySelector("[data-photo-wall-lightbox-image]");
 const lightboxTitle = document.querySelector("[data-photo-wall-lightbox-title]");
 const lightboxLink = document.querySelector("[data-photo-wall-lightbox-link]");
 const closeButton = document.querySelector("[data-photo-wall-close]");
@@ -15,8 +14,6 @@ const state = {
   active: 0,
   current: 0,
   target: 0,
-  min: 0,
-  max: 0,
   velocity: 0,
   dragging: false,
   startX: 0,
@@ -27,18 +24,13 @@ const state = {
   pointerId: null,
   clickIndex: null,
   wavePower: 0,
-  raf: 0
-};
-const lightboxDrag = {
-  active: false,
-  pointerId: null,
-  startX: 0,
-  startY: 0,
-  lastX: 0,
-  lastY: 0,
-  lastTime: 0,
-  velocity: 0,
-  distance: 0
+  raf: 0,
+  hoveredIndex: null,
+  hoverProgress: [],
+  selectedIndex: null,
+  expandProgress: 0,
+  stageWidth: 0,
+  baseLength: 8
 };
 
 init();
@@ -74,6 +66,15 @@ async function loadItems() {
 
 function bindEvents() {
   stage.addEventListener("pointerdown", event => {
+    if (state.selectedIndex !== null) {
+      // Close if clicking outside the selected card
+      const card = event.target.closest?.(".photo-wall-card");
+      const cardIndex = card ? Number(card.dataset.index || 0) : null;
+      if (cardIndex !== state.selectedIndex) {
+        closeLightbox();
+      }
+      return;
+    }
     event.preventDefault();
     const card = event.target.closest?.(".photo-wall-card");
     state.dragging = true;
@@ -100,7 +101,7 @@ function bindEvents() {
     state.wavePower = lerp(state.wavePower, frameVelocity, 0.42);
     state.lastTime = now;
     state.lastDelta = delta;
-    state.target = clamp(state.startTarget + delta, state.min, state.max);
+    state.target = state.startTarget + delta;
     state.moved = state.moved || Math.abs(delta) > 8;
     updateActiveFromCenter();
   });
@@ -113,28 +114,22 @@ function bindEvents() {
   });
 
   track.addEventListener("dragstart", event => event.preventDefault());
+
   shell.addEventListener("wheel", event => {
+    if (state.selectedIndex !== null) return;
     event.preventDefault();
     const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-    const push = clamp(-delta * 1.55, -280, 280);
-    state.velocity = lerp(state.velocity, push * 0.36, 0.55);
-    state.wavePower = lerp(state.wavePower, push * 0.62, 0.55);
-    state.target = clamp(state.target + push, state.min, state.max);
+    const push = -delta * 0.85;
+    state.velocity += push * 0.15;
+    state.wavePower += push * 0.35;
+    state.target += push;
     updateActiveFromCenter();
     animate();
   }, { passive: false });
+
   closeButton?.addEventListener("click", closeLightbox);
-  lightbox?.addEventListener("click", event => {
-    if (event.target === lightbox) closeLightbox();
-  });
-  lightbox?.addEventListener("wheel", event => {
-    event.preventDefault();
-    if (event.deltaY > 12) closeLightbox();
-  }, { passive: false });
-  lightboxImage?.addEventListener("pointerdown", startLightboxDrag);
-  document.addEventListener("pointermove", moveLightboxDrag);
-  document.addEventListener("pointerup", finishLightboxDrag);
-  document.addEventListener("pointercancel", finishLightboxDrag);
+  
+  // Back key also closes the lightbox
   document.addEventListener("keydown", event => {
     if (event.key === "Escape") closeLightbox();
   });
@@ -155,18 +150,21 @@ function finishDrag(event) {
     return;
   }
   state.clickIndex = null;
-  state.target = clamp(state.target + state.velocity * 34, state.min, state.max);
-  state.velocity *= 0.9;
+  state.target = state.target + state.velocity * 12;
+  state.velocity *= 0.82;
   state.wavePower = state.velocity;
   animate();
 }
 
 function renderWall(source) {
   const base = source.length ? source : fallbackItems();
+  state.baseLength = base.length;
   const repeated = [];
   while (repeated.length < 30) repeated.push(...base);
   items = repeated.slice(0, Math.max(30, base.length));
   track.replaceChildren();
+
+  state.hoverProgress = new Array(items.length).fill(0);
 
   items.forEach((item, index) => {
     const card = document.createElement("button");
@@ -184,8 +182,32 @@ function renderWall(source) {
     image.draggable = false;
     card.append(image);
 
-    card.addEventListener("mouseenter", () => setActive(index));
-    card.addEventListener("focus", () => setActive(index));
+    card.addEventListener("mouseenter", () => {
+      if (state.selectedIndex !== null) return;
+      state.hoveredIndex = index;
+      setActive(index);
+      animate();
+    });
+    card.addEventListener("mouseleave", () => {
+      if (state.selectedIndex !== null) return;
+      if (state.hoveredIndex === index) {
+        state.hoveredIndex = null;
+      }
+      animate();
+    });
+    card.addEventListener("focus", () => {
+      if (state.selectedIndex !== null) return;
+      state.hoveredIndex = index;
+      setActive(index);
+      animate();
+    });
+    card.addEventListener("blur", () => {
+      if (state.selectedIndex !== null) return;
+      if (state.hoveredIndex === index) {
+        state.hoveredIndex = null;
+      }
+      animate();
+    });
     track.append(card);
   });
 
@@ -204,45 +226,157 @@ function animate() {
     state.raf = 0;
     const ease = state.dragging ? 0.22 : 0.075;
     state.current += (state.target - state.current) * ease;
-    state.velocity *= state.dragging ? 0.94 : 0.93;
-    state.wavePower *= state.dragging ? 0.95 : 0.91;
-    track.style.transform = `translate3d(${state.current}px, 0, 0)`;
+
+    if (!state.dragging) {
+      state.target += state.velocity;
+      state.velocity *= 0.95;
+    }
+    state.wavePower *= 0.92;
 
     const cards = [...track.children];
-    const center = stage.clientWidth / 2 - state.current;
-    cards.forEach((card, index) => {
-      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
-      const distance = Math.abs(cardCenter - center);
-      const speed = Math.min(Math.abs(state.wavePower), 180);
-      const motion = Math.min(speed / 110, 1);
-      if (motion < 0.012) {
-        card.style.transform = "translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) rotate(0deg) scale(1)";
-        card.style.filter = "";
-        card.style.transformOrigin = "center center";
-        card.style.zIndex = String(100 - Math.round(Math.abs(index - state.active)));
-        return;
-      }
+    if (!cards.length) return;
 
-      const proximity = Math.max(0, 1 - distance / Math.max(1, stage.clientWidth * 0.54));
-      const direction = state.wavePower < 0 ? -1 : 1;
-      const sideOfCenter = cardCenter < center ? -1 : 1;
-      const phase = index * 0.48 + state.current * 0.01;
-      const fold = motion * (34 + proximity * 58 + Math.min(speed * 0.08, 16));
-      const rotateY = clamp(-sideOfCenter * direction * fold, -76, 76);
-      const rotateX = -motion * proximity * (3 + speed * 0.018);
-      const rotateZ = clamp(Math.sin(phase) * motion * 2.4, -4, 4);
-      const gather = clamp((center - cardCenter) * motion * 0.22, -120, 120);
-      const lag = clamp(state.wavePower * 0.11, -32, 32) * (1 - proximity * 0.35);
-      const float = -motion * proximity * (18 + speed * 0.06);
-      const depth = motion * proximity * (130 + speed * 0.46);
-      const scale = 1 + motion * proximity * 0.08;
-      card.style.transformOrigin = sideOfCenter < 0 ? "right center" : "left center";
-      card.style.transform = `translate3d(${gather + lag}px, ${float}px, ${depth}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotate(${rotateZ}deg) scale(${scale})`;
-      card.style.filter = `drop-shadow(${Math.round(-sideOfCenter * direction * motion * 24)}px ${Math.round(18 + proximity * 28)}px ${Math.round(18 + proximity * 34)}px rgba(0,0,0,${0.26 + proximity * 0.24}))`;
-      card.style.zIndex = String(100 - Math.round(Math.abs(index - state.active)));
+    const cardWidth = cards[0]._offsetWidth || 110;
+    const gap = parseFloat(window.getComputedStyle(track).gap) || 20;
+    const T = items.length * (cardWidth + gap);
+
+    // Seamless wrapping
+    if (T > 0 && Math.abs(state.current) > T) {
+      const shift = Math.trunc(state.current / T) * T;
+      state.current -= shift;
+      state.target -= shift;
+    }
+
+    const C = state.stageWidth / 2;
+
+    // Handle expand progress
+    const targetExpand = (state.selectedIndex !== null) ? 1 : 0;
+    state.expandProgress = lerp(state.expandProgress, targetExpand, 0.09);
+    const globalEp = state.expandProgress;
+
+    let hasActiveHover = false;
+    if (Math.abs(globalEp - targetExpand) > 0.001) {
+      hasActiveHover = true;
+    }
+
+    // 1. Update Hover Progresses
+    cards.forEach((card, index) => {
+      const isHovered = (index === state.hoveredIndex);
+      const targetHover = isHovered ? 1 : 0;
+      if (state.hoverProgress[index] === undefined) {
+        state.hoverProgress[index] = 0;
+      }
+      state.hoverProgress[index] = lerp(state.hoverProgress[index], targetHover, 0.12);
+      if (Math.abs(state.hoverProgress[index] - targetHover) > 0.001) {
+        hasActiveHover = true;
+      }
     });
 
-    const settled = Math.abs(state.target - state.current) < 0.35 && Math.abs(state.velocity) < 0.06 && Math.abs(state.wavePower) < 0.06;
+    // 2. Render Cards in 3D Cylinder & Handle Centering/Expand
+    cards.forEach((card, index) => {
+      const isSelected = (index === state.selectedIndex);
+      const cardCenter = card._offsetLeft + cardWidth / 2;
+      const x = cardCenter + state.current;
+
+      // Wrapped offset from stage center
+      const offset = ((x - C + T/2) % T + T) % T - T/2;
+      const distance = Math.abs(offset);
+
+      // Proximity to viewport center (ranges 0 to 1)
+      const proximity = Math.max(0, 1 - distance / Math.max(1, state.stageWidth * 0.6));
+
+      const speed = Math.min(Math.abs(state.wavePower), 180);
+      const motion = Math.min(speed / 110, 1);
+      const hp = state.hoverProgress[index] || 0;
+      const ep = isSelected ? globalEp : 0;
+
+      const sideOfCenter = offset < 0 ? -1 : 1;
+      const direction = state.wavePower < 0 ? -1 : 1;
+      const phase = index * 0.48 + state.current * 0.01;
+
+      // --- 3D Curve Base Layout (Static Cylinder) ---
+      // Rotate cards inward to face center
+      const baseRotateY = -sideOfCenter * (1 - proximity) * 42;
+      // Bring center cards closer to viewer, push outer ones back
+      const baseDepth = (proximity * 160) - 100;
+      // Center cards scale up
+      const baseScale = 0.88 + proximity * 0.14;
+      // Lift center cards up slightly
+      const baseFloat = proximity * -18;
+
+      // --- Dynamic Motion Layout (Scroll/Drag) ---
+      const motionFold = motion * (22 + proximity * 34 + Math.min(speed * 0.06, 12));
+      const motionRotateY = -sideOfCenter * direction * motionFold;
+      const motionRotateX = -motion * proximity * (4 + speed * 0.012);
+      const motionRotateZ = clamp(Math.sin(phase) * motion * 2.2, -3.5, 3.5);
+
+      const motionLag = clamp(state.wavePower * 0.09, -24, 24) * (1 - proximity * 0.35);
+      const motionFloat = -motion * proximity * (12 + speed * 0.04);
+      const motionDepth = motion * proximity * (80 + speed * 0.25);
+      const motionScale = motion * proximity * 0.04;
+
+      // --- Blend Base, Motion, Hover, and Expand ---
+      const rotateY = (baseRotateY + motionRotateY) * (1 - hp) * (1 - globalEp);
+      const rotateX = motionRotateX * (1 - hp) * (1 - globalEp);
+      const rotateZ = motionRotateZ * (1 - hp) * (1 - globalEp);
+
+      const hoverScale = hp * 0.26;
+      const expandScale = ep * 2.45;
+      const neighborScale = (1 - isSelected) * globalEp * -0.22;
+      const scale = (baseScale + motionScale) * (1 - hp) * (1 - globalEp) + hoverScale * (1 - globalEp) + expandScale + neighborScale;
+
+      const hoverDepth = hp * 220;
+      const expandDepth = ep * 320;
+      const neighborDepth = (1 - isSelected) * globalEp * -150;
+      const depth = (baseDepth + motionDepth) * (1 - hp) * (1 - globalEp) + hoverDepth * (1 - globalEp) + expandDepth + neighborDepth;
+
+      const hoverFloat = -hp * 36;
+      const expandFloat = ep * -12;
+      const float = (baseFloat + motionFloat) * (1 - hp) * (1 - globalEp) + hoverFloat * (1 - globalEp) + expandFloat;
+
+      const lag = motionLag * (1 - globalEp);
+
+      // --- Pushing Neighbors ---
+      let push = 0;
+      if (state.selectedIndex !== null && !isSelected) {
+        const pushDirection = offset < 0 ? -1 : 1;
+        push = pushDirection * state.stageWidth * 0.42 * globalEp;
+      }
+
+      // --- Center alignment ---
+      const targetCenterOffset = isSelected ? offset * (1 - globalEp) : (offset + push + lag);
+      const tx = C + targetCenterOffset - cardCenter;
+
+      card.style.transformOrigin = "center center";
+      card.style.transform = `translate3d(${tx}px, ${float}px, ${depth}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotate(${rotateZ}deg) scale(${scale})`;
+
+      // --- Soft Floating Shadows ---
+      card.style.boxShadow = "none";
+      const shadowBlur = Math.round(18 + proximity * 24 + hp * 36 + ep * 40);
+      const shadowOpacity = 0.22 + proximity * 0.22 + hp * 0.26 + ep * 0.28;
+      const shadowX = Math.round(-sideOfCenter * (1 - proximity) * 12 * (1 - hp) * (1 - globalEp));
+      const shadowY = Math.round(14 + proximity * 20 + hp * 28 + ep * 20);
+
+      // --- Blend Grayscale Filters ---
+      const grayscale = 1.0 - 0.88 * hp - 0.12 * ep;
+      const brightness = 0.48 + 0.48 * hp + 0.52 * ep;
+      const contrast = 1.15 - 0.11 * hp - 0.15 * ep;
+      card.style.filter = `grayscale(${grayscale}) brightness(${brightness}) contrast(${contrast}) drop-shadow(${shadowX}px ${shadowY}px ${shadowBlur}px rgba(0,0,0,${shadowOpacity}))`;
+
+      // --- Smooth Z-Indexing ---
+      const baseZIndex = 100 - Math.round(Math.abs(index - state.active));
+      card.style.zIndex = isSelected ? "1000" : String(baseZIndex);
+
+      // --- Opacity ---
+      const opacity = isSelected ? 1 : 1 - 0.82 * globalEp;
+      card.style.opacity = String(opacity);
+    });
+
+    const settled = Math.abs(state.target - state.current) < 0.35 && 
+                    Math.abs(state.velocity) < 0.06 && 
+                    Math.abs(state.wavePower) < 0.06 && 
+                    !hasActiveHover;
+                    
     if (!settled || state.dragging) {
       state.raf = requestAnimationFrame(frame);
     }
@@ -251,27 +385,42 @@ function animate() {
 }
 
 function updateBounds() {
-  const overflow = track.scrollWidth - stage.clientWidth;
-  const edge = Math.max(36, stage.clientWidth * 0.09);
-  state.max = edge;
-  state.min = overflow > 0 ? -overflow - edge : 0;
-  state.target = clamp(state.target, state.min, state.max);
-  state.current = clamp(state.current, state.min, state.max);
+  if (!stage || !track) return;
+  state.stageWidth = stage.clientWidth;
+
+  const cards = [...track.children];
+  if (!cards.length) return;
+
+  cards.forEach(card => {
+    card._offsetLeft = card.offsetLeft;
+    card._offsetWidth = card.offsetWidth;
+  });
 }
 
 function updateActiveFromCenter() {
-  const center = stage.clientWidth / 2 - state.current;
-  let next = 0;
-  let distance = Infinity;
-  [...track.children].forEach((card, index) => {
-    const cardCenter = card.offsetLeft + card.offsetWidth / 2;
-    const cardDistance = Math.abs(cardCenter - center);
-    if (cardDistance < distance) {
-      next = index;
-      distance = cardDistance;
+  if (!state.stageWidth) return;
+  const C = state.stageWidth / 2;
+  const cards = [...track.children];
+  if (!cards.length) return;
+  const cardWidth = cards[0]._offsetWidth || 110;
+  const gap = parseFloat(window.getComputedStyle(track).gap) || 20;
+  const T = items.length * (cardWidth + gap);
+
+  let nextActive = 0;
+  let minDistance = Infinity;
+
+  cards.forEach((card, index) => {
+    const cardCenter = card._offsetLeft + cardWidth / 2;
+    const x = cardCenter + state.current;
+    const offset = ((x - C + T/2) % T + T) % T - T/2;
+    const distance = Math.abs(offset);
+    if (distance < minDistance) {
+      minDistance = distance;
+      nextActive = index;
     }
   });
-  setActive(next);
+
+  setActive(nextActive);
 }
 
 function setActive(index) {
@@ -280,90 +429,57 @@ function setActive(index) {
   [...track.children].forEach((card, cardIndex) => {
     card.classList.toggle("is-active", cardIndex === index);
   });
-  if (activeIndex) activeIndex.textContent = String((index % 30) + 1).padStart(2, "0");
-  if (totalCount) totalCount.textContent = String(Math.min(items.length, 30)).padStart(2, "0");
+
+  const currentNum = (index % state.baseLength) + 1;
+  if (activeIndex) activeIndex.textContent = String(currentNum).padStart(2, "0");
+  if (totalCount) totalCount.textContent = String(state.baseLength).padStart(2, "0");
   if (activeTitle && item) activeTitle.textContent = item.title || "NSY Gallery";
 }
 
 function openItem(index) {
   const item = items[index];
-  if (!item || !lightbox || !lightboxImage) return;
-  setActive(index);
-  lightboxImage.src = item.imageUrl || item.thumbUrl;
-  lightboxImage.alt = item.title || "";
+  if (!item) return;
+  state.selectedIndex = index;
+
+  const bgTitle = document.querySelector("[data-photo-wall-bg-title]");
+  if (bgTitle) {
+    bgTitle.textContent = item.title || "";
+  }
+  stage.classList.add("has-selected");
+
   if (lightboxTitle) lightboxTitle.textContent = item.title || "PHOTO";
   if (lightboxLink) {
     lightboxLink.href = item.linkUrl || "/gallery.html";
     lightboxLink.textContent = item.linkText || "OPEN";
     lightboxLink.hidden = !item.linkUrl;
   }
-  lightbox.hidden = false;
-  resetLightboxDragStyle();
+  if (lightbox) {
+    lightbox.hidden = false;
+  }
+
+  // Scroll the selected card to center
+  const cards = [...track.children];
+  if (cards.length) {
+    const cardWidth = cards[0]._offsetWidth || 110;
+    const gap = parseFloat(window.getComputedStyle(track).gap) || 20;
+    const T = items.length * (cardWidth + gap);
+    const C = state.stageWidth / 2;
+    const cardCenter = cards[index]._offsetLeft + cardWidth / 2;
+    const x = cardCenter + state.target;
+    const offset = ((x - C + T/2) % T + T) % T - T/2;
+    state.target -= offset;
+  }
+
+  animate();
 }
 
 function closeLightbox() {
-  if (!lightbox) return;
-  lightbox.hidden = true;
-  resetLightboxDragStyle();
-}
-
-function startLightboxDrag(event) {
-  if (!lightbox || lightbox.hidden) return;
-  event.preventDefault();
-  lightboxDrag.active = true;
-  lightboxDrag.pointerId = event.pointerId;
-  lightboxDrag.startX = event.clientX;
-  lightboxDrag.startY = event.clientY;
-  lightboxDrag.lastX = event.clientX;
-  lightboxDrag.lastY = event.clientY;
-  lightboxDrag.lastTime = performance.now();
-  lightboxDrag.velocity = 0;
-  lightboxDrag.distance = 0;
-  lightbox.classList.add("is-dragging");
-  lightboxImage?.setPointerCapture?.(event.pointerId);
-}
-
-function moveLightboxDrag(event) {
-  if (!lightboxDrag.active) return;
-  if (lightboxDrag.pointerId !== null && event.pointerId !== lightboxDrag.pointerId) return;
-  event.preventDefault();
-  const dx = event.clientX - lightboxDrag.startX;
-  const dy = event.clientY - lightboxDrag.startY;
-  const now = performance.now();
-  const elapsed = Math.max(8, now - lightboxDrag.lastTime);
-  const frameDistance = Math.hypot(event.clientX - lightboxDrag.lastX, event.clientY - lightboxDrag.lastY);
-  lightboxDrag.velocity = lerp(lightboxDrag.velocity, (frameDistance / elapsed) * 16.67, 0.45);
-  lightboxDrag.distance = Math.hypot(dx, dy);
-  lightboxDrag.lastX = event.clientX;
-  lightboxDrag.lastY = event.clientY;
-  lightboxDrag.lastTime = now;
-
-  const opacity = clamp(1 - lightboxDrag.distance / 520, 0.35, 1);
-  const scale = clamp(1 - lightboxDrag.distance / 1800, 0.86, 1);
-  if (lightboxImage) {
-    lightboxImage.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(${scale})`;
-    lightboxImage.style.opacity = String(opacity);
+  state.selectedIndex = null;
+  stage.classList.remove("has-selected");
+  if (lightbox) {
+    lightbox.hidden = true;
   }
-}
-
-function finishLightboxDrag(event) {
-  if (!lightboxDrag.active) return;
-  if (lightboxDrag.pointerId !== null && event.pointerId !== lightboxDrag.pointerId) return;
-  const shouldClose = lightboxDrag.distance > 150 || lightboxDrag.velocity > 18;
-  lightboxDrag.active = false;
-  lightboxDrag.pointerId = null;
-  lightbox?.classList.remove("is-dragging");
-  if (shouldClose) {
-    closeLightbox();
-  } else {
-    resetLightboxDragStyle();
-  }
-}
-
-function resetLightboxDragStyle() {
-  if (!lightboxImage) return;
-  lightboxImage.style.transform = "";
-  lightboxImage.style.opacity = "";
+  animate();
 }
 
 function fallbackItems() {

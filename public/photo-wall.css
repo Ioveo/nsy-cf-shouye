@@ -184,9 +184,6 @@ a {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(1) brightness(0.48) contrast(1.15);
-  transform: scale(1.08);
-  transition: filter 280ms ease, transform 360ms ease;
   pointer-events: none;
   -webkit-user-drag: none;
 }
@@ -199,12 +196,6 @@ a {
   pointer-events: none;
 }
 
-.photo-wall-card.is-active img,
-.photo-wall-card:hover img {
-  filter: grayscale(0.12) brightness(0.96) contrast(1.04);
-  transform: scale(1.14);
-}
-
 .photo-wall-lightbox {
   position: fixed;
   inset: 0;
@@ -212,10 +203,9 @@ a {
   display: grid;
   place-items: center;
   padding: clamp(28px, 5vw, 76px);
-  background:
-    radial-gradient(circle at 50% 52%, rgba(255, 66, 58, 0.18), transparent 42%),
-    rgba(5, 5, 5, 0.88);
-  backdrop-filter: blur(18px);
+  background: transparent;
+  backdrop-filter: none;
+  pointer-events: none;
 }
 
 .photo-wall-lightbox[hidden] {
@@ -223,42 +213,38 @@ a {
 }
 
 .photo-wall-lightbox img {
-  max-width: min(92vw, 1380px);
-  max-height: 82vh;
-  object-fit: contain;
-  cursor: grab;
-  user-select: none;
-  box-shadow: 0 42px 120px rgba(0, 0, 0, 0.68);
-  animation: photoWallZoom 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: transform, opacity;
-  -webkit-user-drag: none;
-}
-
-.photo-wall-lightbox.is-dragging img {
-  cursor: grabbing;
-  animation: none;
+  display: none;
 }
 
 .photo-wall-lightbox__close {
   position: fixed;
-  top: 28px;
-  right: 32px;
-  width: 44px;
-  height: 44px;
+  top: clamp(20px, 4.5vh, 48px);
+  right: clamp(20px, 4vw, 54px);
+  width: 48px;
+  height: 48px;
   border: 1px solid var(--line);
   border-radius: 50%;
   color: #fff;
   background: rgba(255, 255, 255, 0.08);
   font-size: 28px;
-  line-height: 1;
+  line-height: 46px;
+  text-align: center;
   cursor: pointer;
+  pointer-events: auto;
+  transition: background 240ms ease, border-color 240ms ease, transform 240ms ease;
+}
+
+.photo-wall-lightbox__close:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.45);
+  transform: scale(1.05);
 }
 
 .photo-wall-lightbox__meta {
   position: fixed;
   left: clamp(24px, 4vw, 68px);
   right: clamp(24px, 4vw, 68px);
-  bottom: 28px;
+  bottom: clamp(24px, 5vh, 54px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -266,6 +252,7 @@ a {
   color: rgba(255, 255, 255, 0.82);
   font-size: 13px;
   font-weight: 900;
+  pointer-events: auto;
 }
 
 .photo-wall-lightbox__meta a {
@@ -274,14 +261,44 @@ a {
   text-underline-offset: 4px;
 }
 
-@keyframes photoWallZoom {
+.photo-wall-lightbox:not([hidden]) .photo-wall-lightbox__meta {
+  animation: photoWallFadeIn 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.photo-wall-lightbox:not([hidden]) .photo-wall-lightbox__close {
+  animation: photoWallFadeIn 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.photo-wall-bg-title {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  font-size: clamp(70px, 13vw, 220px);
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.038);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  pointer-events: none;
+  z-index: 1;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 800ms cubic-bezier(0.16, 1, 0.3, 1), transform 800ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.photo-wall-stage.has-selected .photo-wall-bg-title {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.04);
+}
+
+@keyframes photoWallFadeIn {
   from {
     opacity: 0;
-    transform: scale(0.86);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(0);
   }
 }
 
