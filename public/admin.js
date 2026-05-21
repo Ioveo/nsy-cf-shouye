@@ -576,7 +576,7 @@ async function loadSoftwareCoverAssets() {
     .filter(asset => asset.kind === "image" || asset.kind === "site");
   for (const asset of assets) {
     const option = document.createElement("option");
-    option.value = asset.url || `/media/${encodeURIComponent(asset.key)}`;
+    option.value = asset.url || mediaUrlForKey(asset.key);
     option.textContent = `${asset.fileName || asset.key} (${formatBytes(asset.fileSize)})`;
     select.append(option);
   }
@@ -617,7 +617,7 @@ async function loadMusicCoverAssets() {
   const assets = results.filter(result => result.success).flatMap(result => result.assets || []);
   for (const asset of assets) {
     const option = document.createElement("option");
-    option.value = asset.url || `/media/${encodeURIComponent(asset.key)}`;
+    option.value = asset.url || mediaUrlForKey(asset.key);
     option.textContent = `${asset.fileName || asset.key} (${formatBytes(asset.fileSize)})`;
     select.append(option);
   }
@@ -639,7 +639,7 @@ async function loadGalleryAssets() {
   }
   for (const asset of result.assets || []) {
     if (asset.kind !== "image" && asset.kind !== "site") continue;
-    const url = asset.url || asset.publicUrl || (asset.storageId === "default" && asset.key ? `/media/${encodeURIComponent(asset.key)}` : "");
+    const url = asset.url || asset.publicUrl || (asset.storageId === "default" && asset.key ? mediaUrlForKey(asset.key) : "");
     if (!url) continue;
     const option = document.createElement("option");
     option.value = JSON.stringify({
@@ -671,7 +671,7 @@ async function loadSiteCarouselAssets() {
   if (!result.success) return toast(result.msg || "读取 R2 图片失败", true);
   for (const asset of result.assets || []) {
     if (asset.kind !== "image" && asset.kind !== "site") continue;
-    const url = asset.url || asset.publicUrl || (asset.key ? `/media/${encodeURIComponent(asset.key)}` : "");
+    const url = asset.url || asset.publicUrl || (asset.key ? mediaUrlForKey(asset.key) : "");
     if (!url) continue;
     const option = document.createElement("option");
     option.value = url;
@@ -717,7 +717,7 @@ async function loadPhotoWallAssets() {
   if (!result.success) return toast(result.msg || "读取 R2 图片失败", true);
   for (const asset of result.assets || []) {
     if (asset.kind !== "image" && asset.kind !== "site") continue;
-    const url = asset.url || asset.publicUrl || (asset.key ? `/media/${encodeURIComponent(asset.key)}` : "");
+    const url = asset.url || asset.publicUrl || (asset.key ? mediaUrlForKey(asset.key) : "");
     if (!url) continue;
     const option = document.createElement("option");
     option.value = JSON.stringify({
@@ -874,7 +874,7 @@ async function uploadAssetMedia(file, kind, folder = "", refType = "", storageId
     const asset = result.asset || {};
     return {
       ...result,
-      url: asset.url || asset.publicUrl || (asset.key ? `/media/${encodeURIComponent(asset.key)}` : "")
+      url: asset.url || asset.publicUrl || (asset.key ? mediaUrlForKey(asset.key) : "")
     };
   } catch (error) {
     return { success: false, msg: `上传失败：${error.message || "网络或接口异常"}` };
@@ -2194,6 +2194,15 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
   return escapeHtml(value).replace(/`/g, "&#96;");
+}
+
+function mediaUrlForKey(key) {
+  const path = String(key || "")
+    .split("/")
+    .filter(Boolean)
+    .map(segment => encodeURIComponent(segment))
+    .join("/");
+  return path ? `/media/${path}` : "";
 }
 
 

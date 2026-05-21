@@ -75,7 +75,15 @@ export async function markAssetDeleted(env, assetId) {
 export function publicAssetUrl(asset) {
   if (asset.publicUrl) return asset.publicUrl;
   if (asset.kind === "software") return `/download/${encodeURIComponent(asset.refId || asset.id)}`;
-  return `/media/${encodeURIComponent(asset.key)}`;
+  return `/media/${encodeMediaKey(asset.key)}`;
+}
+
+function encodeMediaKey(key) {
+  return String(key || "")
+    .split("/")
+    .filter(Boolean)
+    .map(segment => encodeURIComponent(segment))
+    .join("/");
 }
 
 function rowToAsset(row) {
