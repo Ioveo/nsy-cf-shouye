@@ -133,10 +133,12 @@ const state = {
   startTarget: 0,
   lastDelta: 0,
   lastTime: 0,
+  lastFrameTime: 0,
   moved: false,
   pointerId: null,
   clickIndex: null,
   wavePower: 0,
+  waveTarget: 0,
   raf: 0,
   hoveredIndex: null,
   hoverProgress: [],
@@ -160,7 +162,7 @@ async function init() {
     if (typeof window.Curtains !== "undefined") {
       curtainsInstance = new window.Curtains({
         container: "photo-wall-canvas",
-        pixelRatio: Math.min(1.5, window.devicePixelRatio),
+        pixelRatio: Math.min(1.25, window.devicePixelRatio),
         production: true
       });
       curtainsInstance.onError(() => {
@@ -224,6 +226,7 @@ function bindEvents() {
     state.startTarget = state.target;
     state.lastDelta = 0;
     state.lastTime = performance.now();
+    state.lastFrameTime = state.lastTime;
     state.moved = false;
     stage.classList.add("is-dragging");
     stage.setPointerCapture?.(event.pointerId);
@@ -238,8 +241,8 @@ function bindEvents() {
     const now = performance.now();
     const elapsed = Math.max(8, now - state.lastTime);
     const frameVelocity = ((delta - state.lastDelta) / elapsed) * 16.67;
-    state.velocity = lerp(state.velocity, frameVelocity, 0.38);
-    state.wavePower = lerp(state.wavePower, frameVelocity, 0.42);
+    state.velocity = lerp(state.velocity, clamp(frameVelocity, -110, 110), 0.28);
+    state.waveTarget = clamp(frameVelocity, -180, 180);
     state.lastTime = now;
     state.lastDelta = delta;
     state.target = state.startTarget + delta;
@@ -268,8 +271,8 @@ function bindEvents() {
     event.preventDefault();
     const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
     const push = -delta * 0.85;
-    state.velocity += push * 0.15;
-    state.wavePower += push * 0.35;
+    state.velocity = clamp(state.velocity + push * 0.12, -90, 90);
+    state.waveTarget = clamp(state.waveTarget + push * 0.42, -190, 190);
     state.target += push;
     updateActiveFromCenter();
     animate();
@@ -319,10 +322,12 @@ function finishDrag(event) {
     state.clickIndex = null;
     state.velocity = 0;
     state.wavePower = 0;
+    state.waveTarget = 0;
     return;
   }
   state.clickIndex = null;
-  state.wavePower = state.velocity;
+  state.velocity = clamp(state.velocity * 1.18, -120, 120);
+  state.waveTarget = state.velocity;
   animate();
 }
 
@@ -405,8 +410,8 @@ function renderWall(source) {
       const planeParams = {
         vertexShader: vsSource,
         fragmentShader: fsSource,
-        widthSegments: 36,
-        heightSegments: 36,
+        widthSegments: 24,
+        heightSegments: 24,
         uniforms: {
           uVelocity: { name: "uVelocity", type: "1f", value: 0 },
           uHoverProgress: { name: "uHoverProgress", type: "1f", value: 0 },
@@ -463,15 +468,19 @@ function animate() {
   if (state.raf) return;
   const frame = () => {
     state.raf = 0;
-    const ease = state.dragging ? 0.22 : 0.075;
-    state.current += (state.target - state.current) * ease;
+    const now = performance.now();
+    const previous = state.lastFrameTime || now;
+    const dt = clamp((now - previous) / 16.67, 0.55, 2.2);
+    state.lastFrameTime = now;
+    const follow = state.dragging ? 0.34 : 0.105;
+    state.current += (state.target - state.current) * (1 - Math.pow(1 - follow, dt));
 
     const idleDuration = performance.now() - state.lastInteractionTime;
     const isIdle = idleDuration > 2000 && state.selectedIndex === null && !state.dragging;
 
     if (isIdle) {
       // 1. Slow Auto-Scroll from right to left (conveyor loop)
-      state.target -= 0.50;
+      state.target -= 0.34 * dt;
       
       // 2. Drive active highlights from physical center card to perfectly match speed and keep centered card lit up
       updateActiveFromCenter();
@@ -479,10 +488,11 @@ function animate() {
     }
 
     if (!state.dragging) {
-      state.target += state.velocity;
-      state.velocity *= 0.965;
+      state.target += state.velocity * dt;
+      state.velocity *= Math.pow(0.946, dt);
     }
-    state.wavePower *= 0.92;
+    state.wavePower += (state.waveTarget - state.wavePower) * (1 - Math.pow(0.84, dt));
+    state.waveTarget *= Math.pow(state.dragging ? 0.92 : 0.82, dt);
 
     const cards = [...track.children];
     if (!cards.length) return;
@@ -500,15 +510,18 @@ function animate() {
 
     const C = state.stageWidth / 2;
 
-    // --- High-End Magnetic Snapping to Center (Aristide Benoist Inspired Physics) ---
-    // When not dragging and moving slowly, gently pull target to perfectly center the closest active card!
+    // --- Magnetic spring to center ---
+    // Low speed motion gets a soft spring, high speed motion keeps its inertia.
     if (!state.dragging && Math.abs(state.velocity) < 1.8 && state.selectedIndex === null) {
       const activeCard = cards[state.active];
       if (activeCard) {
         const cardCenter = activeCard._offsetLeft + cardWidth / 2;
         const x = cardCenter + state.current;
         const offset = ((x - C + T/2) % T + T) % T - T/2; // Distance from center
-        state.target -= offset * 0.052; // Elegant snap spring constant
+        const spring = -offset * 0.014;
+        const damping = -state.velocity * 0.035;
+        state.velocity += (spring + damping) * dt;
+        state.target -= offset * 0.006 * dt;
       }
     }
 
@@ -548,8 +561,8 @@ function animate() {
       // Proximity to viewport center (ranges 0 to 1)
       const proximity = Math.max(0, 1 - distance / Math.max(1, state.stageWidth * 0.6));
 
-      const speed = Math.min(Math.abs(state.wavePower), 240);
-      const motion = Math.min(speed / 95, 1.32);
+      const speed = Math.min(Math.abs(state.wavePower), 220);
+      const motion = easeOutCubic(Math.min(speed / 170, 1));
       const hp = state.hoverProgress[index] || 0;
       const ep = isSelected ? globalEp : 0;
 
@@ -567,21 +580,21 @@ function animate() {
       const speedFactor = motion; 
       
       // Center card bulges forward (positive depth), side cards fold back (negative depth)
-      const motionDepth = speedFactor * (proximity * 290 - (1 - proximity) * 200);
+      const motionDepth = speedFactor * (proximity * 260 - (1 - proximity) * 160);
       
       // Center card scales up (positive scale), side cards shrink down (negative scale)
-      const motionScale = speedFactor * (proximity * 0.20 - (1 - proximity) * 0.16);
+      const motionScale = speedFactor * (proximity * 0.14 - (1 - proximity) * 0.105);
       
       // Side cards rotate on Y axis to look like they wrap around a sphere
-      const motionRotateY = -sideOfCenter * (1 - proximity) * 48 * speedFactor;
+      const motionRotateY = -sideOfCenter * (1 - proximity) * 38 * speedFactor;
       
       // Center card floats slightly up, side cards curve down slightly
-      const motionFloat = speedFactor * (proximity * -28 + (1 - proximity) * 14);
+      const motionFloat = speedFactor * (proximity * -22 + (1 - proximity) * 12);
       
       // Subtle Z tilt ripple wave and rotation
-      const motionRotateZ = clamp(Math.sin(phase) * speedFactor * 3.2, -4.5, 4.5);
-      const motionRotateX = -speedFactor * proximity * 6;
-      const motionLag = clamp(state.wavePower * 0.09, -24, 24) * (1 - proximity * 0.35);
+      const motionRotateZ = clamp(Math.sin(phase) * speedFactor * 2.4, -3.6, 3.6);
+      const motionRotateX = -speedFactor * proximity * 4.5;
+      const motionLag = clamp(state.wavePower * 0.075, -20, 20) * (1 - proximity * 0.35);
 
       // --- Blend Base, Motion, Hover, and Expand ---
       const rotateY = (baseRotateY + motionRotateY) * (1 - hp * 0.15) * (1 - globalEp);
@@ -697,7 +710,8 @@ function animate() {
 
     const settled = Math.abs(state.target - state.current) < 0.35 && 
                     Math.abs(state.velocity) < 0.06 && 
-                    Math.abs(state.wavePower) < 0.06 && 
+                    Math.abs(state.wavePower) < 0.06 &&
+                    Math.abs(state.waveTarget) < 0.06 &&
                     !hasActiveHover;
                     
     if (!settled || state.dragging || state.selectedIndex === null) {
@@ -858,6 +872,11 @@ function clamp(value, min, max) {
 // Cubic bezier or spring interpolation
 function lerp(from, to, amount) {
   return from + (to - from) * amount;
+}
+
+function easeOutCubic(value) {
+  const t = clamp(value, 0, 1);
+  return 1 - Math.pow(1 - t, 3);
 }
 
 function debounce(fn, delay = 120) {
