@@ -39,9 +39,17 @@ const SECURITY_HEADERS = {
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
 };
 
+import { onRequestGet as handleUpdateGet, onRequestPost as handleUpdatePost, onRequestOptions as handleUpdateOptions } from "../functions/api/update.js";
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (url.pathname === "/api/update") {
+      if (request.method === "OPTIONS") return handleUpdateOptions();
+      if (request.method === "POST") return handleUpdatePost({ request, env });
+      return handleUpdateGet({ request, env });
+    }
 
     if (url.pathname === "/api/releases") {
       return json(await loadManifest(env));

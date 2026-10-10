@@ -66,7 +66,7 @@ function renderCategoryTabs(catalog) {
     const button = document.createElement("button");
     button.type = "button";
     button.innerHTML = `<span>${escapeHtml(category.name)}</span><strong>${category.count || 0}</strong>`;
-    button.className = category.id === activeCategory ? "is-active" : "";
+    button.className = category.id === activeCategory ? "apple-segmented__btn is-active" : "apple-segmented__btn";
     button.addEventListener("click", () => {
       activeCategory = category.id;
       renderCategoryTabs(catalog);
@@ -121,7 +121,7 @@ function renderSoftwareGrid(catalog) {
     const latest = (item.releases || []).find(release => release.isLatest) || item.releases?.[0];
     const category = catalog.categories?.find(entry => entry.id === item.categoryId);
     const card = document.createElement("article");
-    card.className = `product-card product-card--${item.slug || "software"}`;
+    card.className = "apple-card apple-card--span-6";
 
     const media = document.createElement("div");
     media.className = item.coverUrl ? "product-card__media" : "product-card__media product-card__media--mock";
@@ -139,7 +139,7 @@ function renderSoftwareGrid(catalog) {
     }
 
     const badge = document.createElement("span");
-    badge.className = "product-card__badge";
+    badge.className = "apple-badge-pill";
     badge.innerHTML = `<i>⬢</i>${escapeHtml(category?.name || "软件")}`;
 
     const title = document.createElement("h3");
@@ -163,13 +163,13 @@ function renderSoftwareGrid(catalog) {
     footer.className = "product-card__footer";
 
     const link = document.createElement("a");
-    link.className = latest ? "button button--primary" : "button button--disabled";
+    link.className = latest ? "apple-btn apple-btn--primary" : "apple-btn apple-btn--secondary";
     link.href = latest ? `/download/${encodeURIComponent(latest.id)}` : "#download";
     link.innerHTML = latest ? `<span>点击下载</span><i>↓</i>` : "待发布";
     const detailLink = document.createElement("a");
-    detailLink.className = "button button--ghost";
-    detailLink.href = `/software.html?slug=${encodeURIComponent(item.slug || item.id)}`;
-    detailLink.textContent = "查看详情";
+    detailLink.className = "apple-btn apple-btn--secondary";
+    detailLink.href = item.slug === "desktop" ? "/desktop.html" : `/software.html?slug=${encodeURIComponent(item.slug || item.id)}`;
+    detailLink.textContent = item.slug === "desktop" ? "🌟 3D全景落地页" : "查看详情";
     const helper = document.createElement("span");
     helper.className = "product-card__helper";
     helper.textContent = latest ? "官方发布包，点击后开始下载" : "上传版本后自动开放下载";
@@ -256,9 +256,9 @@ function renderDownloadRank(catalog) {
   ranked.forEach((item, index) => {
     const category = catalog.categories?.find(entry => entry.id === item.categoryId);
     const link = document.createElement("a");
-    link.className = "download-rank-item";
+    link.className = "apple-rank-item";
     link.href = item.latest ? `/download/${encodeURIComponent(item.latest.id)}` : "/download.html";
-    link.innerHTML = `<b>${String(index + 1).padStart(2, "0")}</b><span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(category?.name || "软件")} · ${escapeHtml(item.latest?.version || "待发布")}</small></span><em>${item.latest ? "下载" : "待发布"}</em>`;
+    link.innerHTML = `<b class="apple-rank-num">${String(index + 1).padStart(2, "0")}</b><span style="flex-grow:1;"><strong style="display:block; font-size:14px; color:#fff;">${escapeHtml(item.name)}</strong><small style="font-size:12px; color:var(--apple-text-tertiary);">${escapeHtml(category?.name || "软件")} · ${escapeHtml(item.latest?.version || "待发布")}</small></span><span class="apple-btn apple-btn--secondary" style="padding:4px 10px; font-size:12px;">${item.latest ? "下载" : "待发布"}</span>`;
     root.append(link);
   });
 }

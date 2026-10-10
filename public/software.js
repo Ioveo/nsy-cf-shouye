@@ -34,6 +34,7 @@ function renderSoftware(root, software, category, articles) {
         <p>${escapeHtml(software.description || latest?.description || "查看软件能力、版本更新和官方下载入口。")}</p>
         <div class="software-actions">
           ${latest ? `<a class="button button--primary" href="/download/${encodeURIComponent(latest.id)}">下载最新版 ${escapeHtml(latest.version || "")}</a>` : `<span class="button button--disabled">版本待发布</span>`}
+          ${software.slug === "desktop" ? `<a class="button button--primary" href="/desktop.html" style="background:#00e5a3; color:#000; font-weight:700;">🌟 探索 3D 全景落地页</a>` : ""}
           <a class="button button--ghost" href="/download.html">返回下载中心</a>
         </div>
         <div class="software-hero__meta">

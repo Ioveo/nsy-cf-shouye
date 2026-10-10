@@ -3,103 +3,169 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>软件下载 - 天才猫软件中心</title>
-    <meta name="description" content="天才猫软件官方下载中心，按分类选择数据中心版、DY辅助工具和其他工具版本。" />
+    <title>软件下载 - 天才猫软件中心 (Apple Design Edition)</title>
+    <meta name="description" content="天才猫软件官方下载中心，按分类选择天才猫桌面 2.0、数据中心版、DY辅助工具和其他工具版本。" />
     <link rel="icon" type="image/png" href="/logo.png?v=20260509" />
     <link rel="apple-touch-icon" href="/logo.png?v=20260509" />
-    <link rel="stylesheet" href="/styles.css?v=20260511-download-premium" />
-    <link rel="stylesheet" href="/site-theme.css?v=20260517-raycast-site" />
+    <link rel="stylesheet" href="/apple-design.css?v=20261009-apple" />
   </head>
-  <body class="download-page">
-    <header class="topbar">
-      <a class="brand" href="/">
-        <img src="/logo.png" alt="" />
-        <span>天才猫</span>
-      </a>
-      <nav aria-label="主导航" data-nav>
-        <a href="/">首页</a>
-        <a href="/download.html">软件下载</a>
-        <a href="/photo-wall.html">照片墙</a>
-        <a href="/gallery.html">图片画廊</a>
-        <a href="/music.html">音乐频道</a>
-        <a href="/articles.html">文章教程</a>
-        <a href="/license.html">授权购买</a>
-      </nav>
+  <body>
+    <!-- Apple Translucent Navigation -->
+    <header class="apple-nav">
+      <div class="apple-nav__inner">
+        <a class="apple-nav__brand" href="/">
+          <img src="/logo.png" alt="天才猫" />
+          <span>天才猫软件中心</span>
+        </a>
+        <nav class="apple-nav__links" aria-label="主导航" data-nav>
+          <a href="/">首页</a>
+          <a href="/desktop.html" style="color:var(--apple-cyan); font-weight:600;">桌面软件 2.0</a>
+          <a href="/download.html" class="is-active">下载中心</a>
+          <a href="/photo-wall.html">照片墙</a>
+          <a href="/gallery.html">图片画廊</a>
+          <a href="/music.html">音乐频道</a>
+          <a href="/articles.html">文章教程</a>
+          <a href="/license.html">授权购买</a>
+        </nav>
+        <a class="apple-nav__cta" href="/desktop.html">
+          <span>体验 2.0</span> <i>→</i>
+        </a>
+      </div>
     </header>
 
+    <!-- Sub-Nav Banner -->
+    <div class="apple-subnav">
+      <div class="apple-subnav__inner">
+        <span class="apple-subnav__title">Release Hub</span>
+        <div class="apple-subnav__actions">
+          <a class="apple-subnav__link" href="/">← 返回官网首页</a>
+          <a class="apple-subnav__link" href="/desktop.html">🌟 桌面 2.0 专属落地页</a>
+          <a class="apple-subnav__link" href="https://mk.nsy.me/buy" target="_blank" rel="noopener">正版授权购买</a>
+        </div>
+      </div>
+    </div>
+
     <main>
-      <section class="download-hero">
-        <div class="download-hero__copy">
-          <p class="eyebrow">TianCaiMao Downloads</p>
-          <h1>稳定交付每一个工具版本。</h1>
-          <p>面向直播团队的软件交付中心。版本、说明、安装包统一维护，客户打开页面就能清楚知道该下载什么。</p>
-          <div class="download-hero__actions">
-            <a class="button button--primary" href="#softwareGrid">浏览全部软件 <i>↓</i></a>
-            <a class="button button--ghost" href="https://mk.nsy.me/buy" target="_blank" rel="noopener">购买授权</a>
-          </div>
-          <div class="download-hero__meta">
-            <span><i>✦</i> 官方发布</span>
-            <span><i>⬢</i> R2 稳定托管</span>
-            <span><i>◆</i> 后台版本维护</span>
-          </div>
-          <div class="download-hero__numbers" aria-label="下载中心能力">
-            <strong><b>24h</b><span>版本交付</span></strong>
-            <strong><b>R2</b><span>云端托管</span></strong>
-            <strong><b>Win</b><span>桌面软件</span></strong>
+      <!-- Download Hero (Apple Style) -->
+      <section class="apple-download-hero">
+        <div>
+          <span class="apple-eyebrow">TianCaiMao Downloads</span>
+          <h1 style="font-size:clamp(36px, 4.8vw, 56px); font-weight:700; line-height:1.1; margin-bottom:16px; color:#fff;">
+            稳定交付每一个工具版本。
+          </h1>
+          <p style="font-size:16px; line-height:1.55; color:var(--apple-text-secondary); margin-bottom:28px;">
+            面向个人与团队的软件交付中心。版本、说明、安装包统一维护，打开页面即可直接极速下载。
+          </p>
+          <div style="display:flex; gap:14px; flex-wrap:wrap;">
+            <a class="apple-btn apple-btn--primary" href="#softwareGrid">
+              <span>浏览全部软件</span> <i>↓</i>
+            </a>
+            <a class="apple-btn apple-btn--secondary" href="/desktop.html">
+              <span>探索桌面 2.0 落地页</span> <i>↗</i>
+            </a>
           </div>
         </div>
-        <aside class="download-hero__panel" aria-label="下载中心状态">
-          <div class="download-orbit"><span></span><span></span><span></span></div>
-          <p class="eyebrow">Release Hub</p>
-          <strong>版本清晰，下载路径稳定。</strong>
-          <p>每个软件独立维护版本、更新说明和安装包，下载入口自动指向当前可用版本。</p>
-          <div class="download-hero__stats">
-            <span><b>01</b>分类筛选</span>
-            <span><b>02</b>最新版下载</span>
-            <span><b>03</b>说明同步</span>
+
+        <div>
+          <div class="apple-card" style="padding:28px;">
+            <span class="apple-card__eyebrow">Cloud Architecture</span>
+            <h3 style="font-size:20px; font-weight:700; color:#fff; margin-bottom:10px;">Cloudflare R2 稳定托管</h3>
+            <p style="font-size:14px; color:var(--apple-text-secondary); margin-bottom:20px;">
+              所有大型安装包均通过 R2 全球 CDN 边缘网络分发，免等待、防篡改、秒速下载。
+            </p>
+            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; text-align:center;">
+              <div style="padding:10px; border-radius:10px; background:rgba(255,255,255,0.04);">
+                <b style="display:block; font-size:18px; color:var(--apple-cyan);">24h</b>
+                <span style="font-size:11px; color:var(--apple-text-tertiary);">持续交付</span>
+              </div>
+              <div style="padding:10px; border-radius:10px; background:rgba(255,255,255,0.04);">
+                <b style="display:block; font-size:18px; color:var(--apple-green);">R2</b>
+                <span style="font-size:11px; color:var(--apple-text-tertiary);">云端直链</span>
+              </div>
+              <div style="padding:10px; border-radius:10px; background:rgba(255,255,255,0.04);">
+                <b style="display:block; font-size:18px; color:var(--apple-purple);">Win</b>
+                <span style="font-size:11px; color:var(--apple-text-tertiary);">免装依赖</span>
+              </div>
+            </div>
           </div>
-        </aside>
+        </div>
       </section>
 
-      <section class="download download-shell">
-        <div class="download-shell__head">
+      <!-- Main Software Library -->
+      <section class="apple-section">
+        <!-- 搜索与筛选控制器 -->
+        <div class="apple-search-bar" role="search">
+          <span style="color:var(--apple-text-tertiary); font-size:16px;">🔍</span>
+          <input id="softwareSearch" type="search" placeholder="输入软件名称、简介或版本号进行快速搜索..." autocomplete="off" />
+          <select id="softwareSortMode" style="background:transparent; border:0; color:var(--apple-text-secondary); font-size:13px; outline:none; cursor:pointer;">
+            <option value="updated">最近更新</option>
+            <option value="downloads">下载最多</option>
+            <option value="name">名称 A-Z</option>
+          </select>
+          <button type="button" id="clearSoftwareSearch" style="background:transparent; border:0; color:var(--apple-text-tertiary); cursor:pointer; font-size:12px;">清空</button>
+        </div>
+
+        <div class="apple-download-layout">
+          <!-- 左侧：分类与卡片网格 -->
           <div>
-            <p class="eyebrow">Software Library</p>
-            <h2>选择软件，开始下载。</h2>
+            <!-- Apple 分类胶囊 -->
+            <div style="margin-bottom:20px;">
+              <div class="apple-segmented" id="categoryTabs" role="tablist"></div>
+            </div>
+
+            <!-- 产品卡片网格 -->
+            <div class="apple-bento" id="softwareGrid" aria-live="polite"></div>
           </div>
-          <p>卡片展示软件截图、当前版本、更新说明和下载按钮。没有关联版本的软件会显示为待发布。</p>
-        </div>
-        <div class="download-controls" role="search">
-          <label>搜索软件<input id="softwareSearch" type="search" placeholder="输入软件名称、简介或版本号" autocomplete="off" /></label>
-          <label>排序<select id="softwareSortMode"><option value="updated">最近更新</option><option value="downloads">下载最多</option><option value="name">名称 A-Z</option></select></label>
-          <button class="ghost" type="button" id="clearSoftwareSearch">清空</button>
-        </div>
-        <div class="download-layout download-layout--premium">
-          <div class="download-main">
-            <div class="category-tabs" id="categoryTabs" aria-label="软件分类"></div>
-            <div class="product-grid" id="softwareGrid" aria-live="polite"></div>
-          </div>
-          <aside class="download-sidebar" aria-label="热门下载">
-            <div class="download-rank-card">
-              <div class="download-rank-card__head">
-                <div>
-                  <p class="eyebrow">Trending</p>
-                  <h3>热门下载</h3>
-                </div>
-                <span>Top</span>
-              </div>
-              <div class="download-rank-list" id="downloadRankList"></div>
+
+          <!-- 右侧：Apple 风格热门推荐 -->
+          <aside>
+            <div class="apple-rank-card">
+              <span class="apple-card__eyebrow">Trending</span>
+              <h3 style="font-size:19px; font-weight:700; color:#fff; margin-bottom:16px;">热门下载</h3>
+              <div id="downloadRankList"></div>
             </div>
           </aside>
         </div>
       </section>
     </main>
 
-    <footer>
-      <span>天才猫软件中心</span>
-      <span>Downloads</span>
+    <!-- Apple Minimalist Footer -->
+    <footer class="apple-footer">
+      <div class="apple-footer__inner">
+        <div class="apple-footer__grid">
+          <div class="apple-footer__col">
+            <h4>软件中心</h4>
+            <a href="/desktop.html">天才猫桌面 2.0</a>
+            <a href="/download.html">全部软件发布</a>
+            <a href="/novadisk.html" target="_blank">C盘管家</a>
+          </div>
+          <div class="apple-footer__col">
+            <h4>官方生态</h4>
+            <a href="/">官网生态主站</a>
+            <a href="/gallery.html">图片画廊</a>
+            <a href="/music.html">音乐频道</a>
+          </div>
+          <div class="apple-footer__col">
+            <h4>文章与授权</h4>
+            <a href="/articles.html">更新日志与说明</a>
+            <a href="/license.html">正版授权购买</a>
+            <a href="/lvtuang" target="_blank">管理后台</a>
+          </div>
+          <div class="apple-footer__col">
+            <h4>关于天才猫</h4>
+            <a href="#">关于我们</a>
+            <a href="#">隐私说明</a>
+            <a href="#">服务条款</a>
+          </div>
+        </div>
+        <div class="apple-footer__bottom">
+          <span>Copyright © 2026 天才猫软件中心. 保留所有权利.</span>
+          <span style="font-weight:700; color:var(--apple-text-secondary); letter-spacing:0.1em;">TIANCAIMAO</span>
+        </div>
+      </div>
     </footer>
 
-    <script src="/site.js?v=20260510-download-scale" type="module"></script>
+    <!-- 动态 Catalog 渲染脚本 -->
+    <script src="/site.js?v=20261009-apple" type="module"></script>
   </body>
 </html>

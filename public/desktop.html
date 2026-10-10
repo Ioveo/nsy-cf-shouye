@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>天才猫桌面 2.0 - 官方旗舰落地页 (Apple Design Edition)</title>
+    <meta name="description" content="天才猫桌面 2.0 官方旗舰落地页。全新抽屉式侧边吸附收纳盒、微信离线高精OCR原图翻译、NovaDisk 2.0 C盘管家、顶部偷看速览Dock与治愈灵动桌宠。" />
+    <link rel="icon" type="image/png" href="/logo.png?v=20260509" />
+    <link rel="apple-touch-icon" href="/logo.png?v=20260509" />
+    <link rel="stylesheet" href="/apple-design.css?v=20261009-apple" />
+    <style>
+      /* Desktop Landing Page Custom Apple Refinements */
+      .feature-glow {
+        position: absolute;
+        width: 320px;
+        height: 320px;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.15;
+        pointer-events: none;
+      }
+      .tab-panel-apple {
+        display: none;
+        animation: appleFadeIn 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+      .tab-panel-apple.is-active {
+        display: block;
+      }
+      @keyframes appleFadeIn {
+        from { opacity: 0; transform: scale(0.98); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      .interactive-viewport {
+        border-radius: var(--apple-radius-lg);
+        background: #000;
+        border: 1px solid var(--apple-border);
+        overflow: hidden;
+        box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+        position: relative;
+      }
+      .interactive-viewport img {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .download-box {
+        border-radius: var(--apple-radius-lg);
+        background: linear-gradient(180deg, rgba(30,30,36,0.8) 0%, rgba(14,14,18,0.95) 100%);
+        border: 1px solid var(--apple-border-strong);
+        padding: clamp(32px, 5vw, 60px);
+        text-align: center;
+        box-shadow: 0 1px 0 rgba(255,255,255,0.18) inset, 0 30px 80px rgba(0,0,0,0.6);
+        position: relative;
+        overflow: hidden;
+      }
+      .download-box::after {
+        content: "";
+        position: absolute;
+        top: -120px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(0,113,227,0.2) 0%, transparent 70%);
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Apple Translucent Navigation -->
+    <header class="apple-nav">
+      <div class="apple-nav__inner">
+        <a class="apple-nav__brand" href="/">
+          <img src="/logo.png" alt="天才猫" />
+          <span>天才猫桌面</span>
+        </a>
+        <nav class="apple-nav__links" aria-label="主导航">
+          <a href="/" style="color:var(--apple-cyan); font-weight:600;">🏠 官网首页</a>
+          <a href="#features">核心特性</a>
+          <a href="#screens">真实界面</a>
+          <a href="#novadisk">C盘管家</a>
+          <a href="#download">立即下载</a>
+          <a href="#faq">常见问题</a>
+        </nav>
+        <a class="apple-nav__cta" href="#download">
+          <span>下载 v2.0.0</span> <i>↓</i>
+        </a>
+      </div>
+    </header>
+
+    <!-- Sub-Nav Banner -->
+    <div class="apple-subnav">
+      <div class="apple-subnav__inner">
+        <span class="apple-subnav__title">天才猫桌面 2.0</span>
+        <div class="apple-subnav__actions">
+          <a class="apple-subnav__link" href="/">← 返回官网生态首页</a>
+          <a class="apple-subnav__link" href="/novadisk.html" target="_blank">在线体验 C盘管家</a>
+          <a class="apple-subnav__link" href="/download.html">全系软件中心</a>
+        </div>
+      </div>
+    </div>
+
+    <main>
+      <!-- Hero Section (Apple Keynote Style) -->
+      <section class="apple-hero" style="padding-top:80px; padding-bottom:50px;">
+        <span class="apple-eyebrow">TianCaiMao Desktop 2.0 · 独立自包含运行时版</span>
+        <h1 class="apple-hero__title">
+          灵动抽屉收纳。<br>
+          <em>为 Windows 注入苹果级交互质感。</em>
+        </h1>
+        <p class="apple-hero__subtitle">
+          独创抽屉式侧边吸附把手、微信离线高精 OCR 原图翻译、NovaDisk 2.0 C盘无损搬家管家与 TopPeekDock 顶部无感盲操速览。
+        </p>
+        <div class="apple-hero__actions">
+          <a class="apple-btn apple-btn--primary" href="#download" style="padding:14px 28px; font-size:16px;">
+            <span>🔥 立即下载 Windows 官方安装包</span>
+            <i>↓</i>
+          </a>
+          <a class="apple-btn apple-btn--secondary" href="/novadisk.html" target="_blank" style="padding:14px 24px; font-size:16px;">
+            <span>⚡ 在线体验 NovaDisk C盘管家</span>
+            <i>↗</i>
+          </a>
+        </div>
+        <p style="font-size:13px; color:var(--apple-text-tertiary);">
+          完美支持 Windows 10 (19041+) / Windows 11 · 64 位独立免运行库 · 纯净无广告
+        </p>
+      </section>
+
+      <!-- Main Showcase Media -->
+      <section class="apple-section" style="margin-bottom:70px;">
+        <div class="interactive-viewport">
+          <img src="/preview-desktop-widgets.png" alt="天才猫桌面 2.0 桌面小组件与收纳盒全景展示" />
+        </div>
+      </section>
+
+      <!-- 🌟 Bento Grid: 5 大核心特性 (Apple Bento Cards) -->
+      <section class="apple-section" id="features">
+        <div class="apple-section__head">
+          <span class="apple-eyebrow">Core Innovations</span>
+          <h2>精雕细琢。每一个交互都灵动随心。</h2>
+          <p>遵循 Apple HIG 人机交互原则，融入弹簧物理曲线与无感边缘吸附。</p>
+        </div>
+
+        <div class="apple-bento">
+          <!-- Bento 1: 抽屉式侧边收纳盒 (Span 8) -->
+          <div class="apple-card apple-card--span-8">
+            <span class="apple-card__eyebrow">Interaction Primitives</span>
+            <h3 class="apple-card__title">抽屉式侧边吸附收纳盒</h3>
+            <p class="apple-card__desc">
+              贴边自动收缩为细小灵动把手，鼠标掠过或滚轮一划毫秒级无感滑出。支持多收纳盒防重叠智能避让算法，让杂乱桌面一键遁形。
+            </p>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+              <span class="apple-badge-pill">毫秒极速滑出</span>
+              <span class="apple-badge-pill">防重叠避让</span>
+              <span class="apple-badge-pill">无限收纳分类</span>
+            </div>
+          </div>
+
+          <!-- Bento 2: NovaDisk 2.0 C盘管家 (Span 4) -->
+          <div class="apple-card apple-card--span-4">
+            <span class="apple-card__eyebrow">System Optimization</span>
+            <h3 class="apple-card__title">NovaDisk 2.0 C盘管家</h3>
+            <p class="apple-card__desc">
+              基于 NTFS Junction 符号链接黑科技，将微信/QQ/臃肿软件大文件夹无损搬迁至 D/E 盘，原路径完全无感正常运行。
+            </p>
+            <a class="apple-btn apple-btn--link" href="/novadisk.html" target="_blank" style="padding-left:0;">
+              立即打开在线体验器 →
+            </a>
+          </div>
+
+          <!-- Bento 3: TopPeekDock 顶部无感盲操速览 (Span 6) -->
+          <div class="apple-card apple-card--span-6">
+            <span class="apple-card__eyebrow">Peek & Flow</span>
+            <h3 class="apple-card__title">TopPeekDock 顶部速览</h3>
+            <p class="apple-card__desc">
+              鼠标触碰屏幕顶部正中，瞬间唤出极简全景速览坞。支持全局热键盲操偷看微信聊天或后台窗口，松开鼠标即刻隐退。
+            </p>
+            <div class="apple-card__media">
+              <img src="/preview-top-peek-dock.png" alt="TopPeekDock 顶部速览效果" />
+            </div>
+          </div>
+
+          <!-- Bento 4: 微信离线高精 OCR 翻译 (Span 6) -->
+          <div class="apple-card apple-card--span-6">
+            <span class="apple-card__eyebrow">Intelligence</span>
+            <h3 class="apple-card__title">微信离线高精 OCR 原图覆盖</h3>
+            <p class="apple-card__desc">
+              深度提取 WeChat 原生离线 OCR 识别引擎，零网络延迟、零隐私外泄风险。框选图片即刻在原图文字位置覆盖译文。
+            </p>
+            <div style="padding:24px; border-radius:16px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.08); margin-top:auto;">
+              <div style="font-family:monospace; font-size:13px; color:var(--apple-cyan); margin-bottom:6px;">OCR Core: WeChat Offline Native OCR</div>
+              <div style="font-size:12px; color:var(--apple-text-secondary);">支持中、英、日、韩、法、德等多语种精准检测与原图版面还原。</div>
+            </div>
+          </div>
+
+          <!-- Bento 5: 灵动治愈桌宠与壁纸层时钟 (Span 12) -->
+          <div class="apple-card apple-card--span-12" style="background: linear-gradient(135deg, rgba(22,22,28,0.7) 0%, rgba(12,12,16,0.9) 100%);">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px; align-items:center;">
+              <div>
+                <span class="apple-card__eyebrow">Desk Companion</span>
+                <h3 class="apple-card__title">治愈系灵动桌宠 & 壁纸层跳秒时钟</h3>
+                <p class="apple-card__desc">
+                  穿梭在屏幕底层的活泼喵喵伙伴，支持投喂互动与状态感知。壁纸层嵌入精准跳秒时钟、今日待办清单与重要纪念日倒计时。
+                </p>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                  <span class="apple-badge-pill">天气温度自动同步</span>
+                  <span class="apple-badge-pill">高考/考研/纪念日看板</span>
+                  <span class="apple-badge-pill">Everything64 极速检索</span>
+                </div>
+              </div>
+              <div style="text-align:center; padding:20px;">
+                <div style="font-size:48px; margin-bottom:8px;">🐱 ⏳ 📅</div>
+                <div style="font-size:14px; color:var(--apple-text-secondary);">工作累了摸摸猫猫，桌面管理从此充满温度。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 🎮 真实界面交互演示 Tab 区 -->
+      <section class="apple-section" id="screens">
+        <div class="apple-section__head">
+          <span class="apple-eyebrow">Real Interface Walkthrough</span>
+          <h2>真实界面交互。直击每个细节。</h2>
+          <p>点击下方分段胶囊，查看真实运行状态下的高精界面设计。</p>
+        </div>
+
+        <!-- Apple Segmented Control 交互标签 -->
+        <div style="text-align:center; margin-bottom:34px;">
+          <div class="apple-segmented" id="appleScreenTabs" role="tablist">
+            <button class="apple-segmented__btn is-active" data-tab="tab-widgets">桌面小组件与时钟</button>
+            <button class="apple-segmented__btn" data-tab="tab-drawer">抽屉式侧边收纳盒</button>
+            <button class="apple-segmented__btn" data-tab="tab-peek">TopPeek 顶部速览</button>
+            <button class="apple-segmented__btn" data-tab="tab-ocr">微信离线 OCR 翻译</button>
+            <button class="apple-segmented__btn" data-tab="tab-novadisk">NovaDisk 2.0 C盘管家</button>
+          </div>
+        </div>
+
+        <!-- 对应演示视窗 -->
+        <div class="interactive-viewport">
+          <div class="tab-panel-apple is-active" id="tab-widgets">
+            <img src="/preview-desktop-widgets.png" alt="桌面小组件与时钟看板" />
+          </div>
+          <div class="tab-panel-apple" id="tab-drawer">
+            <img src="/preview-desktop-widgets.png" alt="抽屉侧边收纳盒展示" />
+          </div>
+          <div class="tab-panel-apple" id="tab-peek">
+            <img src="/preview-top-peek-dock.png" alt="TopPeek 顶部速览展示" />
+          </div>
+          <div class="tab-panel-apple" id="tab-ocr">
+            <img src="/assistant-preview.jpg" alt="微信离线 OCR 识别演示" />
+          </div>
+          <div class="tab-panel-apple" id="tab-novadisk">
+            <img src="/datacenter-preview.jpg" alt="NovaDisk 2.0 C盘管家界面" />
+          </div>
+        </div>
+      </section>
+
+      <!-- 🚀 Apple 级官方下载面板 (Download Box) -->
+      <section class="apple-section" id="download">
+        <div class="download-box">
+          <span class="apple-badge-pill" style="margin-bottom:14px;">Official Release Hub</span>
+          <h2 style="font-size:clamp(32px, 4.2vw, 54px); font-weight:700; line-height:1.12; color:#fff; margin-bottom:14px;">
+            立即下载天才猫桌面 2.0。
+          </h2>
+          <p style="font-size:17px; color:var(--apple-text-secondary); max-width:620px; margin:0 auto 34px;">
+            正式发行版：v2.0.0 (Windows x64 独立自包含版)。内置完全独立运行时，双击极速安装，零外部依赖。
+          </p>
+          <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap; margin-bottom:30px;">
+            <a class="apple-btn apple-btn--primary" href="/download/latest/desktop" style="padding:15px 34px; font-size:16px;">
+              <span>🔥 下载官方安装包 (~85.2 MB)</span>
+              <i>↓</i>
+            </a>
+            <a class="apple-btn apple-btn--secondary" href="/download/latest/desktop" style="padding:15px 30px; font-size:16px;">
+              <span>📦 绿色便携免安装版 (~95.2 MB)</span>
+              <i>↓</i>
+            </a>
+          </div>
+          <div style="display:flex; justify-content:center; gap:24px; font-size:13px; color:var(--apple-text-secondary); flex-wrap:wrap;">
+            <span>✦ 100% 绿色纯净</span>
+            <span>✦ 无广告弹窗</span>
+            <span>✦ 不收集个人隐私</span>
+            <span>✦ 支持无缝在线升级</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ❓ 常见问题 (FAQ) -->
+      <section class="apple-section" id="faq">
+        <div class="apple-section__head">
+          <span class="apple-eyebrow">FAQ</span>
+          <h2>常见问题解答</h2>
+        </div>
+        <div class="apple-bento">
+          <div class="apple-card apple-card--span-6">
+            <h3 class="apple-card__title" style="font-size:18px;">需要额外安装 .NET 运行库吗？</h3>
+            <p class="apple-card__desc">不需要。天才猫桌面 2.0 为完全自包含版本，所有依赖运行时均已编译内置，在纯净新电脑上双击即可秒启运行。</p>
+          </div>
+          <div class="apple-card apple-card--span-6">
+            <h3 class="apple-card__title" style="font-size:18px;">NovaDisk C盘搬家安全吗？</h3>
+            <p class="apple-card__desc">完全安全。采用 Windows 操作系统底层成熟的 NTFS Directory Junction 机制，文件实际存储在其他盘，系统原路径完全透明直通。</p>
+          </div>
+          <div class="apple-card apple-card--span-6">
+            <h3 class="apple-card__title" style="font-size:18px;">微信 OCR 识别需要联网吗？</h3>
+            <p class="apple-card__desc">完全本地离线运行。基于本地原生提取的 OCR 动态库进行高精特征匹配，无需上传任何云端服务器，绝对保护数据隐私。</p>
+          </div>
+          <div class="apple-card apple-card--span-6">
+            <h3 class="apple-card__title" style="font-size:18px;">支持双屏或多显示器吗？</h3>
+            <p class="apple-card__desc">完美支持。收纳盒可在任意显示器的左右贴边吸附，小组件支持自由拖拽跨屏放置，并能智能记忆每台显示器的布局参数。</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Apple Minimalist Footer -->
+    <footer class="apple-footer">
+      <div class="apple-footer__inner">
+        <div class="apple-footer__grid">
+          <div class="apple-footer__col">
+            <h4>下载与支持</h4>
+            <a href="/download/latest/desktop">Windows 官方安装包</a>
+            <a href="/download/latest/desktop">绿色免安装便携版</a>
+            <a href="/novadisk.html" target="_blank">在线体验 C盘管家</a>
+          </div>
+          <div class="apple-footer__col">
+            <h4>官方生态</h4>
+            <a href="/">官网生态主站</a>
+            <a href="/download.html">全系软件中心</a>
+            <a href="/photo-wall.html">3D 照片墙</a>
+          </div>
+          <div class="apple-footer__col">
+            <h4>文档与授权</h4>
+            <a href="/articles.html">使用教程与文章</a>
+            <a href="/license.html">正版授权购买</a>
+            <a href="/lvtuang" target="_blank">管理后台</a>
+          </div>
+          <div class="apple-footer__col">
+            <h4>关于天才猫</h4>
+            <a href="#">关于我们</a>
+            <a href="#">隐私安全声明</a>
+            <a href="#">服务条款</a>
+          </div>
+        </div>
+        <div class="apple-footer__bottom">
+          <span>Copyright © 2026 天才猫桌面. 保留所有权利.</span>
+          <span style="font-weight:700; color:var(--apple-text-secondary); letter-spacing:0.1em;">TIANCAIMAO DESKTOP</span>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Interactive Script for Screen Tabs -->
+    <script>
+      const tabs = document.querySelectorAll('#appleScreenTabs button');
+      const panels = document.querySelectorAll('.tab-panel-apple');
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('is-active'));
+          panels.forEach(p => p.classList.remove('is-active'));
+
+          tab.classList.add('is-active');
+          const target = tab.dataset.tab;
+          const panel = document.getElementById(target);
+          if (panel) panel.classList.add('is-active');
+        });
+      });
+    </script>
+  </body>
+</html>

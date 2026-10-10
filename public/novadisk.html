@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NovaDisk - 新一代智能磁盘与文件管理中枢</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      user-select: none;
+      background: #090d16;
+      color: #e2e8f0;
+    }
+    .mica-backdrop {
+      background: radial-gradient(circle at 10% 20%, rgba(30, 41, 59, 0.75) 0%, rgba(9, 13, 22, 0.98) 90%),
+                  radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
+      backdrop-filter: blur(30px);
+    }
+    .acrylic-card {
+      background: rgba(22, 30, 46, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(20px);
+    }
+    .treemap-tile {
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      position: absolute;
+      box-sizing: border-box;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .treemap-tile:hover {
+      transform: translateY(-3px) scale(1.01);
+      z-index: 30;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.6), inset 0 0 0 1.5px rgba(255,255,255,0.4);
+    }
+    .treemap-tile.active {
+      box-shadow: 0 0 0 2px #38bdf8, 0 12px 36px rgba(56, 189, 248, 0.4);
+      z-index: 40;
+    }
+    .glow-safe { box-shadow: 0 0 20px rgba(16, 185, 129, 0.22); }
+    .glow-caution { box-shadow: 0 0 20px rgba(245, 158, 11, 0.22); }
+    .glow-critical { box-shadow: 0 0 20px rgba(239, 68, 68, 0.2); }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.2); }
+    ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.3); border-radius: 4px; }
+    @keyframes pulse-slow { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .animate-pulse-slow { animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+  </style>
+</head>
+<body class="mica-backdrop min-h-screen flex flex-col p-4 text-slate-200 overflow-x-hidden">
+
+  <!-- 顶部状态栏与导航栏 -->
+  <header class="acrylic-card rounded-2xl p-4 mb-3 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center space-x-3.5">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-teal-400 to-emerald-400 flex items-center justify-center shadow-lg shadow-teal-500/25">
+        <svg class="w-6 h-6 text-slate-950 font-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">NovaDisk</h1>
+          <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Release v1.5</span>
+          <div id="engine-badge" class="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="engine-status-text">检测调度引擎中...</span>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400">Windows 空间智能管家 • 真实扫描与无损软链接搬家 • 100% 可直接点击实操</p>
+      </div>
+    </div>
+
+    <!-- 盘符状态仪表盘 -->
+    <div class="flex items-center space-x-6 bg-slate-900/70 border border-slate-800 rounded-xl px-5 py-2.5">
+      <div class="flex items-center space-x-3">
+        <div class="relative w-10 h-10 flex items-center justify-center">
+          <svg class="w-full h-full transform -rotate-90">
+            <circle cx="20" cy="20" r="16" stroke="currentColor" stroke-width="3.5" class="text-slate-800" fill="transparent" />
+            <circle id="c-disk-circle" cx="20" cy="20" r="16" stroke="currentColor" stroke-width="3.5" class="text-amber-400" fill="transparent" stroke-dasharray="100.5" stroke-dashoffset="25" stroke-linecap="round" />
+          </svg>
+          <span id="c-disk-pct" class="absolute text-[11px] font-bold text-amber-300">--%</span>
+        </div>
+        <div>
+          <div class="text-xs font-semibold text-slate-200">系统主盘 (C:)</div>
+          <div class="text-[11px] text-slate-400"><span id="c-disk-free" class="text-red-400 font-medium">可用 -- GB</span> / <span id="c-disk-total">-- GB</span></div>
+        </div>
+      </div>
+
+      <div class="h-6 w-px bg-slate-800"></div>
+
+      <!-- 快速统计 -->
+      <div class="flex items-center space-x-5 text-xs">
+        <div class="flex items-center space-x-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400"></span>
+          <span class="text-slate-300">放心直接清: <strong id="stat-safe" class="text-emerald-400 font-bold">-- GB</strong></span>
+        </div>
+        <div class="flex items-center space-x-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-sm shadow-amber-400"></span>
+          <span class="text-slate-300">无损可搬家: <strong id="stat-caution" class="text-amber-400 font-bold">-- GB</strong></span>
+        </div>
+      </div>
+
+      <button id="rescan-btn" onclick="rescanRealDisk()" class="flex items-center space-x-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold px-3.5 py-1.5 rounded-lg text-xs transition shadow-lg shadow-emerald-500/20 active:scale-95">
+        <svg class="w-3.5 h-3.5 animate-none" id="scan-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        <span>真实秒级重检</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 离线或提示横幅 (若未连接本地引擎时呈现) -->
+  <div id="offline-banner" class="hidden mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between">
+    <div class="flex items-center space-x-2">
+      <span class="text-base">⚠️</span>
+      <span>当前运行于<strong>离线预览模式</strong>（未连接本地后台调度服务 127.0.0.1:39281）。点击【唤醒本地引擎】或保持【天才猫桌面】运行即可开启真机实操与一键搬家！</span>
+    </div>
+    <button onclick="retryConnection()" class="px-3 py-1 bg-amber-500 text-slate-950 font-bold rounded-lg hover:bg-amber-400 transition text-xs">
+      🔄 重新连接本机
+    </button>
+  </div>
+
+  <!-- 主体工作区 -->
+  <main class="grid grid-cols-12 gap-4 flex-1">
+
+    <!-- 左侧：语义安全过滤器与专项锦囊 -->
+    <aside class="col-span-12 lg:col-span-2 flex flex-col gap-3">
+      <div class="acrylic-card rounded-2xl p-3 flex-1 flex flex-col justify-between">
+        <div class="space-y-1.5">
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">空间安全分类</div>
+          
+          <button onclick="setFilter('all')" class="filter-btn active w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium bg-slate-800/80 text-cyan-300 border border-cyan-500/30">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+              <span>全景透视 (全部)</span>
+            </div>
+            <span id="filter-all-size" class="text-[10px] text-slate-400">--</span>
+          </button>
+
+          <button onclick="setFilter('safe')" class="filter-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-800/50 transition">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>🟢 放心直接删</span>
+            </div>
+            <span id="filter-safe-size" class="text-[10px] text-emerald-400 font-bold">--</span>
+          </button>
+
+          <button onclick="setFilter('caution')" class="filter-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-800/50 transition">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+              <span>🟡 建议软链搬家</span>
+            </div>
+            <span id="filter-caution-size" class="text-[10px] text-amber-400 font-bold">--</span>
+          </button>
+
+          <button onclick="setFilter('critical')" class="filter-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-800/50 transition">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-red-400"></span>
+              <span>🔴 核心保护区</span>
+            </div>
+            <span id="filter-critical-size" class="text-[10px] text-slate-500 font-bold">--</span>
+          </button>
+        </div>
+
+        <!-- 极客系统级专项调优 -->
+        <div class="mt-4 pt-3 border-t border-slate-800/80 space-y-2">
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2">系统级空间杀手</div>
+          
+          <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-medium text-slate-200 flex items-center gap-1.5"><span>💤</span> 休眠文件瘦身</span>
+              <span class="text-[10px] font-mono text-emerald-400">省 16~32G</span>
+            </div>
+            <p class="text-[10px] text-slate-400 leading-tight">保留快速启动的前提下，将 hiberfil.sys 压缩 50% 或彻底清空。</p>
+            <button onclick="triggerHibernateAction()" class="w-full py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 font-medium text-[11px] rounded-lg border border-slate-700 transition flex items-center justify-center gap-1">
+              <span>一键极致瘦身</span>
+            </button>
+          </div>
+
+          <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-medium text-slate-200 flex items-center gap-1.5"><span>🛡️</span> DISM 官方组件清理</span>
+              <span class="text-[10px] font-mono text-cyan-400">WinSxS</span>
+            </div>
+            <p class="text-[10px] text-slate-400 leading-tight">调用系统官方服务重置 WinSxS 冗余补丁，无任何蓝屏风险。</p>
+            <button onclick="triggerDismAction()" class="w-full py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-purple-300 font-medium text-[11px] rounded-lg border border-slate-700 transition flex items-center justify-center gap-1">
+              <span>开始组件固化</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 中间：Treemap 视盘空间网格与动态热力图 -->
+    <section class="col-span-12 lg:col-span-6 flex flex-col">
+      <div class="acrylic-card rounded-2xl p-4 flex-1 flex flex-col relative overflow-hidden">
+        <!-- 顶栏状态 -->
+        <div class="flex items-center justify-between mb-3 text-xs">
+          <div class="flex items-center space-x-2">
+            <span class="text-slate-400">透视节点:</span>
+            <span class="font-mono text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/40">C:\ (NTFS Volume)</span>
+          </div>
+          <div class="flex items-center space-x-3 text-[11px]">
+            <span class="flex items-center gap-1 text-emerald-400"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>安全清理</span>
+            <span class="flex items-center gap-1 text-amber-400"><span class="w-2 h-2 rounded-full bg-amber-400"></span>软链搬家</span>
+            <span class="flex items-center gap-1 text-red-400"><span class="w-2 h-2 rounded-full bg-red-400"></span>内核保护</span>
+          </div>
+        </div>
+
+        <!-- Treemap 画布容器 -->
+        <div id="treemap-viewport" class="relative flex-1 w-full rounded-xl overflow-hidden min-h-[520px] bg-slate-950/40 border border-slate-800/40">
+          <!-- 动态磁贴将注入此处 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 右侧：文件夹智能“身份证”抽屉与一键实操面板 -->
+    <aside class="col-span-12 lg:col-span-4 flex flex-col">
+      <div class="acrylic-card rounded-2xl p-4 flex-1 flex flex-col justify-between">
+        <div class="space-y-3.5">
+          <!-- 抽屉头部卡片 -->
+          <div class="flex items-start justify-between pb-3 border-b border-slate-800/80">
+            <div class="flex items-center space-x-3">
+              <div id="card-icon-wrapper" class="w-11 h-11 rounded-xl bg-slate-800/90 border border-slate-700 flex items-center justify-center text-xl shadow-inner">
+                💬
+              </div>
+              <div>
+                <div id="card-title" class="flex items-center space-x-2">
+                  <h3 class="text-sm font-bold text-white tracking-wide">WeChat Files</h3>
+                </div>
+                <div class="flex items-center space-x-2 mt-1">
+                  <span id="card-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">建议搬家</span>
+                  <span id="card-owner" class="text-[11px] text-slate-400">归属：腾讯微信 PC 客户端</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="text-right">
+              <div id="card-size" class="text-lg font-black text-amber-400 font-mono">-- GB</div>
+              <div id="card-pct" class="text-[10px] text-slate-400">占 C 盘已用 --%</div>
+            </div>
+          </div>
+
+          <!-- 真实物理路径展示 -->
+          <div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-xs">
+            <div class="truncate text-slate-400 font-mono text-[11px] flex-1 mr-2" id="card-path">
+              C:\Users\Admin\Documents\WeChat Files
+            </div>
+            <button onclick="copyPath()" class="text-cyan-400 hover:text-cyan-300 p-1 transition" title="复制路径">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            </button>
+          </div>
+
+          <!-- 智能语义解析 (这是干嘛的？) -->
+          <div class="space-y-1">
+            <div class="flex items-center space-x-1.5 text-xs font-semibold text-cyan-300">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <span>这是干嘛的？</span>
+            </div>
+            <p id="card-desc" class="text-xs text-slate-300 leading-relaxed bg-slate-900/40 p-2.5 rounded-xl border border-slate-800/60">
+              加载中...
+            </p>
+          </div>
+
+          <!-- 删了会怎么样？能不能删？ -->
+          <div class="space-y-1">
+            <div class="p-2.5 rounded-xl bg-rose-950/20 border border-rose-500/20">
+              <div class="flex items-center space-x-1.5 text-xs font-semibold text-rose-400 mb-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <span>删了会怎么样？能不能删？</span>
+              </div>
+              <p id="card-consequence" class="text-xs text-slate-300 leading-relaxed">
+                加载中...
+              </p>
+            </div>
+          </div>
+
+          <!-- 搬迁目标磁盘选择区 (仅搬家目录展示) -->
+          <div id="target-drive-container" class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
+            <div class="flex items-center justify-between text-[11px] text-slate-400">
+              <span>🎯 搬迁目标磁盘分区:</span>
+              <span class="text-amber-400 font-mono text-[10px]">自动预留15%安全冗余</span>
+            </div>
+            <select id="target-drive-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-amber-300 font-mono focus:outline-none focus:border-amber-500">
+              <option value="D:">D: [软件与数据] (正在获取可用空间...)</option>
+            </select>
+          </div>
+
+          <!-- 高级底座脚本 (可折叠，无需手动复制) -->
+          <details class="text-[10px] text-slate-500 font-mono">
+            <summary class="cursor-pointer hover:text-slate-400 select-none py-1">查看底层 PowerShell 调度命令 (点击展开)</summary>
+            <pre id="cli-preview" class="p-2 mt-1 rounded bg-black/70 text-emerald-400/90 overflow-x-auto whitespace-pre-wrap text-[10px] border border-slate-800"></pre>
+          </details>
+        </div>
+
+        <!-- 底部真实可点击操作区 -->
+        <div class="pt-3 border-t border-slate-800/80 space-y-2">
+          <div class="text-[11px] font-medium text-slate-400 flex items-center justify-between">
+            <span>推荐处置策略</span>
+            <span class="text-emerald-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>真机直控</span>
+          </div>
+
+          <!-- 核心实操主按钮 (一键搬家/一键清理/一键瘦身) -->
+          <button id="primary-action-btn" onclick="executeCurrentItemAction()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 flex items-center justify-center space-x-2 transition active:scale-[0.98]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+            <span id="primary-btn-text">🚀 立即执行一键无损搬家到外置盘</span>
+          </button>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="executeSecondaryAction()" id="secondary-btn" class="py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-200 text-xs font-medium transition text-center">
+              🧹 专项快捷清理
+            </button>
+            <button onclick="openExplorer()" class="py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-200 text-xs font-medium transition text-center flex items-center justify-center gap-1">
+              <span>📂 资源管理器定位</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- 底部状态栏 -->
+  <footer class="mt-3 px-3 py-2 text-[11px] text-slate-500 flex flex-wrap items-center justify-between border-t border-slate-800/60">
+    <div class="flex items-center space-x-4">
+      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> 本地服务端口: <strong id="footer-port" class="font-mono text-emerald-400">127.0.0.1:39281</strong></span>
+      <span>|</span>
+      <span>规则库：<span id="footer-rules-count">11 大类</span></span>
+      <span>|</span>
+      <span>引擎类型: <span class="text-slate-300">NTFS 原生 Junction 搬迁管道</span></span>
+    </div>
+    <div class="flex items-center space-x-2 text-slate-400">
+      <span class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-400">Windows 原生安全架构</span>
+      <span>•</span>
+      <span>零专利风险 • 无损热迁移</span>
+    </div>
+  </footer>
+
+  <!-- ================= 真实执行交互模态弹窗 (实操控制台) ================= -->
+  <div id="exec-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="acrylic-card w-full max-w-2xl rounded-2xl border border-slate-700 shadow-2xl p-6 flex flex-col space-y-4">
+      
+      <!-- 弹窗标题 -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-2.5">
+          <span class="text-xl">⚡</span>
+          <h2 id="modal-title" class="text-base font-bold text-white">确认执行空间置换操作</h2>
+        </div>
+        <button onclick="closeModal()" id="modal-close-x" class="text-slate-400 hover:text-white text-lg p-1">✕</button>
+      </div>
+
+      <!-- 任务详情与安全声明 -->
+      <div id="modal-summary-box" class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2 text-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400">目标对象:</span>
+          <span id="modal-target-name" class="font-bold text-amber-300 font-mono">--</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400">物理路径:</span>
+          <span id="modal-target-path" class="text-slate-300 font-mono text-[11px] truncate max-w-md">--</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400">安全防护机制:</span>
+          <span class="text-emerald-400 font-medium">四重原子安全校验 (空间预检/Robocopy/文件校验/失败自动回滚)</span>
+        </div>
+      </div>
+
+      <!-- 实时黑金终端日志控制台 -->
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between text-[11px] text-slate-400 font-mono">
+          <span>终端输出与执行日志 (Live Terminal Output)</span>
+          <span id="modal-exec-status" class="text-cyan-400 font-bold">待就绪</span>
+        </div>
+        <pre id="modal-terminal" class="h-48 w-full bg-slate-950 p-3.5 rounded-xl border border-slate-800 font-mono text-xs text-emerald-400 overflow-y-auto leading-relaxed whitespace-pre-wrap select-text">
+[NovaDisk] 准备就绪，点击【确认立即执行】开始作业...
+        </pre>
+      </div>
+
+      <!-- 模态框底部按钮 -->
+      <div class="flex items-center justify-end space-x-3 pt-2 border-t border-slate-800">
+        <button onclick="closeModal()" id="modal-cancel-btn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">
+          取消
+        </button>
+        <button onclick="startExecuteTask()" id="modal-confirm-btn" class="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-bold shadow-lg shadow-emerald-500/20 transition">
+          确认立即执行
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 全局状态管理
+    const API_BASE = "http://127.0.0.1:39281";
+    let isConnected = false;
+    let availableDrives = [];
+    let items = [];
+    let selectedId = 1;
+    let currentFilter = 'all';
+    let currentPendingAction = null;
+
+    // 默认兜底规则（当完全离线时使用）
+    const fallbackItems = [
+      {
+        id: 1,
+        ruleId: "wechat_files",
+        name: "WeChat Files (微信数据)",
+        path: "C:\\Users\\" + (navigator.userAgent.indexOf('Windows') !== -1 ? "Admin" : "User") + "\\Documents\\WeChat Files",
+        sizeGB: 38.4,
+        pct: 18.5,
+        type: "caution",
+        owner: "腾讯微信 PC 客户端",
+        icon: "💬",
+        badge: "建议搬家",
+        desc: "存放好友与微信群的文字聊天记录、接收的 Office 文档、高清照片与短视频缓存。常年积累可达数十 GB。",
+        consequence: "严禁直接删除！会导致所有聊天记录、凭据和重要文件永久丢失。推荐使用一键无损软链接搬迁到 D 盘。",
+        primaryActionText: "🚀 一键无损迁移到 D 盘 (NTFS Junction)",
+        secondaryActionText: "🧹 仅清理过期媒体",
+        canRelocate: true,
+        canClean: false,
+        isRelocated: false
+      },
+      {
+        id: 2,
+        ruleId: "windows_temp",
+        name: "%TEMP% 临时文件与残留碎片",
+        path: "C:\\Users\\AppData\\Local\\Temp",
+        sizeGB: 18.2,
+        pct: 8.7,
+        type: "safe",
+        owner: "Windows 与各类应用程序运行时缓存",
+        icon: "🧹",
+        badge: "极度安全",
+        desc: "应用程序安装包解压碎片、临时日志、软件崩溃残存转储。通常无需保留。",
+        consequence: "放心彻底删除！正在运行中的文件会被系统自动保护锁定，完全不用担心影响软件工作。",
+        primaryActionText: "🧹 立即一键安全粉碎临时垃圾",
+        secondaryActionText: "📂 查看临时目录",
+        canRelocate: false,
+        canClean: true,
+        isRelocated: false
+      },
+      {
+        id: 3,
+        ruleId: "hiberfil_sys",
+        name: "hiberfil.sys (系统休眠镜像)",
+        path: "C:\\hiberfil.sys",
+        sizeGB: 16.0,
+        pct: 7.7,
+        type: "caution",
+        owner: "Windows 快速启动与深度休眠内核",
+        icon: "⚡",
+        badge: "可极致瘦身",
+        desc: "Windows 每次关机时将 RAM 内存保存至磁盘的文件，尺寸通常与您的物理内存大小 (16GB~64GB) 等大。",
+        consequence: "不可直接手动在资源管理器中删除（被系统底层独占）。可通过 NovaDisk 调用 powercfg 优化为 Reduced 精简模式，秒省数十 GB。",
+        primaryActionText: "💤 一键休眠瘦身 (秒省 16GB)",
+        secondaryActionText: "⚡ 关闭休眠",
+        canRelocate: false,
+        canClean: false,
+        canHibernate: true,
+        isRelocated: false
+      }
+    ];
+
+    // 初始化流程
+    window.addEventListener('DOMContentLoaded', async () => {
+      await checkBackendConnection();
+      if (!isConnected) {
+        useFallbackData();
+      }
+      window.addEventListener('resize', renderTreemap);
+      // 后台每 4 秒静默探测重连
+      setInterval(async () => {
+        if (!isConnected) {
+          await checkBackendConnection();
+        }
+      }, 4000);
+    });
+
+    // 探测本机调度引擎
+    async function checkBackendConnection() {
+      try {
+        const res = await fetch(`${API_BASE}/api/status`, { mode: 'cors' });
+        if (res.ok) {
+          const data = await res.json();
+          setConnectedState(true, data);
+          await loadDrives();
+          await fetchRealScan();
+          return true;
+        }
+      } catch (err) {
+        setConnectedState(false);
+      }
+      return false;
+    }
+
+    function setConnectedState(connected, statusData = null) {
+      isConnected = connected;
+      const badge = document.getElementById('engine-badge');
+      const text = document.getElementById('engine-status-text');
+      const banner = document.getElementById('offline-banner');
+
+      if (connected) {
+        badge.className = "flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono";
+        text.innerText = `本机执行引擎在线 (${API_BASE.replace('http://', '')})`;
+        banner.classList.add('hidden');
+
+        if (statusData && statusData.cDrive) {
+          updateCDriveHeader(statusData.cDrive);
+        }
+      } else {
+        badge.className = "flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-mono";
+        text.innerText = "离线演示模式 (未连接引擎)";
+        banner.classList.remove('hidden');
+      }
+    }
+
+    function updateCDriveHeader(c) {
+      document.getElementById('c-disk-free').innerText = `可用 ${c.freeGB} GB`;
+      document.getElementById('c-disk-total').innerText = `${c.totalGB} GB`;
+      document.getElementById('c-disk-pct').innerText = `${c.usedPct}%`;
+      
+      const circle = document.getElementById('c-disk-circle');
+      const offset = 100.5 - (100.5 * (c.usedPct / 100));
+      circle.style.strokeDashoffset = offset;
+      if (c.usedPct > 85) {
+        circle.className.baseVal = "text-red-400";
+      } else if (c.usedPct > 65) {
+        circle.className.baseVal = "text-amber-400";
+      } else {
+        circle.className.baseVal = "text-emerald-400";
+      }
+    }
+
+    async function loadDrives() {
+      try {
+        const res = await fetch(`${API_BASE}/api/drives`, { mode: 'cors' });
+        if (res.ok) {
+          const json = await res.json();
+          availableDrives = json.drives || [];
+          populateDriveDropdown();
+        }
+      } catch { }
+    }
+
+    function populateDriveDropdown() {
+      const select = document.getElementById('target-drive-select');
+      select.innerHTML = '';
+
+      const nonCDrives = availableDrives.filter(d => !d.isSystem);
+      if (nonCDrives.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = 'D:';
+        opt.innerText = 'D: (默认无损安置盘)';
+        select.appendChild(opt);
+        return;
+      }
+
+      nonCDrives.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d.letter;
+        opt.innerText = `${d.letter} [${d.label}] (可用 ${d.freeGB} GB / 共 ${d.totalGB} GB)`;
+        select.appendChild(opt);
+      });
+    }
+
+    async function fetchRealScan() {
+      const icon = document.getElementById('scan-icon');
+      icon.classList.add('animate-spin');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/scan`, { mode: 'cors' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.items && data.items.length > 0) {
+            items = data.items.map(item => ({
+              ...item,
+              colorClass: getColorClass(item.type),
+              glow: item.type === 'safe' ? 'glow-safe' : (item.type === 'caution' ? 'glow-caution' : 'glow-critical')
+            }));
+
+            updateStatistics();
+            renderTreemap();
+            selectTile(selectedId || items[0].id);
+          }
+        }
+      } catch (e) {
+        console.error("Scan fetch error:", e);
+      } finally {
+        icon.classList.remove('animate-spin');
+      }
+    }
+
+    function useFallbackData() {
+      items = fallbackItems.map(item => ({
+        ...item,
+        colorClass: getColorClass(item.type),
+        glow: item.type === 'safe' ? 'glow-safe' : (item.type === 'caution' ? 'glow-caution' : 'glow-critical')
+      }));
+      updateStatistics();
+      renderTreemap();
+      selectTile(1);
+    }
+
+    function getColorClass(type) {
+      if (type === 'safe') return "from-emerald-600/90 to-teal-800/90 border-emerald-400/40 text-emerald-100";
+      if (type === 'caution') return "from-amber-600/90 to-amber-700/90 border-amber-400/40 text-amber-100";
+      return "from-rose-800/90 to-red-950/90 border-rose-500/40 text-rose-100";
+    }
+
+    function updateStatistics() {
+      const safeTotal = items.filter(i => i.type === 'safe').reduce((sum, i) => sum + (i.sizeGB || 0), 0);
+      const cautionTotal = items.filter(i => i.type === 'caution').reduce((sum, i) => sum + (i.sizeGB || 0), 0);
+      const allTotal = items.reduce((sum, i) => sum + (i.sizeGB || 0), 0);
+      const critTotal = items.filter(i => i.type === 'critical').reduce((sum, i) => sum + (i.sizeGB || 0), 0);
+
+      document.getElementById('stat-safe').innerText = safeTotal.toFixed(1) + " GB";
+      document.getElementById('stat-caution').innerText = cautionTotal.toFixed(1) + " GB";
+
+      document.getElementById('filter-all-size').innerText = allTotal.toFixed(1) + "G";
+      document.getElementById('filter-safe-size').innerText = safeTotal.toFixed(1) + "G";
+      document.getElementById('filter-caution-size').innerText = cautionTotal.toFixed(1) + "G";
+      document.getElementById('filter-critical-size').innerText = critTotal.toFixed(1) + "G";
+    }
+
+    function renderTreemap() {
+      const container = document.getElementById('treemap-viewport');
+      container.innerHTML = '';
+
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (!width || !height) return;
+
+      const filtered = currentFilter === 'all' ? items : items.filter(f => f.type === currentFilter);
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="flex items-center justify-center h-full text-slate-500 text-xs">当前分类暂无目录</div>`;
+        return;
+      }
+
+      const totalSize = filtered.reduce((acc, cur) => acc + (cur.sizeGB || 0.1), 0);
+
+      let currentYLeft = 0;
+      let currentYRight = 0;
+      const colWidth = (width - 24) / 2;
+
+      filtered.forEach((item) => {
+        const heightWeight = Math.max(65, Math.min(240, ((item.sizeGB || 0.1) / totalSize) * height * 1.8));
+
+        const isLeft = currentYLeft <= currentYRight;
+        const left = isLeft ? 8 : 8 + colWidth + 8;
+        const top = isLeft ? currentYLeft + 8 : currentYRight + 8;
+        const tileHeight = heightWeight;
+
+        if (isLeft) currentYLeft += tileHeight + 8;
+        else currentYRight += tileHeight + 8;
+
+        const tile = document.createElement('div');
+        tile.className = `treemap-tile bg-gradient-to-br ${item.colorClass} border ${item.glow} p-3 flex flex-col justify-between ${item.id === selectedId ? 'active' : ''}`;
+        tile.style.left = `${left}px`;
+        tile.style.top = `${top}px`;
+        tile.style.width = `${colWidth}px`;
+        tile.style.height = `${tileHeight}px`;
+
+        tile.onclick = () => selectTile(item.id);
+
+        const relocatedBadge = item.isRelocated 
+          ? `<span class="text-[9px] px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 font-bold">已在外部软链</span>`
+          : `<span class="text-[10px] opacity-80 font-medium">${item.badge || ''}</span>`;
+
+        tile.innerHTML = `
+          <div class="flex items-start justify-between">
+            <div class="flex items-center space-x-2 truncate">
+              <span class="text-base">${item.icon || '📁'}</span>
+              <span class="text-xs font-bold truncate text-white">${item.name}</span>
+            </div>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-black/40 border border-white/10 font-mono">${item.sizeGB || 0}G</span>
+          </div>
+          <div class="flex items-end justify-between mt-1">
+            ${relocatedBadge}
+            <span class="text-[10px] opacity-60 font-mono">${item.pct || 0}%</span>
+          </div>
+        `;
+
+        container.appendChild(tile);
+      });
+    }
+
+    function selectTile(id) {
+      selectedId = id;
+      const item = items.find(f => f.id === id);
+      if (!item) return;
+
+      document.getElementById('card-icon-wrapper').innerText = item.icon || '📁';
+      document.getElementById('card-title').firstElementChild.innerText = item.name;
+      
+      const badge = document.getElementById('card-badge');
+      badge.innerText = item.isRelocated ? "✅ 已搬迁运行中" : (item.badge || "常规");
+      if (item.isRelocated) {
+        badge.className = "text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold";
+      } else if (item.type === 'safe') {
+        badge.className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+      } else if (item.type === 'caution') {
+        badge.className = "text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30";
+      } else {
+        badge.className = "text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30";
+      }
+
+      document.getElementById('card-owner').innerText = "归属：" + (item.owner || "未知");
+      document.getElementById('card-size').innerText = (item.sizeGB || 0) + " GB";
+      document.getElementById('card-size').className = item.type === 'safe' ? 'text-lg font-black text-emerald-400' : (item.type === 'caution' ? 'text-lg font-black text-amber-400' : 'text-lg font-black text-rose-400');
+      document.getElementById('card-pct').innerText = `占 C 盘已用 ${item.pct || 0}%`;
+      document.getElementById('card-path').innerText = item.path || '未探测到实际路径';
+      document.getElementById('card-desc').innerText = item.desc || '暂无说明';
+      document.getElementById('card-consequence').innerHTML = item.consequence || '暂无说明';
+      
+      const targetSelectBox = document.getElementById('target-drive-container');
+      const primaryBtn = document.getElementById('primary-action-btn');
+      const primaryText = document.getElementById('primary-btn-text');
+
+      // 动态判断搬迁与清理状态
+      if (item.canRelocate || item.recommendedAction === 'RELOCATE_JUNCTION') {
+        targetSelectBox.classList.remove('hidden');
+        if (item.isRelocated) {
+          primaryText.innerText = "✅ 软链接已生效 (正在外部磁盘透明运行)";
+          primaryBtn.className = "w-full py-3 px-4 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center justify-center space-x-2 cursor-default";
+        } else {
+          primaryText.innerText = "🚀 一键无损搬迁至选中目标盘 (NTFS Junction)";
+          primaryBtn.className = "w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 flex items-center justify-center space-x-2 transition active:scale-[0.98]";
+        }
+      } else {
+        targetSelectBox.classList.add('hidden');
+        if (item.type === 'safe') {
+          primaryText.innerText = "🧹 立即一键安全清理释放空间";
+          primaryBtn.className = "w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/25 flex items-center justify-center space-x-2 transition active:scale-[0.98]";
+        } else if (item.canHibernate) {
+          primaryText.innerText = "💤 立即执行休眠瘦身 (秒省内存容量)";
+          primaryBtn.className = "w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/25 flex items-center justify-center space-x-2 transition active:scale-[0.98]";
+        } else if (item.canDism) {
+          primaryText.innerText = "🛡️ 启动 DISM 官方安全组件重置";
+          primaryBtn.className = "w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white font-bold text-xs shadow-lg shadow-purple-500/25 flex items-center justify-center space-x-2 transition active:scale-[0.98]";
+        } else {
+          primaryText.innerText = "🛡️ 系统核心受保护 (禁止直接变动)";
+          primaryBtn.className = "w-full py-3 px-4 rounded-xl bg-slate-800/80 text-slate-500 font-bold text-xs cursor-not-allowed border border-slate-700 flex items-center justify-center space-x-2";
+        }
+      }
+
+      document.getElementById('secondary-btn').innerText = item.secondaryActionText || "🧹 专项清理";
+
+      // 组装 PowerShell 预览命令
+      const targetDrive = document.getElementById('target-drive-select')?.value || 'D:';
+      let cmd = "";
+      if (item.canRelocate) {
+        cmd = `powershell -ExecutionPolicy Bypass -File .\\core\\JunctionRelocator.ps1 -SourcePath '${item.path}' -TargetDriveOrDir '${targetDrive}\\NovaDisk_Relocated'`;
+      } else if (item.type === 'safe') {
+        cmd = `powershell -ExecutionPolicy Bypass -File .\\core\\SystemOptimizer.ps1 -Action CleanTemp`;
+      } else if (item.canHibernate) {
+        cmd = `powershell -ExecutionPolicy Bypass -File .\\core\\SystemOptimizer.ps1 -Action OptimizeHibernate`;
+      } else if (item.canDism) {
+        cmd = `powershell -ExecutionPolicy Bypass -File .\\core\\SystemOptimizer.ps1 -Action DismCleanup`;
+      }
+      document.getElementById('cli-preview').innerText = cmd;
+
+      // 更新磁贴高亮
+      document.querySelectorAll('.treemap-tile').forEach(t => t.classList.remove('active'));
+      const activeTile = document.querySelectorAll('.treemap-tile')[filteredIndexOf(item.id)];
+      if (activeTile) activeTile.classList.add('active');
+    }
+
+    function filteredIndexOf(id) {
+      const filtered = currentFilter === 'all' ? items : items.filter(f => f.type === currentFilter);
+      return filtered.findIndex(f => f.id === id);
+    }
+
+    function setFilter(type) {
+      currentFilter = type;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active', 'bg-slate-800/80', 'text-cyan-300', 'border', 'border-cyan-500/30');
+      });
+      event.currentTarget.classList.add('active', 'bg-slate-800/80', 'text-cyan-300', 'border', 'border-cyan-500/30');
+      renderTreemap();
+    }
+
+    // ================= 实操指令触发 (用手点击操作) =================
+    function executeCurrentItemAction() {
+      const item = items.find(f => f.id === selectedId);
+      if (!item) return;
+
+      if (item.isRelocated) {
+        alert('【提示】该目录已经通过 NTFS Junction 迁移至外部磁盘，软链接正在良好运行，无需再次操作。');
+        return;
+      }
+
+      if (item.type === 'critical' && !item.canDism) {
+        alert('【系统安全保护】该目录为核心系统组件，禁止直接删除，避免导致系统蓝屏或崩溃！');
+        return;
+      }
+
+      if (item.canRelocate || item.recommendedAction === 'RELOCATE_JUNCTION') {
+        const targetDrive = document.getElementById('target-drive-select').value || 'D:';
+        openActionModal({
+          title: `无损软链接搬家: ${item.name}`,
+          name: item.name,
+          path: item.path,
+          action: 'relocate',
+          targetDrive: targetDrive,
+          desc: `将完整迁移数据至【${targetDrive}\\NovaDisk_Relocated】并通过 Windows 原生 mklink /J 建立透明软链接。微信/原软件透明读取，零数据丢失。`
+        });
+        return;
+      }
+
+      if (item.type === 'safe') {
+        openActionModal({
+          title: `安全清理释放空间: ${item.name}`,
+          name: item.name,
+          path: item.path,
+          action: 'clean_temp',
+          desc: `将安全粉碎未锁定的临时碎片文件，正在占用的进程将自动被保护跳过，预计释放约 ${item.sizeGB} GB。`
+        });
+        return;
+      }
+
+      if (item.canHibernate) {
+        triggerHibernateAction();
+        return;
+      }
+
+      if (item.canDism) {
+        triggerDismAction();
+        return;
+      }
+    }
+
+    function triggerHibernateAction() {
+      openActionModal({
+        title: `系统休眠极致瘦身 (hiberfil.sys)`,
+        name: "hiberfil.sys",
+        path: "C:\\hiberfil.sys",
+        action: 'optimize_hibernate',
+        desc: `调用系统 powercfg.exe 将休眠文件尺寸精简 50%（或关闭休眠），保留快速启动，释放 16GB~32GB 连续物理大空间。`
+      });
+    }
+
+    function triggerDismAction() {
+      openActionModal({
+        title: `DISM 官方组件库清理 (WinSxS)`,
+        name: "WinSxS 组件存储库",
+        path: "C:\\Windows\\WinSxS",
+        action: 'dism_cleanup',
+        desc: `调用微软官方 DISM 管道重置已安装补丁并清除废弃版本（耗时 1-3 分钟），完全合规且绝无蓝屏风险。`
+      });
+    }
+
+    function executeSecondaryAction() {
+      const item = items.find(f => f.id === selectedId);
+      if (item) {
+        alert(`已触发次级专项清理策略: ${item.secondaryActionText || '清理'}`);
+      }
+    }
+
+    function openExplorer() {
+      const item = items.find(f => f.id === selectedId);
+      const targetPath = item ? item.path : "C:\\";
+
+      if (isConnected) {
+        fetch(`${API_BASE}/api/execute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'open_explorer', sourcePath: targetPath })
+        }).catch(() => {});
+      } else {
+        alert(`📂 资源管理器定位路径:\n${targetPath}`);
+      }
+    }
+
+    function copyPath() {
+      const item = items.find(f => f.id === selectedId);
+      if (item) {
+        navigator.clipboard.writeText(item.path);
+        alert("✅ 物理路径已成功复制到剪贴板！\n" + item.path);
+      }
+    }
+
+    // ================= 模态弹窗与实操控制台逻辑 =================
+    function openActionModal(actionConfig) {
+      currentPendingAction = actionConfig;
+
+      document.getElementById('modal-title').innerText = actionConfig.title;
+      document.getElementById('modal-target-name').innerText = actionConfig.name;
+      document.getElementById('modal-target-path').innerText = actionConfig.path;
+      document.getElementById('modal-exec-status').innerText = "待确认";
+      document.getElementById('modal-exec-status').className = "text-amber-400 font-bold";
+
+      const term = document.getElementById('modal-terminal');
+      term.innerText = `[NovaDisk] 任务就绪: ${actionConfig.title}\n[NovaDisk] 机制说明: ${actionConfig.desc}\n[NovaDisk] 请点击右下角【确认立即执行】按钮...`;
+
+      const confirmBtn = document.getElementById('modal-confirm-btn');
+      confirmBtn.innerText = "确认立即执行";
+      confirmBtn.disabled = false;
+      confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+      document.getElementById('modal-cancel-btn').classList.remove('hidden');
+      document.getElementById('modal-close-x').classList.remove('hidden');
+
+      document.getElementById('exec-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('exec-modal').classList.add('hidden');
+      currentPendingAction = null;
+    }
+
+    async function startExecuteTask() {
+      if (!currentPendingAction) return;
+
+      const confirmBtn = document.getElementById('modal-confirm-btn');
+      const cancelBtn = document.getElementById('modal-cancel-btn');
+      const term = document.getElementById('modal-terminal');
+      const status = document.getElementById('modal-exec-status');
+
+      confirmBtn.disabled = true;
+      confirmBtn.innerText = "正在执行中...";
+      confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      cancelBtn.classList.add('hidden');
+      status.innerText = "正在执行...";
+      status.className = "text-cyan-400 font-bold animate-pulse";
+
+      term.innerText += `\n\n[${new Date().toLocaleTimeString()}] 🚀 正在向本地引擎提交执行指令...`;
+
+      if (!isConnected) {
+        // 离线模式模拟动画执行
+        simulateExecution(term, status, confirmBtn);
+        return;
+      }
+
+      try {
+        const payload = {
+          action: currentPendingAction.action,
+          sourcePath: currentPendingAction.path,
+          targetDrive: currentPendingAction.targetDrive || 'D:'
+        };
+
+        const res = await fetch(`${API_BASE}/api/execute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        term.innerText += `\n` + (result.log || "[无日志输出]");
+
+        if (result.ok) {
+          status.innerText = "✅ 执行成功";
+          status.className = "text-emerald-400 font-bold";
+          confirmBtn.disabled = false;
+          confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          confirmBtn.innerText = "完成并刷新全盘";
+          confirmBtn.onclick = async () => {
+            closeModal();
+            await rescanRealDisk();
+          };
+        } else {
+          status.innerText = "❌ 执行中断";
+          status.className = "text-rose-400 font-bold";
+          confirmBtn.disabled = false;
+          confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          confirmBtn.innerText = "关闭窗口";
+          confirmBtn.onclick = closeModal;
+        }
+      } catch (err) {
+        term.innerText += `\n[错误] 请求执行失败: ${err.message}`;
+        status.innerText = "通信异常";
+        status.className = "text-rose-400 font-bold";
+        confirmBtn.disabled = false;
+        confirmBtn.innerText = "关闭";
+        confirmBtn.onclick = closeModal;
+      }
+    }
+
+    function simulateExecution(term, status, confirmBtn) {
+      setTimeout(() => {
+        term.innerText += `\n[${new Date().toLocaleTimeString()}] [提示] 当前处于离线演示模式，正在模拟执行...`;
+        term.innerText += `\n[${new Date().toLocaleTimeString()}] [预检] 空间预检通过，具备四重原子安全性！`;
+      }, 600);
+
+      setTimeout(() => {
+        term.innerText += `\n[${new Date().toLocaleTimeString()}] [模拟] 操作模拟成功完成！若在真机运行，将释放对应容量。`;
+        status.innerText = "✅ 模拟成功";
+        status.className = "text-emerald-400 font-bold";
+        confirmBtn.disabled = false;
+        confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        confirmBtn.innerText = "关闭窗口";
+        confirmBtn.onclick = closeModal;
+      }, 1500);
+    }
+
+    async function rescanRealDisk() {
+      if (isConnected) {
+        await checkBackendConnection();
+        await fetchRealScan();
+      } else {
+        const icon = document.getElementById('scan-icon');
+        icon.classList.add('animate-spin');
+        setTimeout(() => {
+          icon.classList.remove('animate-spin');
+          updateStatistics();
+          renderTreemap();
+        }, 600);
+      }
+    }
+
+    async function retryConnection() {
+      const ok = await checkBackendConnection();
+      if (!ok) {
+        alert("未能连接到 127.0.0.1:39281。\n请确认【天才猫桌面】正在运行或双击【启动NovaDisk.bat】启动后台引擎！");
+      }
+    }
+  </script>
+</body>
+</html>

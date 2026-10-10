@@ -5,23 +5,34 @@ let articleSoftwareSelection = new Set();
 const ARTICLE_DRAFT_KEY = "downloadAdminArticleDraft";
 const ADMIN_MODULES = {
   software: {
-    title: "\u8f6f\u4ef6\u7ba1\u7406",
-    description: "\u7ef4\u62a4\u8f6f\u4ef6\u8d44\u6599\u3001\u5206\u7c7b\u548c\u7248\u672c\u53d1\u5e03\u3002",
+    title: "软件管理",
+    description: "维护软件资料、分类和版本发布。",
     items: [
-      { panel: "softwarePanel", view: "softwareEdit", label: "\u6dfb\u52a0\u8f6f\u4ef6", action: "\u8d44\u6599\u7f16\u8f91" },
-      { panel: "softwarePanel", view: "softwareList", label: "\u8f6f\u4ef6\u5217\u8868", action: "\u5217\u8868\u7ba1\u7406" },
-      { panel: "categoryPanel", label: "\u5206\u7c7b\u7ba1\u7406", action: "\u5206\u7c7b\u7ef4\u62a4" },
-      { panel: "releasePanel", view: "releaseUpload", label: "\u4e0a\u4f20\u7248\u672c", action: "\u53d1\u5e03\u5b89\u88c5\u5305" },
-      { panel: "releasePanel", view: "releaseList", label: "\u7248\u672c\u5217\u8868", action: "\u6587\u4ef6\u7ba1\u7406" }
+      { panel: "softwarePanel", view: "softwareEdit", label: "添加软件", action: "资料编辑" },
+      { panel: "softwarePanel", view: "softwareList", label: "软件列表", action: "列表管理" },
+      { panel: "hotUpdatePanel", view: "hotUpdateEdit", label: "热更控制台", action: "在线热更" },
+      { panel: "categoryPanel", label: "分类管理", action: "分类维护" },
+      { panel: "releasePanel", view: "releaseUpload", label: "上传版本", action: "发布安装包" },
+      { panel: "releasePanel", view: "releaseList", label: "版本列表", action: "文件管理" }
+    ]
+  },
+  hotupdate: {
+    title: "热更管理",
+    description: "Cloudflare R2 客户端增量热更与全量安装包版本分发控制台。",
+    items: [
+      { panel: "hotUpdatePanel", view: "hotUpdateEdit", label: "在线热更", action: "版本发布" },
+      { panel: "hotUpdatePanel", view: "hotUpdateHistory", label: "发版审计", action: "历史回滚", anchor: "hotHistorySection" },
+      { panel: "releasePanel", view: "releaseUpload", label: "上传安装包", action: "版本存储" },
+      { panel: "softwarePanel", view: "softwareList", label: "软件列表", action: "软件矩阵" }
     ]
   },
   music: {
-    title: "\u97f3\u4e50\u7ba1\u7406",
-    description: "\u7ba1\u7406\u97f3\u4e50\u9891\u9053\u3001\u66f2\u5e93\u3001\u5c01\u9762\u548c\u8bd5\u542c\u3002",
+    title: "音乐管理",
+    description: "管理音乐频道、曲库、封面和试听。",
     items: [
-      { panel: "musicPanel", view: "musicEdit", label: "\u6dfb\u52a0\u97f3\u4e50", action: "\u7f16\u8f91\u66f2\u76ee" },
-      { panel: "musicPanel", view: "musicList", label: "\u97f3\u4e50\u5217\u8868", action: "\u5217\u8868\u7ba1\u7406" },
-      { panel: "mediaPanel", label: "\u5a92\u4f53\u5e93", action: "\u97f3\u9891/\u56fe\u7247" }
+      { panel: "musicPanel", view: "musicEdit", label: "添加音乐", action: "编辑曲目" },
+      { panel: "musicPanel", view: "musicList", label: "音乐列表", action: "列表管理" },
+      { panel: "mediaPanel", label: "媒体库", action: "音频/图片" }
     ]
   },
   gallery: {
@@ -177,6 +188,23 @@ byId("clearArticleSoftware").addEventListener("click", () => {
   renderArticleOptions();
 });
 
+byId("hotUpdateForm")?.addEventListener("submit", submitHotUpdate);
+byId("hotAppSelect")?.addEventListener("change", event => switchHotApp(event.target.value));
+document.querySelectorAll(".app-preset-btn").forEach(button => {
+  button.addEventListener("click", () => switchHotApp(button.dataset.hotApp));
+});
+byId("bumpPatchBtn")?.addEventListener("click", () => bumpHotVersion("patch"));
+byId("bumpMinorBtn")?.addEventListener("click", () => bumpHotVersion("minor"));
+byId("bumpMajorBtn")?.addEventListener("click", () => bumpHotVersion("major"));
+byId("uploadPatchLocalBtn")?.addEventListener("click", () => byId("localPatchFileInput")?.click());
+byId("uploadSetupLocalBtn")?.addEventListener("click", () => byId("localSetupFileInput")?.click());
+byId("localPatchFileInput")?.addEventListener("change", handleLocalPatchFile);
+byId("localSetupFileInput")?.addEventListener("change", handleLocalSetupFile);
+byId("pickPatchR2Btn")?.addEventListener("click", () => pickR2FileForHotUpdate("hotPatchUrl"));
+byId("pickSetupR2Btn")?.addEventListener("click", () => pickR2FileForHotUpdate("hotFullSetupUrl"));
+byId("hotPatchSize")?.addEventListener("input", updateHotPatchSizeDisplay);
+byId("hotVersion")?.addEventListener("input", event => updateUrlsForVersion(event.target.value.trim().replace(/^v/i, "")));
+
 document.querySelectorAll(".sidebar nav button").forEach(button => {
   button.addEventListener("click", () => showPanel(button.dataset.panel, { moduleId: button.dataset.module }));
 });
@@ -307,6 +335,7 @@ function renderCategoryOptions() {
   loadGalleryAssets();
   loadSiteCarouselAssets();
   loadPhotoWallAssets();
+  syncHotAppSelect();
 }
 
 function renderArticleOptions() {
@@ -359,8 +388,12 @@ function renderSoftwareRows() {
     const tr = document.createElement("tr");
     tr.innerHTML = `<td><strong>${escapeHtml(item.name)}</strong><br><small>${escapeHtml(item.slug)}</small></td><td>${escapeHtml(category?.name || "-")}</td><td>${escapeHtml(latest?.version || "-")}</td><td class="status-${item.status === "disabled" ? "disabled" : "active"}">${item.status === "disabled" ? "下架" : "上架"}</td><td class="row-actions"></td>`;
     const edit = actionButton("编辑", () => fillSoftwareForm(item));
+    const hotUpdate = actionButton("热更", () => {
+      showPanel("hotUpdatePanel");
+      switchHotApp(item.slug);
+    });
     const remove = actionButton("删除", () => deleteSoftware(item.id), "danger");
-    tr.lastElementChild.append(edit, remove);
+    tr.lastElementChild.append(edit, hotUpdate, remove);
     rows.append(tr);
   }
 }
@@ -2069,6 +2102,9 @@ function showPanel(id, options = {}) {
   renderModuleNav(moduleId, id, view);
   const target = document.getElementById(id);
   if (target) target.scrollIntoView({ block: "start", behavior: "smooth" });
+  if (id === "hotUpdatePanel") {
+    loadHotUpdateData(byId("hotAppSelect")?.value || "desktop");
+  }
 }
 
 function moduleForPanel(panelId) {
@@ -2305,3 +2341,355 @@ async function uploadChunked(file, options) {
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+// ==========================================
+// Cloudflare R2 客户端热更新控制台 (Ported from Cloudflare-R2-puls)
+// ==========================================
+
+let currentHotApp = "desktop";
+let currentHotLiveVersion = null;
+
+function syncHotAppSelect() {
+  const select = byId("hotAppSelect");
+  if (!select || !catalog?.software) return;
+  const existingValues = new Set(Array.from(select.options).map(opt => opt.value));
+  for (const sw of catalog.software) {
+    if (!existingValues.has(sw.slug)) {
+      const opt = document.createElement("option");
+      opt.value = sw.slug;
+      opt.textContent = `📦 ${sw.name} (${sw.slug})`;
+      select.appendChild(opt);
+    }
+  }
+}
+
+function switchHotApp(appSlug) {
+  if (!appSlug) return;
+  currentHotApp = appSlug;
+  const select = byId("hotAppSelect");
+  if (select && select.value !== appSlug) select.value = appSlug;
+
+  document.querySelectorAll(".app-preset-btn").forEach(btn => {
+    btn.classList.toggle("is-active", btn.dataset.hotApp === appSlug);
+  });
+
+  const currentVer = byId("hotVersion")?.value?.trim().replace(/^v/i, "") || "2.0.0";
+  updateUrlsForVersion(currentVer);
+  loadHotUpdateData(appSlug);
+}
+
+async function loadHotUpdateData(app = currentHotApp) {
+  currentHotApp = app;
+  const liveBadge = byId("liveVersionText");
+  const badgeWrap = byId("liveVersionBadge");
+  if (liveBadge) liveBadge.textContent = `检测 ${app} 线上版本...`;
+
+  try {
+    const res = await fetch(`/api/update?app=${encodeURIComponent(app)}`, {
+      cache: "no-store",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      currentHotLiveVersion = data.version || null;
+      if (liveBadge) {
+        liveBadge.textContent = `${app} 线上版本: v${data.version || "未知"}`;
+      }
+      if (badgeWrap) badgeWrap.classList.remove("is-offline");
+
+      const versionInput = byId("hotVersion");
+      if (!versionInput.value || versionInput.dataset.autoFilled === "true") {
+        fillHotUpdateFormFromData(data, false);
+      }
+    } else {
+      currentHotLiveVersion = null;
+      if (liveBadge) liveBadge.textContent = `${app} 尚未发版 (无线上 version.json)`;
+      if (badgeWrap) badgeWrap.classList.add("is-offline");
+    }
+  } catch (err) {
+    if (liveBadge) liveBadge.textContent = `${app} 状态检测异常`;
+  }
+
+  await loadHotHistory(app);
+}
+
+function fillHotUpdateFormFromData(data, overwriteChangelog = true) {
+  if (!data) return;
+  const versionInput = byId("hotVersion");
+  if (versionInput && data.version) {
+    versionInput.value = data.version;
+    versionInput.dataset.autoFilled = "true";
+  }
+  if (data.patchUrl) byId("hotPatchUrl").value = data.patchUrl;
+  if (data.fullSetupUrl) byId("hotFullSetupUrl").value = data.fullSetupUrl;
+  if (data.minSupportedVersion) byId("hotMinSupportedVersion").value = data.minSupportedVersion;
+  if (data.patchMd5) byId("hotPatchMd5").value = data.patchMd5;
+  if (data.patchSize) {
+    byId("hotPatchSize").value = data.patchSize;
+    updateHotPatchSizeDisplay();
+  }
+  if (data.forceUpdate !== undefined) byId("hotForceUpdate").checked = Boolean(data.forceUpdate);
+  if (overwriteChangelog && data.changelog) {
+    byId("hotChangelog").value = data.changelog;
+  }
+}
+
+function bumpHotVersion(type) {
+  let verStr = (byId("hotVersion").value || currentHotLiveVersion || "1.0.0").trim().replace(/^v/i, "");
+  let parts = verStr.split(".").map(n => parseInt(n, 10) || 0);
+  while (parts.length < 3) parts.push(0);
+
+  if (type === "patch") {
+    parts[2] = (parts[2] || 0) + 1;
+  } else if (type === "minor") {
+    parts[1] = (parts[1] || 0) + 1;
+    parts[2] = 0;
+  } else if (type === "major") {
+    parts[0] = (parts[0] || 0) + 1;
+    parts[1] = 0;
+    parts[2] = 0;
+  }
+  const nextVer = parts.slice(0, 3).join(".");
+  byId("hotVersion").value = nextVer;
+  delete byId("hotVersion").dataset.autoFilled;
+  toast(`已将版本自增至 v${nextVer}`);
+  updateUrlsForVersion(nextVer);
+}
+
+function updateUrlsForVersion(version) {
+  if (!version) return;
+  const app = currentHotApp;
+  const patchInput = byId("hotPatchUrl");
+  if (patchInput && (!patchInput.value || patchInput.dataset.autoGenerated === "true")) {
+    patchInput.value = `/apps/${app}/TianCaiMao.${app.charAt(0).toUpperCase() + app.slice(1)}.exe`;
+    patchInput.dataset.autoGenerated = "true";
+  }
+  const setupInput = byId("hotFullSetupUrl");
+  if (setupInput && (!setupInput.value || setupInput.dataset.autoGenerated === "true")) {
+    setupInput.value = `/apps/${app}/${app}-Setup-v${version}.exe`;
+    setupInput.dataset.autoGenerated = "true";
+  }
+}
+
+function updateHotPatchSizeDisplay() {
+  const bytes = parseInt(byId("hotPatchSize")?.value, 10) || 0;
+  const el = byId("hotPatchSizeMb");
+  if (el) el.textContent = `${(bytes / (1024 * 1024)).toFixed(2)} MB (${formatBytes(bytes)})`;
+}
+
+function handleLocalPatchFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  byId("hotPatchSize").value = file.size;
+  updateHotPatchSizeDisplay();
+  const patchInput = byId("hotPatchUrl");
+  patchInput.value = `/apps/${currentHotApp}/${file.name}`;
+  delete patchInput.dataset.autoGenerated;
+
+  computeFileHash(file).then(hash => {
+    if (hash) byId("hotPatchMd5").value = hash;
+  });
+  toast(`已选择补丁: ${file.name} (${formatBytes(file.size)})`);
+}
+
+function handleLocalSetupFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const setupInput = byId("hotFullSetupUrl");
+  setupInput.value = `/apps/${currentHotApp}/${file.name}`;
+  delete setupInput.dataset.autoGenerated;
+  toast(`已选择全量包: ${file.name} (${formatBytes(file.size)})`);
+}
+
+async function computeFileHash(file) {
+  try {
+    const slice = file.slice(0, 16 * 1024 * 1024);
+    const buffer = await slice.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return "";
+  }
+}
+
+async function pickR2FileForHotUpdate(targetInputId) {
+  const appSlug = currentHotApp;
+  const sw = (catalog?.software || []).find(s => s.slug === appSlug || s.id === appSlug);
+  const releases = sw?.releases || [];
+
+  const options = [];
+  releases.forEach(r => {
+    if (r.fileKey) options.push({ label: `[版本记录] v${r.version}: ${r.fileName || r.fileKey}`, value: r.downloadUrl || `/${r.fileKey}` });
+  });
+
+  const assetRes = await api("/api/admin/assets/list", { pageSize: 50 }).catch(() => ({ success: false }));
+  if (assetRes.success) {
+    (assetRes.assets || []).forEach(a => {
+      if (a.key?.includes(appSlug) || a.key?.endsWith(".exe") || a.key?.endsWith(".zip")) {
+        options.push({ label: `[R2 资产] ${a.fileName || a.key} (${formatBytes(a.fileSize)})`, value: a.url || `/${a.key}` });
+      }
+    });
+  }
+
+  if (options.length === 0) {
+    const val = prompt(`未在库中匹配到 ${appSlug} 的专属文件。\n请输入 R2 相对路径或下载 URL (例如 /apps/${appSlug}/patch_v2.0.1.zip):`, byId(targetInputId).value);
+    if (val) {
+      byId(targetInputId).value = val.trim();
+      delete byId(targetInputId).dataset.autoGenerated;
+    }
+    return;
+  }
+
+  const promptText = `请从以下 R2 资源中选择或输入目标文件的相对路径/URL：\n\n` +
+    options.slice(0, 8).map((opt, idx) => `${idx + 1}. ${opt.label}`).join("\n") +
+    `\n\n输入序号 (1-${Math.min(8, options.length)})，或直接粘贴路径：`;
+  const answer = prompt(promptText);
+  if (!answer) return;
+  const num = parseInt(answer.trim(), 10);
+  if (!isNaN(num) && num >= 1 && num <= options.length) {
+    byId(targetInputId).value = options[num - 1].value;
+    delete byId(targetInputId).dataset.autoGenerated;
+    toast(`已填入: ${options[num - 1].value}`);
+  } else {
+    byId(targetInputId).value = answer.trim();
+    delete byId(targetInputId).dataset.autoGenerated;
+    toast(`已填入: ${answer.trim()}`);
+  }
+}
+
+async function submitHotUpdate(event) {
+  event.preventDefault();
+  const app = byId("hotAppSelect").value;
+  const version = byId("hotVersion").value.trim().replace(/^v/i, "");
+  const patchUrl = byId("hotPatchUrl").value.trim();
+  const fullSetupUrl = byId("hotFullSetupUrl").value.trim();
+  const minSupportedVersion = byId("hotMinSupportedVersion").value.trim().replace(/^v/i, "");
+  const patchMd5 = byId("hotPatchMd5").value.trim();
+  const patchSize = parseInt(byId("hotPatchSize").value, 10) || 0;
+  const changelog = byId("hotChangelog").value.trim();
+  const forceUpdate = byId("hotForceUpdate").checked;
+
+  if (!app) return toast("请选择软件标识", true);
+  if (!version) return toast("请填写发布版本号", true);
+  if (!patchUrl && !fullSetupUrl) return toast("补丁 URL 和全量安装包 URL 至少需填写一项", true);
+
+  const statusEl = byId("hotPublishStatus");
+  const submitBtn = byId("submitHotUpdateBtn");
+  if (statusEl) statusEl.textContent = "正在发布至 Cloudflare R2 并同步版本历史...";
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    const payload = {
+      app,
+      version,
+      patchUrl,
+      patchMd5,
+      patchSize,
+      fullSetupUrl,
+      minSupportedVersion,
+      forceUpdate,
+      changelog
+    };
+
+    const res = await fetch("/api/update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await res.json();
+    if (!res.ok || !result.success) {
+      if (statusEl) statusEl.textContent = "发布失败: " + (result.msg || "接口错误");
+      return toast(result.msg || "发布失败", true);
+    }
+
+    if (statusEl) statusEl.textContent = `发布成功！已写入 R2 (apps/${app}/version.json)`;
+    toast(`🚀 [${app}] v${version} 热更新配置已发布并写入 R2!`);
+
+    if (result.catalog) render(result.catalog);
+    await loadHotUpdateData(app);
+  } catch (e) {
+    if (statusEl) statusEl.textContent = "发布网络异常: " + e.message;
+    toast("发布异常: " + e.message, true);
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+
+async function loadHotHistory(app = currentHotApp) {
+  const container = byId("hotHistoryRows");
+  const countBadge = byId("historyCountBadge");
+  if (!container) return;
+  container.innerHTML = `<div style="grid-column: 1/-1; padding: 24px; text-align: center; color: var(--muted);">正在加载历史版本...</div>`;
+
+  try {
+    const res = await fetch(`/api/update?app=${encodeURIComponent(app)}&action=history`, {
+      cache: "no-store",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const list = res.ok ? await res.json() : [];
+    if (!Array.isArray(list) || list.length === 0) {
+      if (countBadge) countBadge.textContent = "暂无发布记录";
+      container.innerHTML = `<div style="grid-column: 1/-1; padding: 32px; text-align: center; color: var(--muted); background: var(--bg-surface); border-radius: 12px; border: 1px dashed var(--border);">暂无 ${app} 的历史发版记录。在上方填写配置后点击“立即发布”，记录将自动归档在此。</div>`;
+      return;
+    }
+    if (countBadge) countBadge.textContent = `共 ${list.length} 个历史版本`;
+    renderHotHistoryRows(list);
+  } catch (e) {
+    container.innerHTML = `<div style="grid-column: 1/-1; color: #ef4444; padding: 20px;">历史版本加载失败: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function renderHotHistoryRows(list) {
+  const container = byId("hotHistoryRows");
+  if (!container) return;
+  container.innerHTML = "";
+
+  for (const item of list) {
+    const card = document.createElement("article");
+    const isCurrent = item.version === currentHotLiveVersion;
+    card.className = `history-ver-card ${isCurrent ? "is-current-active" : ""}`;
+
+    card.innerHTML = `
+      <div class="history-ver-top">
+        <div class="history-ver-badge">
+          <span class="ver-tag">v${escapeHtml(item.version || "0.0.0")}</span>
+          ${isCurrent ? `<span class="active-now-tag">🟢 当前线上</span>` : ""}
+          ${item.forceUpdate ? `<span class="force-tag">⚠️ 强制更新</span>` : ""}
+        </div>
+        <span class="history-date">${formatDateTime(item.updatedAt || item.publishedAt || "")}</span>
+      </div>
+      <div class="history-ver-meta">
+        <span>补丁文件:</span>
+        <span class="history-meta-path" title="${escapeAttr(item.patchUrl || "-")}">${escapeHtml(item.patchUrl || "-")}</span>
+        ${item.patchSize ? `<span>(${formatBytes(item.patchSize)})</span>` : ""}
+      </div>
+      <div class="history-ver-meta">
+        <span>全量安装:</span>
+        <span class="history-meta-path" title="${escapeAttr(item.fullSetupUrl || "-")}">${escapeHtml(item.fullSetupUrl || "-")}</span>
+      </div>
+      ${item.minSupportedVersion ? `<div class="history-ver-meta"><span>最低支持:</span><span>v${escapeHtml(item.minSupportedVersion)}</span></div>` : ""}
+      ${item.changelog ? `<pre class="history-changelog">${escapeHtml(item.changelog)}</pre>` : ""}
+      <div class="history-ver-actions">
+        <button type="button" class="btn-load-history">⏮️ 载入配置并一键回滚</button>
+      </div>
+    `;
+
+    card.querySelector(".btn-load-history").addEventListener("click", () => {
+      rollbackToHistoryItem(item);
+    });
+
+    container.appendChild(card);
+  }
+}
+
+function rollbackToHistoryItem(item) {
+  fillHotUpdateFormFromData(item, true);
+  byId("hotUpdateForm")?.scrollIntoView({ block: "start", behavior: "smooth" });
+  toast(`已载入 v${item.version} 的全部配置，核对无误后点击“立即发布”即可快速回滚上线！`);
+}
+

@@ -3,6 +3,7 @@ import { DEFAULT_MANIFEST } from "./releases.js";
 export const CATALOG_KEY = "software/catalog.json";
 
 export const DEFAULT_CATEGORIES = [
+  { id: "desktop", name: "桌面效能", slug: "desktop", sortOrder: 5, status: "active" },
   { id: "data", name: "数据中心", slug: "data", sortOrder: 10, status: "active" },
   { id: "assistant", name: "直播辅助", slug: "assistant", sortOrder: 20, status: "active" },
   { id: "tools", name: "工具插件", slug: "tools", sortOrder: 30, status: "active" }
@@ -10,9 +11,10 @@ export const DEFAULT_CATEGORIES = [
 
 export const DEFAULT_NAVIGATION = [
   { id: "home", label: "首页", href: "/", sortOrder: 10, status: "active", external: false },
-  { id: "download", label: "下载", href: "/download.html", sortOrder: 20, status: "active", external: false },
+  { id: "desktop", label: "桌面软件2.0", href: "/desktop.html", sortOrder: 15, status: "active", external: false },
+  { id: "download", label: "下载中心", href: "/download.html", sortOrder: 20, status: "active", external: false },
   { id: "photo-wall", label: "照片墙", href: "/photo-wall.html", sortOrder: 25, status: "active", external: false },
-  { id: "articles", label: "文章", href: "/articles.html", sortOrder: 30, status: "active", external: false },
+  { id: "articles", label: "文章教程", href: "/articles.html", sortOrder: 30, status: "active", external: false },
   { id: "license", label: "授权", href: "/license.html", sortOrder: 40, status: "active", external: false },
   { id: "buy", label: "购买授权", href: "https://mk.nsy.me/buy", sortOrder: 50, status: "active", external: true }
 ];
@@ -60,23 +62,56 @@ export async function saveCatalog(env, catalog) {
 
 export function manifestToCatalog(manifest) {
   const releases = Array.isArray(manifest.releases) ? manifest.releases : [];
-  const software = releases.map((release, index) => {
-    const isAssistant = /assistant|辅助|live/i.test([release.id, release.name, release.category].filter(Boolean).join(" "));
-    const slug = isAssistant ? "dy-assistant" : "datacenter";
-    return {
-      id: slug,
-      categoryId: isAssistant ? "assistant" : "data",
-      name: isAssistant ? "天才猫DY辅助工具" : "数据中心版",
-      slug,
-      description: release.description || "",
-      coverUrl: isAssistant ? "" : "/datacenter-preview.jpg",
-      sortOrder: index + 1,
-      status: "active",
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      releases: [normalizeRelease(release, slug)]
-    };
-  });
+  const desktopItem = {
+    id: "desktop",
+    categoryId: "desktop",
+    name: "天才猫桌面 2.0",
+    slug: "desktop",
+    description: "灵动抽屉式侧边收纳、C盘无损搬家管家、顶部偷看Dock与离线多语 OCR 翻译。",
+    coverUrl: "/preview-desktop-widgets.png",
+    sortOrder: 1,
+    status: "active",
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    releases: [
+      {
+        id: "desktop-v200",
+        softwareId: "desktop",
+        softwareSlug: "desktop",
+        version: "2.0.0",
+        changelog: "全新抽屉式侧边吸附把手与防重叠避让算法\n微信离线 OCR 文本高精识别与原图覆盖翻译\nNovaDisk 2.0 C盘管家支持 NTFS Junction 无损搬家\nTopPeekDock 顶部无感盲操速览",
+        fileKey: "releases/天才猫桌面-Setup-v2.0.0.exe",
+        fileName: "天才猫桌面-Setup-v2.0.0.exe",
+        fileSize: 89338675,
+        size: "85.2 MB",
+        isLatest: true,
+        status: "published",
+        downloadCount: 168,
+        createdAt: Date.now()
+      }
+    ]
+  };
+
+  const software = [
+    desktopItem,
+    ...releases.map((release, index) => {
+      const isAssistant = /assistant|辅助|live/i.test([release.id, release.name, release.category].filter(Boolean).join(" "));
+      const slug = isAssistant ? "dy-assistant" : "datacenter";
+      return {
+        id: slug,
+        categoryId: isAssistant ? "assistant" : "data",
+        name: isAssistant ? "天才猫DY辅助工具" : "数据中心版",
+        slug,
+        description: release.description || "",
+        coverUrl: isAssistant ? "" : "/datacenter-preview.jpg",
+        sortOrder: index + 2,
+        status: "active",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        releases: [normalizeRelease(release, slug)]
+      };
+    })
+  ];
 
   return normalizeCatalog({
     product: manifest.product || "天才猫软件中心",

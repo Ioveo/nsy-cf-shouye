@@ -53,6 +53,7 @@
         <a class="site-link" href="/" target="_blank" rel="noopener">打开前台</a>
         <nav class="module-sidebar">
           <button class="is-active" data-module="software" data-panel="softwarePanel">软件</button>
+          <button data-module="hotupdate" data-panel="hotUpdatePanel">热更</button>
           <button data-module="music" data-panel="musicPanel">音乐</button>
           <button data-module="gallery" data-panel="galleryPanel">画廊</button>
           <button data-module="article" data-panel="articlePanel">文章</button>
@@ -142,6 +143,150 @@
             <div class="form-actions span-2"><button class="ghost" type="submit">登记已上传 R2 文件</button></div>
           </form>
           <div class="table-wrap"><table><thead><tr><th>软件</th><th>版本</th><th>文件</th><th>大小</th><th>最新</th><th>下载</th><th>操作</th></tr></thead><tbody id="releaseRows"></tbody></table></div>
+        </section>
+
+        <!-- 🚀 Cloudflare R2 智能热更控制台 (Inspired by Cloudflare-R2-puls) -->
+        <section class="panel tab-panel" id="hotUpdatePanel" hidden>
+          <div class="releases-header-card">
+            <div class="releases-header-icon">
+              <span>🚀</span>
+            </div>
+            <div class="releases-header-info">
+              <h2>软件版本与 R2 热更新管理控制台</h2>
+              <p>一键发布增量补丁（单文件/差量包）与全量安装包，秒级写入 Cloudflare R2 全球 CDN 节点，客户端启动无感热更与强制更新。</p>
+            </div>
+            <div class="live-version-badge" id="liveVersionBadge">
+              <span class="live-dot-pulse"></span>
+              <span id="liveVersionText">正在读取线上版本...</span>
+            </div>
+          </div>
+
+          <!-- 应用快捷预设选择栏 -->
+          <div class="app-presets-row">
+            <button type="button" class="app-preset-btn is-active" data-hot-app="desktop">
+              <span class="preset-icon">🖥️</span>
+              <span class="preset-name">天才猫桌面 2.0</span>
+              <span class="preset-slug">(desktop)</span>
+            </button>
+            <button type="button" class="app-preset-btn" data-hot-app="live">
+              <span class="preset-icon">⚡</span>
+              <span class="preset-name">天才猫极速直播助手</span>
+              <span class="preset-slug">(live)</span>
+            </button>
+            <button type="button" class="app-preset-btn" data-hot-app="dy">
+              <span class="preset-icon">💎</span>
+              <span class="preset-name">天才猫直播助手</span>
+              <span class="preset-slug">(dy)</span>
+            </button>
+            <button type="button" class="app-preset-btn" data-hot-app="datacenter">
+              <span class="preset-icon">📊</span>
+              <span class="preset-name">天才猫数据中心 2.0</span>
+              <span class="preset-slug">(datacenter)</span>
+            </button>
+          </div>
+
+          <!-- 发版配置表单 -->
+          <form class="form-grid" id="hotUpdateForm">
+            <div class="form-row-2col span-2">
+              <label>
+                软件标识 (App Slug)
+                <select id="hotAppSelect">
+                  <option value="desktop">🖥️ 天才猫桌面 2.0 (desktop - 自包含运行版)</option>
+                  <option value="live">⚡ 天才猫极速直播助手 (live - Go 极速版)</option>
+                  <option value="dy">💎 天才猫直播助手 (dy - C# 旗舰版)</option>
+                  <option value="datacenter">📊 天才猫数据中心 (datacenter - Go 2.0)</option>
+                </select>
+              </label>
+
+              <label>
+                <div class="label-with-actions">
+                  <span>发布版本号 (Version)</span>
+                  <div class="version-bump-group">
+                    <button type="button" class="btn-bump-pill" id="bumpPatchBtn" title="补丁自增 +0.0.1">+0.0.1 (Patch)</button>
+                    <button type="button" class="btn-bump-pill" id="bumpMinorBtn" title="特性自增 +0.1.0">+0.1.0 (Minor)</button>
+                    <button type="button" class="btn-bump-pill" id="bumpMajorBtn" title="大版本 +1.0.0">+1.0.0 (Major)</button>
+                  </div>
+                </div>
+                <div class="input-with-prefix">
+                  <span class="input-prefix">v</span>
+                  <input id="hotVersion" required placeholder="例如 2.0.1" />
+                </div>
+              </label>
+            </div>
+
+            <!-- 增量补丁与全量安装包路径 -->
+            <div class="form-row-2col span-2">
+              <label>
+                <div class="label-with-actions">
+                  <span>增量补丁 / 单文件更新包路径 (Patch URL)</span>
+                  <div class="action-btn-group">
+                    <button type="button" class="ghost btn-small" id="pickPatchR2Btn">📂 从 R2 选取</button>
+                    <button type="button" class="ghost btn-small" id="uploadPatchLocalBtn">📤 本地上传</button>
+                  </div>
+                  <input type="file" id="localPatchFileInput" accept=".exe,.zip,.7z,.rar,.tar.gz,.dll" style="display:none;" />
+                </div>
+                <input id="hotPatchUrl" required placeholder="例如 /apps/desktop/TianCaiMao.Desktop.exe" />
+              </label>
+
+              <label>
+                <div class="label-with-actions">
+                  <span>全量安装包路径 (Full Setup URL)</span>
+                  <div class="action-btn-group">
+                    <button type="button" class="ghost btn-small" id="pickSetupR2Btn">📂 从 R2 选取</button>
+                    <button type="button" class="ghost btn-small" id="uploadSetupLocalBtn">📤 本地上传</button>
+                  </div>
+                  <input type="file" id="localSetupFileInput" accept=".exe,.zip,.7z,.rar,.tar.gz,.msi" style="display:none;" />
+                </div>
+                <input id="hotFullSetupUrl" required placeholder="例如 /apps/desktop/天才猫桌面-Setup-v2.0.1.exe" />
+              </label>
+            </div>
+
+            <div class="form-row-3col span-2">
+              <label>
+                最低兼容支持版本 (Min Supported)
+                <input id="hotMinSupportedVersion" placeholder="低于此版本将强制全量更新" />
+              </label>
+              <label>
+                补丁 MD5 / SHA256 校验码 (可选)
+                <input id="hotPatchMd5" placeholder="留空则不校验" />
+              </label>
+              <label>
+                补丁文件大小 (Bytes: <span id="hotPatchSizeMb">0.00 MB</span>)
+                <input id="hotPatchSize" type="number" placeholder="11985408" />
+              </label>
+            </div>
+
+            <label class="span-2">
+              更新说明 (Changelog，将直接展示给客户端用户与官网)
+              <textarea id="hotChangelog" rows="4" placeholder="1. 升级原生抽屉吸附物理动效；&#10;2. 微信离线高精 OCR 响应提速；&#10;3. NovaDisk 2.0 C盘无损搬迁规则库升级。"></textarea>
+            </label>
+
+            <div class="span-2" style="display:flex; align-items:center; gap:8px;">
+              <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
+                <input id="hotForceUpdate" type="checkbox" style="width:auto;" />
+                <span style="color:#ff9f0a; font-weight:600;">⚠️ 设为紧急强制更新 (客户端检测到后必须完成更新方可使用)</span>
+              </label>
+            </div>
+
+            <div class="form-actions span-2" style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;">
+              <div id="hotPublishStatus" style="font-size:13px; color:var(--muted);"></div>
+              <button type="submit" id="submitHotUpdateBtn" style="padding:14px 28px; font-size:15px; display:inline-flex; align-items:center; gap:8px;">
+                <span>🚀 立即发布并推送更新至 R2 / CDN</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- 历史发版时间线与一键回滚 -->
+          <div class="releases-history-section" id="hotHistorySection">
+            <div class="history-section-title">
+              <span style="font-size:18px;">⏱️</span>
+              <strong style="color:#fff; font-size:16px;">历史发版审计与快速回滚</strong>
+              <span id="historyCountBadge" style="font-size:12px; color:var(--muted);"></span>
+            </div>
+            <div class="history-cards-grid" id="hotHistoryRows">
+              <!-- 由 admin.js 动态渲染 -->
+            </div>
+          </div>
         </section>
 
         <section class="panel tab-panel" id="storagePanel" hidden>
