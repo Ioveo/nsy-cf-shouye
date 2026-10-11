@@ -1,17 +1,12 @@
-import { publicAssetUrl, saveAsset } from "../../../_lib/assets-db.js";
+import { saveAsset } from "../../../_lib/assets-db.js";
+import { ASSET_LIMITS, inferredContentType, keyFor, normalizeKind, sanitizeFileName, withAssetUrl } from "../../../_lib/asset-upload.js";
 import { decryptSecret } from "../../../_lib/crypto.js";
-import { id, loadCatalog, slugify } from "../../../_lib/catalog.js";
+import { loadCatalog } from "../../../_lib/catalog.js";
 import { publicUrlFor, putExternalR2 } from "../../../_lib/r2-s3.js";
 import { json } from "../../../_lib/releases.js";
 import { requireAdmin } from "../_lib.js";
 
-const LIMITS = {
-  image: 8 * 1024 * 1024,
-  audio: 50 * 1024 * 1024,
-  software: 1024 * 1024 * 1024,
-  site: 8 * 1024 * 1024,
-  other: 30 * 1024 * 1024
-};
+const LIMITS = ASSET_LIMITS;
 
 export async function onRequestPost({ request, env }) {
   if (String(request.headers.get("Content-Type") || "").includes("application/json")) {
@@ -108,31 +103,6 @@ async function saveUploadedAsset(env, input) {
   return json({ success: true, asset: withAssetUrl(asset) });
 }
 
-function normalizeKind(kind, name, type) {
-  const ext = String(name || "").toLowerCase().split(".").pop();
-  if (String(type || "").toLowerCase() === "image/svg+xml" || ext === "svg") return "";
-  if (kind === "image" && ["png", "jpg", "jpeg", "gif", "webp", "avif"].includes(ext)) return "image";
-  if (kind === "audio" && ["mp3", "m4a", "aac", "wav", "ogg", "oga", "webm", "flac"].includes(ext)) return "audio";
-  if (kind === "software" && ["zip", "7z", "exe", "msi"].includes(ext)) return "software";
-  if (kind === "site" && ["png", "jpg", "jpeg", "gif", "webp", "avif", "ico"].includes(ext)) return "site";
-  if (kind === "other") return "other";
-  return "";
-}
-
-function keyFor(kind, folder, fileName) {
-  const safeFolder = slugify(folder || kind);
-  const ym = new Date().toISOString().slice(0, 7).replace("-", "/");
-  if (kind === "software") return `software/manual/${Date.now()}-${fileName}`;
-  if (kind === "site") return `site/${safeFolder}/${Date.now()}-${fileName}`;
-  if (kind === "audio") return `media/audio/${ym}/${id("audio")}-${fileName}`;
-  if (kind === "image") return `media/images/${ym}/${id("image")}-${fileName}`;
-  return `media/other/${ym}/${id("asset")}-${fileName}`;
-}
-
-function sanitizeFileName(value) {
-  return String(value || "asset.bin").replace(/["\\\r\n]/g, "").replace(/[^a-zA-Z0-9._-]/g, "-");
-}
-
 function base64ToBytes(value) {
   const binary = atob(value);
   const bytes = new Uint8Array(binary.length);
@@ -144,32 +114,6 @@ function toArrayBuffer(value) {
   if (value instanceof ArrayBuffer) return value;
   if (ArrayBuffer.isView(value)) return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength);
   return new Uint8Array(value || []).buffer;
-}
-
-function inferredContentType(name) {
-  const ext = String(name || "").toLowerCase().split(".").pop();
-  return {
-    png: "image/png",
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    gif: "image/gif",
-    webp: "image/webp",
-    avif: "image/avif",
-    ico: "image/x-icon",
-    mp3: "audio/mpeg",
-    m4a: "audio/mp4",
-    aac: "audio/aac",
-    wav: "audio/wav",
-    ogg: "audio/ogg",
-    oga: "audio/ogg",
-    webm: "audio/webm",
-    flac: "audio/flac"
-  }[ext] || "";
-}
-
-function withAssetUrl(asset) {
-  if (asset.storageId && asset.storageId !== "default" && !asset.publicUrl) return { ...asset, url: "" };
-  return { ...asset, url: publicAssetUrl(asset) };
 }
 
 async function sha256Hex(value) {

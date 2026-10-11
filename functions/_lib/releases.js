@@ -66,7 +66,7 @@ export function findLatestRelease(manifest) {
   return releases.find(item => item.id === manifest.latest) || releases[0] || DEFAULT_MANIFEST.releases[0];
 }
 
-export async function serveRelease(env, release) {
+export async function serveRelease(env, release, request = null) {
   if (!env.SOFTWARE_BUCKET?.get) {
     return text("R2 binding SOFTWARE_BUCKET is not configured", 500);
   }
@@ -75,20 +75,91 @@ export async function serveRelease(env, release) {
     return text("Release is not configured", 404);
   }
 
-  const object = await env.SOFTWARE_BUCKET.get(release.key);
-  if (!object) {
-    return text("File has not been uploaded to R2 yet", 404);
+  const response = await serveR2Object(env, request, release.key, {
+    fileName: release.fileName || release.key.split("/").pop(),
+    cacheControl: "public, max-age=3600"
+  });
+  return response || text("File has not been uploaded to R2 yet", 404);
+}
+
+/**
+ * 从 R2 读取对象并返回下载响应，支持 HEAD、单段 Range（断点续传 / 多线程下载）。
+ * 对象不存在时返回 null，由调用方决定 404 文案。
+ */
+export async function serveR2Object(env, request, key, options = {}) {
+  const bucket = env.SOFTWARE_BUCKET;
+  const method = String(request?.method || "GET").toUpperCase();
+  const isHead = method === "HEAD";
+  const rangeHeader = request?.headers?.get("Range") || "";
+  const requested = parseRangeHeader(rangeHeader);
+
+  let object;
+  let range = null;
+  if (requested) {
+    const meta = await bucket.head(key);
+    if (!meta) return null;
+    range = resolveRange(requested, meta.size);
+    if (!range) {
+      const headers = new Headers(SECURITY_HEADERS);
+      headers.set("Content-Range", `bytes */${meta.size}`);
+      headers.set("Accept-Ranges", "bytes");
+      return new Response(null, { status: 416, headers });
+    }
+    object = isHead ? meta : await bucket.get(key, { range });
+  } else {
+    object = isHead ? await bucket.head(key) : await bucket.get(key);
   }
+  if (!object) return null;
 
   const headers = new Headers(SECURITY_HEADERS);
   object.writeHttpMetadata(headers);
   headers.set("Content-Type", headers.get("Content-Type") || "application/octet-stream");
-  headers.set("Content-Length", object.size.toString());
   headers.set("ETag", object.httpEtag);
-  headers.set("Cache-Control", "public, max-age=3600");
-  headers.set("Content-Disposition", contentDisposition(release.fileName || release.key.split("/").pop()));
+  headers.set("Last-Modified", new Date(object.uploaded || Date.now()).toUTCString());
+  headers.set("Accept-Ranges", "bytes");
+  headers.set("Cache-Control", options.cacheControl || "public, max-age=3600");
+  if (options.fileName !== false) {
+    headers.set("Content-Disposition", contentDisposition(options.fileName || key.split("/").pop()));
+  }
 
-  return new Response(object.body, { headers });
+  const body = isHead ? null : object.body;
+  if (range) {
+    headers.set("Content-Length", String(range.length));
+    headers.set("Content-Range", `bytes ${range.offset}-${range.offset + range.length - 1}/${object.size}`);
+    return new Response(body, { status: 206, headers });
+  }
+
+  headers.set("Content-Length", String(object.size));
+  return new Response(body, { status: 200, headers });
+}
+
+/** 是否应计入下载次数：只统计 GET 且从头开始的请求，避免多线程下载器 / 续传重复计数 */
+export function shouldCountDownload(request) {
+  if (!request || String(request.method || "GET").toUpperCase() !== "GET") return !request;
+  const requested = parseRangeHeader(request.headers.get("Range") || "");
+  return !requested || (requested.offset === 0 && requested.suffix === undefined);
+}
+
+function parseRangeHeader(value) {
+  const match = /^bytes=(\d*)-(\d*)$/i.exec(String(value || "").trim());
+  if (!match || (!match[1] && !match[2])) return null;
+  if (!match[1]) return { suffix: Number(match[2]) };
+  const offset = Number(match[1]);
+  const end = match[2] ? Number(match[2]) : undefined;
+  if (!Number.isSafeInteger(offset)) return null;
+  if (end !== undefined && (!Number.isSafeInteger(end) || end < offset)) return null;
+  return { offset, end };
+}
+
+function resolveRange(requested, size) {
+  if (requested.suffix !== undefined) {
+    if (requested.suffix <= 0 || size <= 0) return null;
+    const length = Math.min(requested.suffix, size);
+    return { offset: size - length, length };
+  }
+  if (requested.offset >= size) return null;
+  const end = Math.min(requested.end ?? size - 1, size - 1);
+  return { offset: requested.offset, length: end - requested.offset + 1 };
 }
 
 export function json(data, status = 200) {

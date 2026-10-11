@@ -37,6 +37,29 @@ function resolveUrl(targetUrl, publicUrl, origin) {
   return `${origin}/${cleanPath}`;
 }
 
+// 把 fullSetupUrl 解析成 R2 key（相对路径或 PUBURL 下的地址）并确认文件存在；其它外部直链原样返回
+async function resolveSetupFile(bucket, rawUrl, publicUrl) {
+  const value = String(rawUrl || "").trim();
+  if (!value) return null;
+  let key = "";
+  if (/^https?:\/\//i.test(value)) {
+    if (publicUrl && value.startsWith(`${publicUrl}/`)) {
+      key = value.slice(publicUrl.length + 1);
+    } else {
+      return { publicUrl: value };
+    }
+  } else {
+    key = value.replace(/^\/+/, "");
+  }
+  key = key.split(/[?#]/)[0];
+  try {
+    key = key.split("/").map(part => decodeURIComponent(part)).join("/");
+  } catch {}
+  if (!key || !bucket?.head) return null;
+  const head = await bucket.head(key).catch(() => null);
+  return head ? { fileKey: key, size: head.size } : null;
+}
+
 async function verifyAuth(request, env, body = {}) {
   // 1. Bearer Token
   const authHeader = request.headers.get("Authorization") || "";
@@ -121,10 +144,10 @@ export async function onRequestGet(context) {
             version: r.version,
             appName: software.name,
             minSupportedVersion: r.version,
-            patchUrl: resolveUrl(r.fileKey ? `/${r.fileKey}` : `/apps/${app}/patch_v${r.version}.zip`, publicUrl, origin),
+            patchUrl: resolveUrl((r.fileKey || r.publicUrl) ? `/download/${encodeURIComponent(r.id)}` : `/apps/${app}/patch_v${r.version}.zip`, publicUrl, origin),
             patchMd5: r.sha256 || "",
             patchSize: Number(r.fileSize || 0),
-            fullSetupUrl: resolveUrl(r.fileKey ? `/${r.fileKey}` : `/apps/${app}/${software.name}-Setup-v${r.version}.exe`, publicUrl, origin),
+            fullSetupUrl: resolveUrl((r.fileKey || r.publicUrl) ? `/download/${encodeURIComponent(r.id)}` : `/apps/${app}/${software.name}-Setup-v${r.version}.exe`, publicUrl, origin),
             forceUpdate: false,
             changelog: r.changelog || "",
             updatedAt: new Date(r.createdAt || Date.now()).toISOString(),
@@ -181,10 +204,10 @@ export async function onRequestGet(context) {
           version: v,
           appName: software.name || (app === "desktop" ? "天才猫桌面 2.0" : app === "live" ? "天才猫极速直播助手" : app === "datacenter" ? "天才猫数据中心" : "天才猫软件"),
           minSupportedVersion: v,
-          patchUrl: latest?.fileKey ? `/${latest.fileKey}` : `/apps/${app}/TianCaiMao.${app === "datacenter" ? "DataCenter" : app === "desktop" ? "Desktop" : "LiveAssistant"}.exe`,
+          patchUrl: (latest?.fileKey || latest?.publicUrl) ? `/download/${encodeURIComponent(latest.id)}` : `/apps/${app}/TianCaiMao.${app === "datacenter" ? "DataCenter" : app === "desktop" ? "Desktop" : "LiveAssistant"}.exe`,
           patchMd5: latest?.sha256 || "",
           patchSize: Number(latest?.fileSize || 0),
-          fullSetupUrl: latest?.fileKey ? `/${latest.fileKey}` : `/apps/${app}/${software.name}-Setup-v${v}.exe`,
+          fullSetupUrl: (latest?.fileKey || latest?.publicUrl) ? `/download/${encodeURIComponent(latest.id)}` : `/apps/${app}/${software.name}-Setup-v${v}.exe`,
           forceUpdate: false,
           changelog: latest?.changelog || "官方稳定更新，零依赖独立运行时。",
           updatedAt: new Date(latest?.createdAt || Date.now()).toISOString(),
@@ -322,22 +345,34 @@ export async function onRequestPost(context) {
   }
 
   // 3. 联动同步至 catalog.json 保证官网软件展示与下载卡片同步保持最新
+  let catalogWarning = "";
   try {
     const catalog = await loadCatalog(env);
     let software = (catalog.software || []).find(s => (s.slug || s.id) === app || (app === "desktop" && /桌面/i.test(s.name)));
     if (software) {
-      // 取消旧最新标记
-      for (const r of (software.releases || [])) {
-        r.isLatest = false;
+      // 只有全量包在 R2 中真实存在（或是外部直链）时才写入下载信息，避免把已上传版本的 fileKey 覆盖成不存在的路径
+      const setup = await resolveSetupFile(bucket, versionPayload.fullSetupUrl, getPublicUrl(env));
+      if (!setup) {
+        catalogWarning = `全量安装包 ${versionPayload.fullSetupUrl} 在 R2 中不存在，官网下载信息未更新`;
       }
-      const existingRel = (software.releases || []).find(r => r.version === version);
+      const downloadFields = setup?.fileKey
+        ? { fileKey: setup.fileKey, storageId: "default", publicUrl: "", fileSize: setup.size, size: formatBytes(setup.size) }
+        : setup?.publicUrl
+          ? { fileKey: "", storageId: "url", publicUrl: setup.publicUrl }
+          : null;
+
+      software.releases = software.releases || [];
+      const existingRel = software.releases.find(r => r.version === version);
+      if (downloadFields || existingRel) {
+        // 取消旧最新标记
+        for (const r of software.releases) {
+          r.isLatest = false;
+        }
+      }
       if (existingRel) {
         existingRel.isLatest = true;
         existingRel.changelog = versionPayload.changelog;
-        existingRel.fileKey = versionPayload.fullSetupUrl.replace(/^\//, "");
-        existingRel.fileSize = versionPayload.patchSize;
-        existingRel.size = formatBytes(versionPayload.patchSize);
-        existingRel.sha256 = versionPayload.patchMd5;
+        if (downloadFields) Object.assign(existingRel, downloadFields, { status: "published" });
         existingRel.updatedAt = Date.now();
       } else {
         const newRel = normalizeRelease({
@@ -346,15 +381,12 @@ export async function onRequestPost(context) {
           softwareSlug: software.slug || app,
           version,
           changelog: versionPayload.changelog,
-          fileKey: versionPayload.fullSetupUrl.replace(/^\//, ""),
-          fileName: versionPayload.fullSetupUrl.split("/").pop(),
-          fileSize: versionPayload.patchSize,
-          size: formatBytes(versionPayload.patchSize),
-          sha256: versionPayload.patchMd5,
-          isLatest: true,
-          status: "published",
+          fileName: decodeURIComponent(String(versionPayload.fullSetupUrl || "").split("?")[0].split("/").pop() || ""),
+          ...(downloadFields || {}),
+          isLatest: Boolean(downloadFields),
+          status: downloadFields ? "published" : "draft",
           createdAt: Date.now(),
-        });
+        }, software.slug || app);
         software.releases.unshift(newRel);
       }
       await saveCatalog(env, catalog);
@@ -368,6 +400,7 @@ export async function onRequestPost(context) {
       success: true,
       message: `🎉 版本 v${version} 发布成功！已秒级更新至 ${targetKey} 并同步历史版本库与全网 CDN。`,
       data: versionPayload,
+      ...(catalogWarning ? { warning: catalogWarning } : {}),
     }, null, 2),
     {
       status: 200,

@@ -1,19 +1,28 @@
 import { findLatestRelease, isDownloadableRelease, loadCatalog } from "../../_lib/catalog.js";
 import { incrementReleaseDownload } from "../../_lib/download-stats.js";
-import { serveRelease, text } from "../../_lib/releases.js";
+import { serveRelease, shouldCountDownload, text } from "../../_lib/releases.js";
 
-export async function onRequestGet({ env, params }) {
+export async function onRequestGet(context) {
+  const { env, params, request } = context;
   const catalog = await loadCatalog(env);
   const match = findLatestRelease(catalog, params.software);
-  if (!match?.release?.fileKey || !isDownloadableRelease(match.release)) return text("Release not found", 404);
-  await incrementReleaseDownload(env, match.release.id);
-  if (match.release.storageId !== "default" && match.release.publicUrl) {
-    return Response.redirect(match.release.publicUrl, 302);
+  const release = match?.release;
+  if (!release || !(release.fileKey || release.publicUrl) || !isDownloadableRelease(release)) return text("Release not found", 404);
+
+  if (shouldCountDownload(request)) {
+    const task = incrementReleaseDownload(env, release.id).catch(error => console.warn("download stats failed:", error));
+    if (typeof context.waitUntil === "function") context.waitUntil(task);
+  }
+
+  if (release.publicUrl && (release.storageId !== "default" || !release.fileKey)) {
+    return Response.redirect(release.publicUrl, 302);
   }
   return serveRelease(env, {
-    key: match.release.fileKey,
-    fileName: match.release.fileName,
-    size: match.release.size,
-    sha256: match.release.sha256
-  });
+    key: release.fileKey,
+    fileName: release.fileName,
+    size: release.size,
+    sha256: release.sha256
+  }, request);
 }
+
+export const onRequestHead = onRequestGet;

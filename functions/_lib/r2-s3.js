@@ -64,6 +64,56 @@ export async function listExternalR2(account, secretAccessKey, { prefix = "", li
   return parseListBucketResult(text);
 }
 
+// ---------- 外部 R2 分片上传（S3 Multipart Upload API） ----------
+
+export async function createExternalMultipart(account, secretAccessKey, key, contentType = "application/octet-stream") {
+  const url = objectUrlFor(account, key);
+  url.search = "uploads=";
+  const response = await signedExternalR2Fetch(account, secretAccessKey, url, "POST", null, contentType);
+  const text = await response.text();
+  if (!response.ok) throw new Error(`External R2 create multipart failed: ${response.status} ${text}`);
+  const uploadId = decodeXml(xmlValue(text, "UploadId"));
+  if (!uploadId) throw new Error("External R2 did not return UploadId");
+  return uploadId;
+}
+
+// body 可以是已知长度的 ReadableStream 或 ArrayBuffer；使用 UNSIGNED-PAYLOAD，避免在 Worker 里对分片做 SHA-256
+export async function uploadExternalPart(account, secretAccessKey, key, uploadId, partNumber, body) {
+  const url = objectUrlFor(account, key);
+  url.search = canonicalQueryString(new URLSearchParams({ partNumber: String(partNumber), uploadId }));
+  const response = await signedExternalR2Fetch(account, secretAccessKey, url, "PUT", body, "", { unsignedPayload: true });
+  if (!response.ok) throw new Error(`External R2 upload part failed: ${response.status} ${await response.text()}`);
+  const etag = response.headers.get("ETag") || "";
+  if (!etag) throw new Error("External R2 did not return ETag");
+  return etag;
+}
+
+export async function completeExternalMultipart(account, secretAccessKey, key, uploadId, parts) {
+  const url = objectUrlFor(account, key);
+  url.search = canonicalQueryString(new URLSearchParams({ uploadId }));
+  const xml = `<CompleteMultipartUpload>${parts.map(part => `<Part><PartNumber>${Number(part.partNumber)}</PartNumber><ETag>${escapeXml(part.etag)}</ETag></Part>`).join("")}</CompleteMultipartUpload>`;
+  const response = await signedExternalR2Fetch(account, secretAccessKey, url, "POST", xml, "application/xml");
+  const text = await response.text();
+  if (!response.ok || /<Error>/.test(text)) throw new Error(`External R2 complete multipart failed: ${response.status} ${text}`);
+  return true;
+}
+
+export async function abortExternalMultipart(account, secretAccessKey, key, uploadId) {
+  const url = objectUrlFor(account, key);
+  url.search = canonicalQueryString(new URLSearchParams({ uploadId }));
+  const response = await signedExternalR2Fetch(account, secretAccessKey, url, "DELETE", null, "");
+  if (!response.ok && response.status !== 404) throw new Error(`External R2 abort multipart failed: ${response.status} ${await response.text()}`);
+  return true;
+}
+
+export async function headExternalR2(account, secretAccessKey, key) {
+  const url = objectUrlFor(account, key);
+  const response = await signedExternalR2Fetch(account, secretAccessKey, url, "HEAD", null, "");
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`External R2 head failed: ${response.status}`);
+  return { size: Number(response.headers.get("Content-Length") || 0), etag: response.headers.get("ETag") || "" };
+}
+
 export function publicUrlFor(account, key) {
   if (!account.publicBaseUrl) return "";
   return `${account.publicBaseUrl.replace(/\/+$/, "")}/${encodePath(key)}`;
@@ -78,7 +128,7 @@ function objectUrlFor(account, key) {
   const url = bucketUrlFor(account);
   const pathParts = url.pathname.split("/").filter(Boolean).map(decodeURIComponent);
   pathParts.push(...String(key).split("/").filter(Boolean));
-  url.pathname = `/${pathParts.map(encodeURIComponent).join("/")}`;
+  url.pathname = `/${pathParts.map(encodeRfc3986).join("/")}`;
   url.search = "";
   return url;
 }
@@ -89,16 +139,16 @@ function bucketUrlFor(account) {
   if (pathParts[pathParts.length - 1] !== account.bucket) {
     pathParts.push(account.bucket);
   }
-  url.pathname = `/${pathParts.map(encodeURIComponent).join("/")}`;
+  url.pathname = `/${pathParts.map(encodeRfc3986).join("/")}`;
   url.search = "";
   return url;
 }
 
-async function signedExternalR2Fetch(account, secretAccessKey, url, method, body, contentType = "application/octet-stream") {
+async function signedExternalR2Fetch(account, secretAccessKey, url, method, body, contentType = "application/octet-stream", options = {}) {
   const now = new Date();
   const amzDate = toAmzDate(now);
   const dateStamp = amzDate.slice(0, 8);
-  const payloadHash = body ? await sha256Hex(body) : await sha256Hex("");
+  const payloadHash = options.unsignedPayload ? "UNSIGNED-PAYLOAD" : body ? await sha256Hex(body) : await sha256Hex("");
   const host = url.host;
   const region = account.region || "auto";
   const service = "s3";
@@ -135,10 +185,16 @@ function encodePath(path) {
   return String(path).split("/").map(encodeURIComponent).join("/");
 }
 
+// SigV4 要求按 RFC 3986 编码，encodeURIComponent 不会编码 !'()*，
+// 文件名含括号（如 "Setup (1).exe"）时会导致 SignatureDoesNotMatch
+function encodeRfc3986(value) {
+  return encodeURIComponent(value).replace(/[!'()*]/g, char => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
+}
+
 function canonicalQueryString(searchParams) {
   return Array.from(searchParams.entries())
     .sort(([left], [right]) => left.localeCompare(right))
-    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .map(([key, value]) => `${encodeRfc3986(key)}=${encodeRfc3986(value)}`)
     .join("&");
 }
 
@@ -156,6 +212,10 @@ function parseListBucketResult(xml) {
 
 function xmlValue(block, tag) {
   return new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`).exec(block)?.[1] || "";
+}
+
+function escapeXml(value) {
+  return String(value || "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&apos;" })[char]);
 }
 
 function decodeXml(value) {

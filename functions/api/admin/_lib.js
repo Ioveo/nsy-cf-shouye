@@ -39,6 +39,13 @@ export async function loginAdmin(request, env) {
   return json({ success: true, token: await createAdminToken(env), expiresIn: TOKEN_TTL_MS });
 }
 
+// 用仍然有效的令牌换一个新令牌（长时间上传时前端定期调用，避免 2 小时后中途过期）
+export async function refreshAdmin(request, env) {
+  const auth = await requireAdminToken(request, env);
+  if (!auth.ok) return auth.response;
+  return json({ success: true, token: await createAdminToken(env), expiresIn: TOKEN_TTL_MS });
+}
+
 export async function requireAdminToken(request, env) {
   const token = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") || "";
   if (!token) return { ok: false, response: json({ success: false, msg: "未授权" }, 403) };

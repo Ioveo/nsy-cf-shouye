@@ -25,7 +25,7 @@ export async function onRequestPost({ request, env }) {
 
   const fileName = sanitizeFileName(file.name || `${software.slug}-${version}.zip`);
   if (!isAllowedPackage(fileName, file.type)) {
-    return json({ success: false, msg: "安装包格式不支持，请上传 zip、7z、exe 或 msi 文件" }, 400);
+    return json({ success: false, msg: "安装包格式不支持，请上传 zip、7z、rar、exe 或 msi 文件" }, 400);
   }
   if (file.size > 1024 * 1024 * 1024) {
     return json({ success: false, msg: "安装包不能超过 1GB" }, 400);
@@ -94,7 +94,7 @@ function sanitizeFileName(value) {
 
 function isAllowedPackage(fileName, contentType) {
   const ext = String(fileName || "").toLowerCase().split(".").pop();
-  return ["zip", "7z", "exe", "msi"].includes(ext);
+  return ["zip", "7z", "rar", "exe", "msi"].includes(ext);
 }
 
 async function sha256Hex(value) {

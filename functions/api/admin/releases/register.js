@@ -78,5 +78,5 @@ function sanitizeFileName(value) {
 
 function isAllowedPackage(fileName) {
   const ext = String(fileName || "").toLowerCase().split(".").pop();
-  return ["zip", "7z", "exe", "msi"].includes(ext);
+  return ["zip", "7z", "rar", "exe", "msi"].includes(ext);
 }

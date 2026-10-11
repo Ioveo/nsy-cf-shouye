@@ -87,7 +87,9 @@ const ADMIN_MODULES = {
 const DIRECT_UPLOAD_LIMIT = 95 * 1024 * 1024;
 const CHUNK_SIZE = 10 * 1024 * 1024;
 const CHUNK_UPLOAD_THRESHOLD = 10 * 1024 * 1024;
-const MAX_CHUNKED_SIZE = 5 * 1024 * 1024 * 1024;
+const MAX_CHUNKED_SIZE = 10 * 1024 * 1024 * 1024;
+const UPLOAD_CONCURRENCY = 8;
+const TOKEN_REFRESH_INTERVAL = 20 * 60 * 1000;
 const SITE_HOME_FIELDS = [
   "homeHeroKicker",
   "homeHeroTitle",
@@ -327,6 +329,12 @@ function renderCategoryOptions() {
   byId("softwareCategory").innerHTML = options;
   byId("releaseSoftware").innerHTML = catalog.software.map(item => `<option value="${escapeAttr(item.id)}">${escapeHtml(item.name)}</option>`).join("");
   byId("registerSoftware").innerHTML = byId("releaseSoftware").innerHTML;
+  const assetStorage = byId("assetStorage");
+  if (assetStorage) {
+    const selectedStorage = assetStorage.value || "default";
+    assetStorage.innerHTML = `<option value="default">默认 R2：dy-ldms-downloads</option>${(catalog.storageAccounts || []).filter(item => item.status !== "disabled").map(item => `<option value="${escapeAttr(item.id)}">${escapeHtml(item.name)} / ${escapeHtml(item.bucket)}</option>`).join("")}`;
+    assetStorage.value = [...assetStorage.options].some(option => option.value === selectedStorage) ? selectedStorage : "default";
+  }
   byId("releaseStorage").innerHTML = `<option value="default">默认 R2：dy-ldms-downloads</option>${(catalog.storageAccounts || []).filter(item => item.status !== "disabled").map(item => `<option value="${escapeAttr(item.id)}">${escapeHtml(item.name)} / ${escapeHtml(item.bucket)}</option>`).join("")}`;
   const galleryStorage = byId("galleryStorage");
   if (galleryStorage) galleryStorage.innerHTML = `<option value="default">默认 R2</option><option value="cloudflare-images">Cloudflare Images 图像托管</option>${(catalog.storageAccounts || []).filter(item => item.status !== "disabled").map(item => `<option value="${escapeAttr(item.id)}">${escapeHtml(item.name)} / ${escapeHtml(item.bucket)}</option>`).join("")}`;
@@ -503,7 +511,7 @@ function renderReleaseRows() {
       const link = `/download/${encodeURIComponent(release.id)}`;
       const replaceInput = document.createElement("input");
       replaceInput.type = "file";
-      replaceInput.accept = ".zip,.7z,.exe,.msi";
+      replaceInput.accept = ".zip,.7z,.rar,.exe,.msi";
       replaceInput.hidden = true;
       replaceInput.addEventListener("change", () => replaceReleaseFile(release.id, replaceInput));
       tr.lastElementChild.append(
@@ -933,13 +941,31 @@ async function uploadAsset(event) {
   event.preventDefault();
   const file = byId("assetFile").files[0];
   if (!file) return toast("请选择资源文件", true);
-  const form = new FormData();
-  form.append("token", token);
-  form.append("kind", byId("assetKind").value);
-  form.append("folder", byId("assetFolder").value.trim());
-  form.append("file", file);
-  toast("正在上传资源");
-  const result = await uploadMultipart("/api/admin/assets/upload", form);
+  const kind = byId("assetKind").value;
+  const folder = byId("assetFolder").value.trim();
+  const storageId = byId("assetStorage")?.value || "default";
+  if (file.size > MAX_CHUNKED_SIZE) return toast(`文件不能超过 ${formatBytes(MAX_CHUNKED_SIZE)}`, true);
+  let result;
+  if (file.size > CHUNK_UPLOAD_THRESHOLD) {
+    // 大文件分片并行上传，突破单次请求 100MB 限制
+    result = await uploadFileInParts(file, {
+      title: "正在上传资源",
+      initUrl: "/api/admin/assets/presign",
+      initPayload: { kind, folder, storageId },
+      completeUrl: "/api/admin/assets/complete-upload",
+      completePayload: { kind, folder },
+      doneText: "上传完成，资源已登记"
+    });
+  } else {
+    const form = new FormData();
+    form.append("token", token);
+    form.append("kind", kind);
+    form.append("folder", folder);
+    form.append("storageId", storageId);
+    form.append("file", file);
+    toast("正在上传资源");
+    result = await uploadMultipart("/api/admin/assets/upload", form);
+  }
   if (!result.success) return toast(result.msg || "上传失败", true);
   byId("assetUploadForm").reset();
   await loadAssets();
@@ -1160,7 +1186,7 @@ function mediaTypeFor(file) {
 }
 
 function allowedPackageFile(file) {
-  return /\.(zip|7z|exe|msi)$/i.test(String(file?.name || ""));
+  return /\.(zip|7z|rar|exe|msi)$/i.test(String(file?.name || ""));
 }
 
 function insertArticleTable() {
@@ -1376,8 +1402,8 @@ async function uploadRelease(event) {
   event.preventDefault();
   const file = byId("releaseFile").files[0];
   if (!file) return toast("请选择安装包", true);
-  if (!allowedPackageFile(file)) return toast("安装包格式不支持，请上传 zip、7z、exe 或 msi 文件", true);
-  if (file.size > MAX_CHUNKED_SIZE) return toast("安装包不能超过 5GB", true);
+  if (!allowedPackageFile(file)) return toast("安装包格式不支持，请上传 zip、7z、rar、exe 或 msi 文件", true);
+  if (file.size > MAX_CHUNKED_SIZE) return toast(`安装包不能超过 ${formatBytes(MAX_CHUNKED_SIZE)}`, true);
 
   const softwareId = byId("releaseSoftware").value;
   const version = byId("releaseVersion").value.trim();
@@ -1388,10 +1414,8 @@ async function uploadRelease(event) {
   const isLatest = byId("releaseLatest").checked;
   let result;
 
-  if (file.size > CHUNK_UPLOAD_THRESHOLD && storageId === "default") {
-    result = await uploadChunked(file, { softwareId, version, changelog, isLatest });
-  } else if (file.size > DIRECT_UPLOAD_LIMIT) {
-    return toast("文件超过 95MB 且使用外部存储，请先上传到 R2 再用登记功能发布。", true);
+  if (file.size > CHUNK_UPLOAD_THRESHOLD) {
+    result = await uploadChunked(file, { softwareId, version, changelog, isLatest, storageId });
   } else {
     const form = new FormData();
     form.append("token", token);
@@ -1487,12 +1511,16 @@ async function replaceReleaseFile(releaseId, input) {
   const file = input.files?.[0];
   input.value = "";
   if (!file) return;
-  if (!allowedPackageFile(file)) return toast("安装包格式不支持，请上传 zip、7z、exe 或 msi 文件", true);
-  if (file.size > MAX_CHUNKED_SIZE) return toast("安装包不能超过 5GB", true);
+  if (!allowedPackageFile(file)) return toast("安装包格式不支持，请上传 zip、7z、rar、exe 或 msi 文件", true);
+  if (file.size > MAX_CHUNKED_SIZE) return toast(`安装包不能超过 ${formatBytes(MAX_CHUNKED_SIZE)}`, true);
   if (!confirm(`确定用 ${file.name} 覆盖这个版本的安装包吗？版本号和下载链接会保持不变。`)) return;
 
-  if (file.size > DIRECT_UPLOAD_LIMIT) {
-    return toast("替换功能暂不支持大文件分片上传。请删除旧版本后重新发布。", true);
+  // 大文件走分片上传（默认 R2 / 外部 R2 都支持），避免单次请求超过 Cloudflare 100MB 请求体 / Worker 内存限制
+  if (file.size > CHUNK_UPLOAD_THRESHOLD) {
+    const chunkResult = await uploadChunked(file, { releaseId });
+    if (!chunkResult.success) return toast(chunkResult.msg || "替换失败", true);
+    render(chunkResult.catalog);
+    return toast("安装包已替换，列表已刷新");
   }
 
   const form = new FormData();
@@ -2242,100 +2270,164 @@ function mediaUrlForKey(key) {
 }
 
 
-async function uploadChunked(file, options) {
-  const { softwareId, version, changelog, isLatest } = options;
-  showUploadProgress("正在初始化分片上传", file.name);
-
-  const presignResult = await api("/api/admin/releases/presign", {
-    softwareId,
-    version,
-    fileName: file.name,
-    fileSize: file.size
+// 安装包分片上传：发布新版本，或传入 releaseId 替换已有版本；支持默认 R2 和外部 R2
+function uploadChunked(file, options) {
+  const { softwareId, version, changelog, isLatest, releaseId, storageId } = options;
+  return uploadFileInParts(file, {
+    title: releaseId ? "正在替换安装包" : "正在发布版本",
+    initUrl: "/api/admin/releases/presign",
+    initPayload: { releaseId, softwareId, version, storageId },
+    completeUrl: "/api/admin/releases/complete-upload",
+    completePayload: { releaseId, softwareId, version, changelog, isLatest },
+    doneText: releaseId ? "上传完成，安装包已替换" : "上传完成，版本已发布"
   });
+}
 
-  if (!presignResult.success) {
+// 通用并行分片上传：多个分片同时上传（UPLOAD_CONCURRENCY），单个分片失败自动重试
+async function uploadFileInParts(file, options) {
+  showUploadProgress(options.title || "正在上传", file.name);
+
+  let init;
+  try {
+    init = await api(options.initUrl, { ...options.initPayload, fileName: file.name, fileSize: file.size, contentType: file.type || "" });
+  } catch (error) {
+    init = { success: false, msg: `初始化上传失败：${error.message || "网络异常"}` };
+  }
+  if (!init.success) {
     hideUploadProgress();
-    return presignResult;
+    return init;
   }
 
-  const { uploadId, fileKey } = presignResult;
-  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-  const parts = [];
-  const uploadStart = Date.now();
-  let uploadedBytes = 0;
+  const { uploadId, fileKey, storageId } = init;
+  const partSize = Math.max(CHUNK_SIZE, Math.ceil(file.size / 9000 / (1024 * 1024)) * 1024 * 1024);
+  const totalParts = Math.max(1, Math.ceil(file.size / partSize));
+  const loaded = new Array(totalParts).fill(0);
+  const etags = new Array(totalParts);
+  const startedAt = Date.now();
+  let nextIndex = 0;
+  let finishedParts = 0;
+  let failure = "";
 
-  for (let i = 0; i < totalChunks; i++) {
-    const start = i * CHUNK_SIZE;
-    const end = Math.min(start + CHUNK_SIZE, file.size);
-    const chunk = file.slice(start, end);
-    const partNumber = i + 1;
-    const percent = Math.max(1, Math.min(95, Math.round((i / totalChunks) * 95)));
-    const elapsed = (Date.now() - uploadStart) / 1000;
-    const speed = elapsed > 0 ? uploadedBytes / elapsed : 0;
-    const eta = speed > 0 ? Math.round((file.size - uploadedBytes) / speed) : 0;
+  const report = () => {
+    const uploaded = loaded.reduce((sum, value) => sum + value, 0);
+    const elapsed = (Date.now() - startedAt) / 1000;
+    const speed = elapsed > 0 ? uploaded / elapsed : 0;
+    const eta = speed > 0 ? Math.round((file.size - uploaded) / speed) : 0;
     const etaText = eta > 60 ? `${Math.floor(eta / 60)}分${eta % 60}秒` : `${eta}秒`;
-    updateUploadProgress(percent, `分片 ${partNumber}/${totalChunks} · ${formatBytes(uploadedBytes)} / ${formatBytes(file.size)} · ${formatBytes(speed)}/s · 预计 ${etaText}`);
+    const percent = Math.max(1, Math.min(97, Math.round((uploaded / Math.max(file.size, 1)) * 97)));
+    updateUploadProgress(percent, `${formatBytes(uploaded)} / ${formatBytes(file.size)} · ${formatBytes(speed)}/s · 分片 ${finishedParts}/${totalParts} · 预计 ${etaText}`);
+  };
+  const timer = setInterval(report, 500);
+  // 长时间上传期间定期续期登录令牌
+  const refreshTimer = setInterval(() => refreshAdminToken().catch(() => {}), TOKEN_REFRESH_INTERVAL);
 
-    let retries = 3;
-    let partResult = null;
-
-    while (retries > 0) {
-      try {
-        const response = await fetch("/api/admin/releases/upload-part", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/octet-stream",
-            "X-Upload-Id": uploadId,
-            "X-File-Key": fileKey,
-            "X-Part-Number": String(partNumber)
-          },
-          body: chunk
-        });
-        partResult = await response.json();
-        if (partResult.success) break;
-      } catch (error) {
-        partResult = { success: false, msg: error.message || "网络异常" };
+  const worker = async () => {
+    while (!failure && nextIndex < totalParts) {
+      const index = nextIndex++;
+      const start = index * partSize;
+      const end = Math.min(start + partSize, file.size);
+      let lastError = "";
+      for (let attempt = 1; attempt <= 4 && !failure; attempt++) {
+        try {
+          const result = await sendUploadPart(file.slice(start, end), { uploadId, fileKey, storageId, partNumber: index + 1 }, bytes => {
+            loaded[index] = bytes;
+          });
+          etags[index] = result.etag;
+          loaded[index] = end - start;
+          finishedParts++;
+          lastError = "";
+          break;
+        } catch (error) {
+          loaded[index] = 0;
+          lastError = error.message || "网络异常";
+          if (error.fatal) break;
+          await sleep(1000 * attempt);
+        }
       }
-      retries--;
-      if (retries > 0) {
-        updateUploadProgress(percent, `分片 ${partNumber} 失败，${retries} 次重试中...`);
-        await sleep(1500);
-      }
+      if (lastError && !failure) failure = `分片 ${index + 1} 上传失败：${lastError}`;
     }
+  };
 
-    if (!partResult?.success) {
-      await api("/api/admin/releases/abort-upload", { uploadId, fileKey }).catch(() => {});
-      hideUploadProgress();
-      return { success: false, msg: partResult?.msg || `分片 ${partNumber} 上传失败` };
-    }
+  await Promise.all(Array.from({ length: Math.min(UPLOAD_CONCURRENCY, totalParts) }, () => worker()));
+  clearInterval(timer);
+  clearInterval(refreshTimer);
 
-    parts.push({ partNumber, etag: partResult.etag });
-    uploadedBytes += (end - start);
+  if (failure) {
+    api("/api/admin/uploads/abort", { uploadId, fileKey, storageId }).catch(() => {});
+    hideUploadProgress();
+    return { success: false, msg: failure };
   }
 
-  updateUploadProgress(97, "正在完成上传并发布版本...");
+  report();
+  updateUploadProgress(98, "所有分片已上传，正在合并文件...");
+  let result;
+  try {
+    result = await api(options.completeUrl, {
+      ...options.completePayload,
+      uploadId,
+      fileKey,
+      storageId,
+      fileName: file.name,
+      fileSize: file.size,
+      contentType: file.type || "",
+      parts: etags.map((etag, index) => ({ partNumber: index + 1, etag }))
+    });
+  } catch (error) {
+    result = { success: false, msg: `完成上传失败：${error.message || "网络异常"}` };
+  }
 
-  const completeResult = await api("/api/admin/releases/complete-upload", {
-    uploadId,
-    fileKey,
-    parts,
-    softwareId,
-    version,
-    fileName: file.name,
-    fileSize: file.size,
-    changelog,
-    isLatest
-  });
-
-  if (completeResult.success) {
-    updateUploadProgress(100, "上传完成，版本已发布");
+  if (result.success) {
+    updateUploadProgress(100, options.doneText || "上传完成");
     setTimeout(() => hideUploadProgress(), 800);
   } else {
     hideUploadProgress();
   }
+  return result;
+}
 
-  return completeResult;
+async function refreshAdminToken() {
+  const response = await fetch("/api/admin/refresh", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+  const result = await response.json();
+  if (result.success && result.token) {
+    token = result.token;
+    sessionStorage.setItem("downloadAdminToken", token);
+  }
+  return result;
+}
+
+function sendUploadPart(blob, meta, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/admin/uploads/part");
+    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.setRequestHeader("Content-Type", "application/octet-stream");
+    xhr.setRequestHeader("X-Upload-Id", meta.uploadId);
+    xhr.setRequestHeader("X-File-Key", encodeURIComponent(meta.fileKey));
+    xhr.setRequestHeader("X-Storage-Id", meta.storageId || "default");
+    xhr.setRequestHeader("X-Part-Number", String(meta.partNumber));
+    xhr.timeout = 10 * 60 * 1000;
+    xhr.upload.onprogress = event => {
+      if (event.lengthComputable) onProgress(event.loaded);
+    };
+    xhr.onload = () => {
+      let result = {};
+      try {
+        result = parseUploadResponse(xhr.responseText);
+      } catch {
+        result = {};
+      }
+      if (xhr.status >= 200 && xhr.status < 300 && result.success && result.etag) return resolve(result);
+      const error = new Error(result.msg || `HTTP ${xhr.status}`);
+      error.fatal = xhr.status === 401 || xhr.status === 403;
+      reject(error);
+    };
+    xhr.onerror = () => reject(new Error("网络异常"));
+    xhr.ontimeout = () => reject(new Error("请求超时"));
+    xhr.send(blob);
+  });
 }
 
 function sleep(ms) {

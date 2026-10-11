@@ -39,6 +39,7 @@ const SECURITY_HEADERS = {
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
 };
 
+import { serveRelease as serveSharedRelease, serveR2Object } from "../functions/_lib/releases.js";
 import { onRequestGet as handleUpdateGet, onRequestPost as handleUpdatePost, onRequestOptions as handleUpdateOptions } from "../functions/api/update.js";
 
 export default {
@@ -74,7 +75,7 @@ export default {
     if (url.pathname === "/download/latest") {
       const manifest = await loadManifest(env);
       const release = findLatestRelease(manifest);
-      return serveRelease(env, release);
+      return serveRelease(env, release, request);
     }
 
     if (url.pathname.startsWith("/download/")) {
@@ -84,7 +85,23 @@ export default {
       if (!release) {
         return text("Release not found", 404);
       }
-      return serveRelease(env, release);
+      return serveRelease(env, release, request);
+    }
+
+    // 热更新 patchUrl / fullSetupUrl 指向的 R2 文件
+    if ((url.pathname.startsWith("/apps/") || url.pathname.startsWith("/software/")) && (request.method === "GET" || request.method === "HEAD")) {
+      if (!env.SOFTWARE_BUCKET?.get) return text("R2 binding SOFTWARE_BUCKET is not configured", 500);
+      const segments = url.pathname.slice(1).split("/").filter(Boolean).map(part => decodeURIComponent(part));
+      if (segments.length > 1 && !segments.some(part => part === ".." || part === ".")) {
+        const key = segments.join("/");
+        const isJson = /\.json$/i.test(key);
+        const response = await serveR2Object(env, request, key, {
+          fileName: isJson ? false : segments[segments.length - 1],
+          cacheControl: isJson ? "no-cache, no-store, must-revalidate" : "public, max-age=3600"
+        });
+        if (response) return response;
+        return text("File not found", 404);
+      }
     }
 
     if (env.ASSETS?.fetch) {
@@ -268,29 +285,8 @@ function findLatestRelease(manifest) {
   return releases.find(item => item.id === manifest.latest) || releases[0] || DEFAULT_MANIFEST.releases[0];
 }
 
-async function serveRelease(env, release) {
-  if (!env.SOFTWARE_BUCKET?.get) {
-    return text("R2 binding SOFTWARE_BUCKET is not configured", 500);
-  }
-
-  if (!release?.key) {
-    return text("Release is not configured", 404);
-  }
-
-  const object = await env.SOFTWARE_BUCKET.get(release.key);
-  if (!object) {
-    return text("File has not been uploaded to R2 yet", 404);
-  }
-
-  const headers = new Headers(SECURITY_HEADERS);
-  object.writeHttpMetadata(headers);
-  headers.set("Content-Type", headers.get("Content-Type") || "application/octet-stream");
-  headers.set("Content-Length", object.size.toString());
-  headers.set("ETag", object.httpEtag);
-  headers.set("Cache-Control", "public, max-age=3600");
-  headers.set("Content-Disposition", contentDisposition(release.fileName || release.key.split("/").pop()));
-
-  return new Response(object.body, { headers });
+function serveRelease(env, release, request) {
+  return serveSharedRelease(env, release, request);
 }
 
 function sanitizeFileName(value) {
