@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -86,9 +86,10 @@ h2{font-size:clamp(30px,3.6vw,42px);font-weight:900;letter-spacing:1px;margin-bo
 .card p{font-size:14.5px;color:var(--muted)}
 .card .k{position:absolute;top:22px;right:24px;font-size:12px;color:var(--faint);border:1px solid rgba(255,255,255,.12);padding:3px 10px;border-radius:99px}
 .pet-grid{display:grid;grid-template-columns:.95fr 1.05fr;gap:56px;align-items:center}
-.video-card{position:relative;border-radius:26px;overflow:hidden;border:1px solid rgba(255,255,255,.1);box-shadow:0 30px 80px rgba(0,0,0,.5);animation:float 7s ease-in-out infinite}
+.video-card{position:relative;border-radius:26px;overflow:hidden;border:1px solid rgba(255,255,255,.12);box-shadow:0 30px 80px rgba(0,0,0,.6);background:radial-gradient(ellipse at 50% 65%, rgba(30,41,59,.85) 0%, rgba(10,15,29,.98) 100%);animation:float 7s ease-in-out infinite}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.video-card video{display:block;width:100%;aspect-ratio:16/10;object-fit:cover}
+.video-card canvas{display:block;width:100%;aspect-ratio:16/9;object-fit:contain}
+.video-card video{display:none}
 .video-tag{position:absolute;left:16px;bottom:14px;font-size:12.5px;font-weight:600;background:rgba(7,11,22,.65);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(8px);padding:6px 14px;border-radius:99px}
 .video-tag i{font-style:normal;color:var(--green);margin-right:6px}
 .pet-copy p{color:var(--muted);margin:16px 0 26px;font-size:16px}
@@ -138,7 +139,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--fai
 
 <!-- ============ 156式电影Hero ============ -->
 <header class="cine-hero">
-  <video class="bg" id="heroVideo" src="/hero-combined.mp4" autoplay muted loop playsinline preload="auto"></video>
+  <div class="bg-hero-img" style="position:absolute; inset:-5%; width:110%; height:110%; background:url('/ui-desktop-full.png') center/cover no-repeat; filter:saturate(1.08) contrast(1.02); animation:slowpush 26s ease-in-out infinite alternate;"></div>
   <div class="hero-grade"></div>
   <div class="hero-vignette"></div>
   <canvas id="dust"></canvas>
@@ -179,14 +180,22 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--fai
 
 <section id="pet" style="background:rgba(255,255,255,.015)"><div class="wrap pet-grid">
   <div class="rv"><div class="video-card">
-    <video src="/video.mp4" autoplay muted loop playsinline></video>
-    <span class="video-tag"><i>●</i>桌宠日常 · 追光</span>
+    <canvas id="petCanvas" width="640" height="360"></canvas>
+    <video id="petVideo" src="/video.mp4" autoplay muted loop playsinline preload="auto"></video>
+    <span class="video-tag"><i>●</i>桌宠日常 · 实时灵动抠像</span>
   </div></div>
   <div class="pet-copy rv">
     <div class="sec-eyebrow">DESKTOP PET</div>
     <h2>不止是工具，<br>更是陪伴</h2>
     <p>这只深藏青色的小猫住在你的桌面上。它会在窗口后面跟你玩藏露游戏，在你输密码时贱兮兮地偷看，在你加班时安静地陪你。每一个动作，都是为它单独设计的。</p>
-    <div class="chips"><span class="chip">👀 探头点亮</span><span class="chip">😼 WINK 偷瞄</span><span class="chip">🙈 捂眼害羞</span><span class="chip">🦒 长颈鹿脖子</span><span class="chip">🌀 斗鸡眼</span><span class="chip">🎬 开场登场</span></div>
+    <div class="chips">
+      <span class="chip" data-time="0">👀 探头点亮</span>
+      <span class="chip" data-time="1.8">😼 WINK 偷瞄</span>
+      <span class="chip" data-time="3.6">🙈 捂眼害羞</span>
+      <span class="chip" data-time="5.5">🦒 灵动抬头</span>
+      <span class="chip" data-time="7.2">🌀 斗鸡眼</span>
+      <span class="chip" data-time="0">🎬 开场登场</span>
+    </div>
   </div>
 </div></section>
 
@@ -205,7 +214,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--fai
 <section id="ui"><div class="wrap">
   <div class="sec-head rv"><div class="sec-eyebrow">UI SHOWCASE</div><h2>真实界面，所见即所得</h2><p>以下均为软件实际运行截图，不是效果图。</p></div>
   <div class="shots">
-    <div class="shot rv"><img src="/preview-desktop-widgets.png" alt="天才猫桌面实际运行效果" loading="lazy"><div class="cap"><b>🖥️ 桌面实拍</b><span>小组件 + 桌宠，和壁纸融为一体</span></div></div>
+    <div class="shot rv"><img src="/ui-desktop-full.png" alt="天才猫桌面 2.0 实际全屏运行效果" loading="lazy"><div class="cap"><b>🖥️ 桌面实拍</b><span>全景工作台 · 收纳盒 + 实用小组件 + 灵动桌宠</span></div></div>
     <div class="shot-grid">
       <div class="shot rv"><img src="/preview-appearance-themes.png" alt="外观设置" loading="lazy"><div class="cap"><b>🎨 外观设置</b><span>6 套皮肤一键换</span></div></div>
       <div class="shot rv"><img src="/preview-novadisk-clean.png" alt="空间管家" loading="lazy"><div class="cap"><b>💾 空间管家</b><span>C盘清理，安全可逆</span></div></div>
@@ -229,9 +238,107 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--fai
   const t=document.getElementById('cineTitle'),txt=t.textContent;t.textContent='';
   [...txt].forEach((c,i)=>{const s=document.createElement('span');s.className='ch';s.textContent=c;s.style.animationDelay=(0.15+i*0.12)+'s';t.appendChild(s)});
 })();
-// hero视频载入后淡入
+// hero视频载入后淡入（若存在）
 const hv=document.getElementById('heroVideo');
-if(hv.readyState>=2)hv.classList.add('on');else hv.addEventListener('canplay',()=>hv.classList.add('on'),{once:true});
+if(hv){if(hv.readyState>=2)hv.classList.add('on');else hv.addEventListener('canplay',()=>hv.classList.add('on'),{once:true});}
+
+// 桌宠绿幕Canvas实时抠像
+(function initPetChromaKey(){
+  const video = document.getElementById('petVideo');
+  const canvas = document.getElementById('petCanvas');
+  if(!video || !canvas) return;
+  const ctx = canvas.getContext('2d', { willReadFrequently:true });
+  const W = 640, H = 360;
+  canvas.width = W;
+  canvas.height = H;
+
+  const mem = document.createElement('canvas');
+  mem.width = W;
+  mem.height = H;
+  const memCtx = mem.getContext('2d', { willReadFrequently:true });
+
+  let isVisible = true;
+  let running = false;
+
+  function render(){
+    if(!isVisible || video.paused || video.ended){
+      running = false;
+      return;
+    }
+    try{
+      memCtx.drawImage(video, 0, 0, W, H);
+      const img = memCtx.getImageData(0, 0, W, H);
+      const d = img.data;
+      const len = d.length;
+      for(let i = 0; i < len; i += 4){
+        const r = d[i], g = d[i+1], b = d[i+2];
+        const maxRB = r > b ? r : b;
+        const diff = g - maxRB * 1.25;
+        if(diff > 45){
+          d[i+3] = 0;
+        } else if(diff > 0){
+          d[i+3] = ((1 - diff / 45) * d[i+3]) | 0;
+          d[i+1] = maxRB;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+    }catch(e){
+      ctx.drawImage(video, 0, 0, W, H);
+    }
+
+    if('requestVideoFrameCallback' in video){
+      video.requestVideoFrameCallback(render);
+    } else {
+      requestAnimationFrame(render);
+    }
+  }
+
+  function startLoop(){
+    if(!running && isVisible && !video.paused){
+      running = true;
+      if('requestVideoFrameCallback' in video){
+        video.requestVideoFrameCallback(render);
+      } else {
+        requestAnimationFrame(render);
+      }
+    }
+  }
+
+  video.addEventListener('play', startLoop);
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      isVisible = e.isIntersecting;
+      if(isVisible){
+        if(video.paused) video.play().catch(()=>{});
+        startLoop();
+      }
+    });
+  }, { threshold: 0.05 });
+  obs.observe(canvas);
+
+  video.play().then(startLoop).catch(()=>{
+    const unlock = () => {
+      video.play().then(startLoop).catch(()=>{});
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('touchstart', unlock);
+    };
+    window.addEventListener('click', unlock, { once:true });
+    window.addEventListener('touchstart', unlock, { once:true });
+  });
+
+  document.querySelectorAll('#pet .chip[data-time]').forEach(chip => {
+    chip.style.cursor = 'pointer';
+    chip.addEventListener('click', () => {
+      const t = parseFloat(chip.dataset.time);
+      if(!isNaN(t)){
+        video.currentTime = t;
+        if(video.paused) video.play().then(startLoop).catch(()=>{});
+      }
+    });
+  });
+})();
+
 // 数据面板开合
 const tg=document.getElementById('dataToggle'),pn=document.getElementById('dataPanel');
 tg.addEventListener('click',()=>{const o=pn.classList.toggle('open');tg.classList.toggle('open',o);tg.setAttribute('aria-expanded',o)});
