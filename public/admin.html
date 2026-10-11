@@ -95,6 +95,17 @@
             <label class="span-2">简介<textarea id="softwareDescription" rows="3" placeholder="软件说明"></textarea></label>
             <label>排序<input id="softwareSort" type="number" value="10" /></label>
             <label>状态<select id="softwareStatus"><option value="active">上架</option><option value="disabled">下架</option></select></label>
+            <div class="span-2" style="margin-top: 6px; padding: 14px; background: rgba(59,130,246,0.06); border: 1px dashed rgba(59,130,246,0.3); border-radius: 12px;">
+              <div style="font-weight: 600; font-size: 13px; margin-bottom: 6px; color: #60a5fa; display: flex; align-items: center; justify-content: space-between;">
+                <span>📦 首发独立安装包（选填 · 新建软件时可直接上传或登记）</span>
+                <span style="font-size: 12px; font-weight: normal; color: var(--muted);">若暂无安装包可留空，后续在“版本上传”单独发布</span>
+              </div>
+              <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin: 0;">
+                <label>首发版本号<input id="softwareInitialVersion" placeholder="例如 1.0.0" /></label>
+                <label>首发安装包文件<input id="softwareInitialFile" type="file" /></label>
+                <label class="span-2">首发版本更新说明<textarea id="softwareInitialChangelog" rows="2" placeholder="首发版本更新说明，例如：天才猫桌面全新上线"></textarea></label>
+              </div>
+            </div>
             <div class="form-actions span-2"><button type="submit">保存软件</button><button class="ghost" type="button" id="resetSoftware">清空</button></div>
           </form>
           <div class="table-wrap"><table><thead><tr><th>软件</th><th>分类</th><th>最新版本</th><th>状态</th><th>操作</th></tr></thead><tbody id="softwareRows"></tbody></table></div>
@@ -116,12 +127,19 @@
         <section class="panel tab-panel" id="releasePanel" hidden>
           <div class="panel__head">
             <div>
-              <h2>版本上传</h2>
-              <p>文件会上传到 R2，并自动写入软件目录。</p>
+              <h2>📦 独立全量安装包发布 (Full Setup)</h2>
+              <p>针对官网下载卡片、独立运行版及新用户首次安装，上传完整安装包（exe / zip，通常 80MB+）。</p>
             </div>
           </div>
           <div class="form-grid">
-            <p class="span-2">大于 95MB 的安装包不要使用下面的网页直传。请先上传到 R2，然后使用下方“登记已上传 R2 文件”。</p>
+            <div class="span-2" style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.22); border-radius: 12px; padding: 14px 16px; font-size: 13px; line-height: 1.6;">
+              <div style="font-weight: 600; color: #60a5fa; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                <span>💡 安装包两种上传方案对比与指引：</span>
+              </div>
+              <div>⚡ <strong>方案 A · 极速秒级直传（80MB+ 大安装包强烈推荐）：</strong>在 Cloudflare 控制台直接将大安装包拖拽上传到 R2 桶 <code>dy-ldms-downloads</code>（走 CF 全球高速通道跑满家庭宽带几十 MB/s），然后直接在下方<strong>“登记已上传 R2 文件”</strong>填入路径，<strong>1秒瞬间完成登记与发版</strong>！</div>
+              <div style="margin-top: 4px;">🌐 <strong>方案 B · 网页分片直传（中等文件）：</strong>在下方选择本地文件提交，支持自动分片断点续传（国内普通公网直连 Cloudflare 边缘节点受限，速度约 200~500 KB/s，大文件建议使用方案 A）。</div>
+              <div style="margin-top: 4px; color: #f59e0b;">⚡ <strong>老用户在线热更新去哪里发？</strong>如果只需推送几 MB 的单 exe 或差量包给老用户，请前往左侧<strong>【热更控制台】</strong>发布。</div>
+            </div>
           </div>
           <form class="form-grid" id="releaseForm">
             <label>所属软件<select id="releaseSoftware"></select></label>
@@ -232,6 +250,7 @@
                 <div class="label-with-actions">
                   <span>全量安装包路径 (Full Setup URL)</span>
                   <div class="action-btn-group">
+                    <button type="button" class="ghost btn-small" id="syncSetupFromReleasesBtn" title="一键引用软件版本库中已发布的独立全量包">🔄 引用已发独立版</button>
                     <button type="button" class="ghost btn-small" id="pickSetupR2Btn">📂 从 R2 选取</button>
                     <button type="button" class="ghost btn-small" id="uploadSetupLocalBtn">📤 本地上传</button>
                   </div>
