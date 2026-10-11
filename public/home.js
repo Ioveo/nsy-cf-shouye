@@ -185,7 +185,7 @@ function renderHomeArticles(catalog) {
       {
         slug: "desktop-v2-release",
         title: "天才猫桌面 2.0 正式发布：抽屉收纳盒与 C 盘无损搬家",
-        summary: "全新 2.0 版本带来抽屉式侧边吸附、微信离线高精 OCR 翻译与 NovaDisk 2.0 C盘管家。",
+        summary: "全新 2.0 版本带来抽屉式侧边吸附、Alt+1~9 快捷键矩阵、空间管家与 6 款高定皮肤。",
         createdAt: Date.now()
       },
       {
@@ -377,10 +377,10 @@ function initDesktopFeatureSwitcher() {
       title: "NovaDisk 2.0 C盘无损搬家",
       desc: "独创 Fluent 2.0 圆角 Treemap 树图，内置文件夹语义身份证。通过 Windows 原生 NTFS Junction 软链接技术将微信、QQ 等大文件安全搬至 D 盘，原路径无感兼容，空间瞬间释放数十 GB！"
     },
-    ocr: {
-      badge: "本地神经网络",
-      title: "微信离线高精 OCR 与原图翻译",
-      desc: "深度集成微信离线神经网络 OCR 核心引擎，零网络请求、零流量消耗，100% 保护隐私。支持原图就地视觉覆盖翻译、滚动无缝长截图、GIF 高清录屏与桌面置顶钉图。"
+    hotkeys: {
+      badge: "极速盲操",
+      title: "Alt+1~9 快捷键矩阵与快速启动盒",
+      desc: "桌面图标直接拖入绑定，按一下打开常用软件，再按一下隐退收起。前4个自动同步至桌面主控盒，支持软件、文件夹、网址与终端命令。"
     },
     dock: {
       badge: "顶部盲操中枢",
@@ -653,7 +653,7 @@ function getFallbackCatalog() {
         slug: "desktop",
         name: "天才猫桌面 2.0",
         categoryId: "desktop",
-        description: "灵动抽屉式侧边收纳、C盘无损搬家管家、顶部偷看Dock与离线多语 OCR 翻译。"
+        description: "灵动抽屉式侧边收纳、C盘无损搬家管家、顶部偷看Dock、Alt快捷键矩阵与6款高定皮肤。"
       },
       {
         id: "dy-assistant",
