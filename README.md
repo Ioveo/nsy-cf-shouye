@@ -83,140 +83,63 @@ PRODUCT_NAME = 天才猫直播数据管理
 
 ## 推荐部署方式：GitHub + Cloudflare Pages
 
-### 1. 准备 GitHub 仓库
+> 📖 **完整图文与避坑手册**：详细步骤请查阅 [Cloudflare Pages 部署与配置完全手册](docs/Cloudflare_Pages_部署与配置完全手册.md)。
 
-如果仓库根目录就是 `DownloadSite`，Cloudflare Pages 的 Root directory 留空。
-
-如果仓库包含整个 `D:\AI\dy`，Cloudflare Pages 的 Root directory 填：
-
-```text
-DownloadSite
-```
-
-### 2. 创建 Pages 项目
+### 1. 创建 Pages 项目与构建配置
 
 进入 Cloudflare Dashboard：
-
 ```text
-Workers & Pages -> Create -> Pages -> Connect to Git
+Workers & Pages -> Create -> 页面底部选择 "想部署 Pages？开始使用" -> Connect to Git
 ```
 
-选择 GitHub 仓库后，构建配置如下：
+选择 GitHub 仓库后，构建参数如下设置：
 
+| 配置项 | 填写值 | 核心注意事项 |
+| :--- | :--- | :--- |
+| **Framework preset (框架预设)** | **None (无)** | 纯静态 + Functions 架构 |
+| **Build command (构建命令)** | **留空** | 无需编译命令 |
+| **Build output directory (构建输出目录)** | **`public`** | 静态网页目录 |
+| **Root directory (根目录 高级)** | **留空** | ⚠️ **切勿填 `/functions/`**，functions/ 与 public/ 需在同级仓库根目录 |
+
+### 2. 添加存储绑定 (Settings -> Functions / Bindings)
+
+部署完成后，进入项目 **Settings (设置) -> Functions (函数) -> Bindings (绑定)** 添加：
+
+1. **R2 Bucket Binding (存储桶绑定)**：
+   * **Variable name**: **`SOFTWARE_BUCKET`** (必须大写)
+   * **R2 Bucket**: **`dy-ldms-downloads`**
+2. **D1 Database Binding (数据库绑定)**：
+   * **Variable name**: **`DB`** (必须大写)
+   * **D1 Database**: 选择创建好的数据库（如 `dy-ldms-download-db`）
+   * 💡 **初始化建表**：在 D1 Console 中执行一次项目根目录的 `schema.sql`。
+
+### 3. 配置变量和机密 (Settings -> Variables and Secrets)
+
+进入 **Settings -> Variables and Secrets (变量和机密)** 添加：
+
+* **机密 (Secret 类型)**：
+  * `ADMIN_PASSWORD`: 管理员登录后台密码
+  * `ADMIN_TOKEN_SECRET`: Token HMAC 签名密钥 (长随机字符)
+  * `STORAGE_SECRET`: 外部多 R2 存储密钥加密 Key (长随机字符)
+* **普通变量 (Environment Variable)**：
+  * `MANIFEST_KEY`: `releases/manifest.json`
+  * `PUBURL`: R2 自定义公开域名 (可选，如绑定了 CDN 域名)
+
+### 4. 关键注意事项
+
+* ⚠️ **重部署生效**：修改完绑定或变量后，必须在 **Deployments** 页面点击最新部署右侧的 **Retry deployment (重试部署)** 才会生效。
+* ⚠️ **生产与预览分开配**：Pages 的 Production 与 Preview 环境绑定隔离。若开启了预览构建，预览环境也需配置（推荐预览环境绑测试桶 `dy-ldms-downloads-dev`）。
+* ⚠️ **wrangler.toml 不要加 pages_build_output_dir**：加了会导致 Pages 改为由本地文件接管，控制台绑定的 R2/D1 将失效。保持当前配置即可。
+
+### 5. 部署并访问
+
+部署完成后访问：
 ```text
-Framework preset: None
-Build command: npm install
-Build output directory: public
-Root directory: DownloadSite   # 仓库根目录已经是 DownloadSite 时留空
+https://你的-pages项目.pages.dev/             # 首页
+https://你的-pages项目.pages.dev/download.html  # 下载中心
+https://你的-pages项目.pages.dev/photo-wall.html # 3D 照片墙
+https://你的-pages项目.pages.dev/lvtuang       # 管理控制台
 ```
-
-### 3. 创建 R2 bucket
-
-进入 Cloudflare Dashboard：
-
-```text
-R2 Object Storage -> Create bucket
-```
-
-Bucket 名称建议：
-
-```text
-dy-ldms-downloads
-```
-
-然后在 Pages 项目里添加 R2 绑定：
-
-```text
-Settings -> Functions -> R2 bucket bindings
-```
-
-配置：
-
-```text
-Variable name: SOFTWARE_BUCKET
-R2 bucket: dy-ldms-downloads
-```
-
-### 4. 创建 D1 数据库
-
-进入 Cloudflare Dashboard：
-
-```text
-Workers & Pages -> D1 SQL Database -> Create
-```
-
-数据库名称建议：
-
-```text
-dy-ldms-download-db
-```
-
-然后在 Pages 项目里添加 D1 绑定：
-
-```text
-Settings -> Functions -> D1 database bindings
-```
-
-配置：
-
-```text
-Variable name: DB
-D1 database: dy-ldms-download-db
-```
-
-### 5. 初始化 D1 表结构
-
-本地已登录 Wrangler 时，执行：
-
-```powershell
-cd D:\AI\dy\DownloadSite
-npm install
-npx wrangler d1 execute dy-ldms-download-db --file .\schema.sql --remote
-```
-
-也可以在 Cloudflare D1 控制台里打开数据库，进入 SQL Console，粘贴 `schema.sql` 内容执行。
-
-当前表结构包含：
-
-```text
-articles           # 文章主表
-article_software   # 文章和软件关联表
-```
-
-### 6. 配置环境变量
-
-进入 Pages 项目：
-
-```text
-Settings -> Environment variables
-```
-
-添加：
-
-```text
-ADMIN_PASSWORD = 后台管理密码
-MANIFEST_KEY = releases/manifest.json
-PRODUCT_NAME = 天才猫直播数据管理
-```
-
-修改变量或绑定后，需要重新部署一次 Pages。
-
-### 7. 上传初始 manifest
-
-可以用 Wrangler 上传示例 manifest：
-
-```powershell
-cd D:\AI\dy\DownloadSite
-npx wrangler r2 object put dy-ldms-downloads/releases/manifest.json --file .\docs\manifest.example.json
-```
-
-也可以在 Cloudflare R2 控制台手动上传到：
-
-```text
-releases/manifest.json
-```
-
-### 8. 部署并访问
 
 推送到 GitHub 后，Cloudflare Pages 会自动部署。
 
