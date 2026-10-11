@@ -1,368 +1,262 @@
-<!doctype html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>天才猫桌面 2.0 - 官方旗舰落地页 (Apple Design Edition)</title>
-    <meta name="description" content="天才猫桌面 2.0 官方旗舰落地页。全新抽屉式侧边吸附收纳盒、微信离线高精OCR原图翻译、NovaDisk 2.0 C盘管家、顶部偷看速览Dock与治愈灵动桌宠。" />
-    <link rel="icon" type="image/png" href="/logo.png?v=20260509" />
-    <link rel="apple-touch-icon" href="/logo.png?v=20260509" />
-    <link rel="stylesheet" href="/apple-design.css?v=20261009-apple" />
-    <style>
-      /* Desktop Landing Page Custom Apple Refinements */
-      .feature-glow {
-        position: absolute;
-        width: 320px;
-        height: 320px;
-        border-radius: 50%;
-        filter: blur(80px);
-        opacity: 0.15;
-        pointer-events: none;
-      }
-      .tab-panel-apple {
-        display: none;
-        animation: appleFadeIn 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
-      }
-      .tab-panel-apple.is-active {
-        display: block;
-      }
-      @keyframes appleFadeIn {
-        from { opacity: 0; transform: scale(0.98); }
-        to { opacity: 1; transform: scale(1); }
-      }
-      .interactive-viewport {
-        border-radius: var(--apple-radius-lg);
-        background: #000;
-        border: 1px solid var(--apple-border);
-        overflow: hidden;
-        box-shadow: 0 30px 80px rgba(0,0,0,0.7);
-        position: relative;
-      }
-      .interactive-viewport img {
-        width: 100%;
-        height: auto;
-        display: block;
-      }
-      .download-box {
-        border-radius: var(--apple-radius-lg);
-        background: linear-gradient(180deg, rgba(30,30,36,0.8) 0%, rgba(14,14,18,0.95) 100%);
-        border: 1px solid var(--apple-border-strong);
-        padding: clamp(32px, 5vw, 60px);
-        text-align: center;
-        box-shadow: 0 1px 0 rgba(255,255,255,0.18) inset, 0 30px 80px rgba(0,0,0,0.6);
-        position: relative;
-        overflow: hidden;
-      }
-      .download-box::after {
-        content: "";
-        position: absolute;
-        top: -120px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 400px;
-        height: 400px;
-        background: radial-gradient(circle, rgba(0,113,227,0.2) 0%, transparent 70%);
-        pointer-events: none;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Apple Translucent Navigation -->
-    <header class="apple-nav">
-      <div class="apple-nav__inner">
-        <a class="apple-nav__brand" href="/">
-          <img src="/logo.png" alt="天才猫" />
-          <span>天才猫桌面</span>
-        </a>
-        <nav class="apple-nav__links" aria-label="主导航">
-          <a href="/" style="color:var(--apple-cyan); font-weight:600;">🏠 官网首页</a>
-          <a href="#features">核心特性</a>
-          <a href="#screens">真实界面</a>
-          <a href="#novadisk">C盘管家</a>
-          <a href="#download">立即下载</a>
-          <a href="#faq">常见问题</a>
-        </nav>
-        <a class="apple-nav__cta" href="#download">
-          <span>下载 v2.0.0</span> <i>↓</i>
-        </a>
-      </div>
-    </header>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>天才猫桌面 2.0 — 桌面，从此有猫相伴</title>
+<meta name="description" content="天才猫桌面 2.0：桌面整理助手。一键整理桌面、治愈小组件、智能空间管家，还有一只永远陪你的猫。免费下载。">
+<style>
+:root{
+  --bg:#070b16;
+  --ink:#f5f1e8; --muted:#b8b0a0; --faint:#7a7468;
+  --gold:#f5c86e; --gold2:#e8a33d; --green:#34d399; --teal:#2dd4bf;
+  --glass:rgba(20,14,8,.42); --line:rgba(245,200,110,.22);
+  --r:20px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;line-height:1.7;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+::selection{background:rgba(245,200,110,.35)}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+/* ================= 156式电影Hero ================= */
+.cine-hero{position:relative;height:100svh;min-height:640px;overflow:hidden;background:#130903;display:flex;align-items:flex-end}
+.cine-hero video.bg{position:absolute;inset:-6%;width:112%;height:112%;object-fit:cover;opacity:0;transition:opacity 1.6s ease;filter:saturate(1.12) sepia(.16) contrast(1.04);animation:slowpush 26s ease-in-out infinite alternate}
+.cine-hero video.bg.on{opacity:1}
+@keyframes slowpush{from{transform:scale(1) translateY(0)}to{transform:scale(1.09) translateY(-1.5%)}}
+.hero-grade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,6,3,.42) 0%,rgba(10,6,3,.05) 34%,rgba(10,6,3,.12) 62%,rgba(7,11,22,.94) 100%);pointer-events:none}
+.hero-vignette{position:absolute;inset:0;box-shadow:inset 0 0 180px rgba(0,0,0,.55);pointer-events:none}
+#dust{position:absolute;inset:0;pointer-events:none}
+.backdrop-word{position:absolute;left:50%;top:16%;transform:translateX(-50%);font-size:clamp(120px,22vw,300px);font-weight:900;letter-spacing:.06em;color:transparent;-webkit-text-stroke:1px rgba(245,200,110,.16);user-select:none;pointer-events:none;white-space:nowrap}
+.hero-copy{position:relative;z-index:3;width:100%;padding-bottom:11vh}
+.cine-badge{display:inline-flex;align-items:center;gap:10px;font-size:12.5px;font-weight:700;letter-spacing:2.5px;color:var(--gold);border:1px solid var(--line);background:rgba(20,14,8,.5);backdrop-filter:blur(10px);padding:9px 20px;border-radius:99px;margin-bottom:26px}
+.cine-badge i{width:7px;height:7px;border-radius:50%;background:var(--gold);animation:pulse 2s infinite;font-style:normal}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(245,200,110,.5)}50%{box-shadow:0 0 0 8px rgba(245,200,110,0)}}
+.cine-title{font-size:clamp(56px,9vw,118px);font-weight:900;letter-spacing:.08em;line-height:1.15;margin-bottom:10px;text-shadow:0 6px 40px rgba(0,0,0,.5)}
+.cine-title .ch{display:inline-block;opacity:0;filter:blur(14px);transform:translateY(34px);animation:chIn 1.1s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes chIn{to{opacity:1;filter:blur(0);transform:none}}
+.cine-en{font-size:13px;letter-spacing:6px;color:var(--muted);margin-bottom:20px;font-weight:600}
+.cine-sub{font-size:17px;color:#e8e0d0;max-width:560px;margin-bottom:34px;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.cine-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:26px}
+.btn{display:inline-flex;align-items:center;gap:8px;font-weight:700;border-radius:14px;padding:14px 30px;font-size:15.5px;cursor:pointer;border:0;transition:transform .25s,box-shadow .25s;position:relative;overflow:hidden}
+.btn-gold{background:linear-gradient(135deg,#f5c86e,#e8a33d);color:#3a2404;box-shadow:0 10px 32px rgba(232,163,61,.4)}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(232,163,61,.55)}
+.btn-gold::after{content:"";position:absolute;top:0;left:-80%;width:50%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);transition:left .6s}
+.btn-gold:hover::after{left:130%}
+.btn-ghost{background:rgba(20,14,8,.5);border:1px solid var(--line);color:var(--ink);backdrop-filter:blur(10px)}
+.btn-ghost:hover{border-color:rgba(245,200,110,.5);transform:translateY(-2px)}
+.cine-meta{display:flex;gap:26px;font-size:12.5px;color:var(--muted);letter-spacing:1px}
+.cine-meta b{color:var(--gold)}
+/* 数据面板（156标志性可开合面板） */
+.data-toggle{position:absolute;z-index:4;right:34px;bottom:34px;display:flex;align-items:center;gap:10px;background:rgba(20,14,8,.55);border:1px solid var(--line);color:var(--ink);backdrop-filter:blur(12px);border-radius:99px;padding:13px 24px;font-size:14px;font-weight:700;cursor:pointer;transition:all .3s}
+.data-toggle:hover{border-color:var(--gold);transform:translateY(-2px)}
+.data-toggle .pl{font-size:18px;color:var(--gold);transition:transform .35s}
+.data-toggle.open .pl{transform:rotate(45deg)}
+.data-panel{position:absolute;z-index:4;right:34px;bottom:96px;width:min(380px,calc(100vw - 48px));background:rgba(16,11,6,.78);border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(18px);padding:26px;opacity:0;transform:translateY(16px);pointer-events:none;transition:all .45s cubic-bezier(.2,.7,.2,1)}
+.data-panel.open{opacity:1;transform:none;pointer-events:auto}
+.data-panel h4{font-size:15px;letter-spacing:2px;color:var(--gold);margin-bottom:16px}
+.data-panel .row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid rgba(245,200,110,.12);font-size:14px}
+.data-panel .row span:first-child{color:#e8e0d0;font-weight:600}
+.data-panel .row span:last-child{color:var(--muted);font-size:12.5px}
+/* 滚动提示 */
+.scroll-cue{position:absolute;z-index:3;left:50%;bottom:26px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;font-size:11.5px;letter-spacing:3px;color:var(--muted)}
+.scroll-cue i{width:1px;height:44px;background:linear-gradient(var(--gold),transparent);display:block;animation:cue 1.8s ease-in-out infinite;font-style:normal}
+@keyframes cue{0%{transform:scaleY(0);transform-origin:top}45%{transform:scaleY(1);transform-origin:top}55%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+/* ================= 导航 ================= */
+nav{position:fixed;top:0;left:0;right:0;z-index:50;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgba(7,11,22,.5);border-bottom:1px solid rgba(255,255,255,.08);transition:transform .4s ease}
+nav.hide{transform:translateY(-100%)}
+.nav-in{max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:36px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px}
+.brand .dot{width:34px;height:34px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#3b82f6);display:grid;place-items:center;font-size:19px}
+.brand small{font-size:11px;font-weight:600;color:var(--muted);border:1px solid rgba(255,255,255,.14);border-radius:99px;padding:2px 9px}
+.nav-links{display:flex;gap:28px;margin-left:auto;font-size:15px;color:var(--muted)}
+.nav-links a:hover{color:var(--ink)}
+.btn-sm{padding:10px 20px;font-size:14px;border-radius:12px}
+/* ================= 内容区 ================= */
+section{padding:88px 0}
+.sec-head{text-align:center;max-width:640px;margin:0 auto 54px}
+.sec-eyebrow{font-size:13px;font-weight:800;letter-spacing:3px;color:var(--gold2);margin-bottom:14px}
+h2{font-size:clamp(30px,3.6vw,42px);font-weight:900;letter-spacing:1px;margin-bottom:14px}
+.sec-head p{color:var(--muted);font-size:16px}
+.bento{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:30px 28px;transition:transform .3s,border-color .3s,box-shadow .3s;position:relative;overflow:hidden}
+.card:hover{transform:translateY(-6px);border-color:rgba(245,200,110,.35);box-shadow:0 18px 44px rgba(0,0,0,.4)}
+.card .ic{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:25px;margin-bottom:18px}
+.card h3{font-size:18.5px;margin-bottom:10px;font-weight:800}
+.card p{font-size:14.5px;color:var(--muted)}
+.card .k{position:absolute;top:22px;right:24px;font-size:12px;color:var(--faint);border:1px solid rgba(255,255,255,.12);padding:3px 10px;border-radius:99px}
+.pet-grid{display:grid;grid-template-columns:.95fr 1.05fr;gap:56px;align-items:center}
+.video-card{position:relative;border-radius:26px;overflow:hidden;border:1px solid rgba(255,255,255,.1);box-shadow:0 30px 80px rgba(0,0,0,.5);animation:float 7s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.video-card video{display:block;width:100%;aspect-ratio:16/10;object-fit:cover}
+.video-tag{position:absolute;left:16px;bottom:14px;font-size:12.5px;font-weight:600;background:rgba(7,11,22,.65);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(8px);padding:6px 14px;border-radius:99px}
+.video-tag i{font-style:normal;color:var(--green);margin-right:6px}
+.pet-copy p{color:var(--muted);margin:16px 0 26px;font-size:16px}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font-size:13.5px;font-weight:600;padding:9px 18px;border-radius:99px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);transition:all .25s;cursor:default}
+.chip:hover{border-color:var(--teal);color:var(--teal);transform:translateY(-2px)}
+.skins{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.skin{border-radius:20px;padding:26px;min-height:150px;display:flex;flex-direction:column;justify-content:flex-end;border:1px solid rgba(255,255,255,.1);transition:transform .3s}
+.skin:hover{transform:scale(1.03)}
+.skin b{font-size:17px}
+.skin span{font-size:13px;color:rgba(255,255,255,.65)}
+.shots{display:grid;gap:18px}
+.shot{border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);transition:transform .35s,box-shadow .35s}
+.shot:hover{transform:translateY(-5px);box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.shot img{display:block;width:100%;height:auto}
+.shot .cap{padding:16px 22px;font-size:14px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.shot .cap b{color:var(--ink);font-size:15px}
+.shot-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.dl{background:linear-gradient(135deg,rgba(52,211,153,.1),rgba(45,212,191,.05));border:1px solid rgba(52,211,153,.25);border-radius:28px;padding:64px 40px;text-align:center}
+.dl p{color:var(--muted);margin:12px 0 32px}
+.dl .meta{margin-top:22px;font-size:13px;color:var(--faint)}
+.btn-green{background:linear-gradient(135deg,#34d399,#2dd4bf);color:#052e22;box-shadow:0 8px 28px rgba(52,211,153,.35);font-size:17px;padding:16px 40px}
+.btn-green:hover{transform:translateY(-2px);box-shadow:0 12px 34px rgba(52,211,153,.5)}
+footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--faint);font-size:13.5px}
+.foot-in{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;max-width:1180px;margin:0 auto;padding:0 24px}
+.rv{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.3,1)}
+.rv.on{opacity:1;transform:none}
+@media(max-width:900px){
+  .pet-grid{grid-template-columns:1fr}
+  .bento,.skins{grid-template-columns:1fr 1fr}
+  .nav-links{display:none}
+  .data-toggle{right:20px;bottom:20px}
+  .data-panel{right:20px;bottom:84px}
+  .scroll-cue{display:none}
+}
+@media(max-width:600px){.bento,.skins{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}.cine-hero video.bg{animation:none}.video-card{animation:none}.cine-title .ch{opacity:1;filter:none;transform:none;animation:none}}
+</style>
+</head>
+<body>
 
-    <!-- Sub-Nav Banner -->
-    <div class="apple-subnav">
-      <div class="apple-subnav__inner">
-        <span class="apple-subnav__title">天才猫桌面 2.0</span>
-        <div class="apple-subnav__actions">
-          <a class="apple-subnav__link" href="/">← 返回官网生态首页</a>
-          <a class="apple-subnav__link" href="/novadisk.html" target="_blank">在线体验 C盘管家</a>
-          <a class="apple-subnav__link" href="/download.html">全系软件中心</a>
-        </div>
-      </div>
+<nav id="nav"><div class="nav-in">
+  <a class="brand" href="/download/latest/desktop"><span class="dot">🐈‍⬛</span>天才猫桌面<small>2.0</small></a>
+  <div class="nav-links"><a href="#features">功能</a><a href="#pet">桌宠</a><a href="#skins">皮肤</a><a href="#ui">界面</a><a href="#download">下载</a></div>
+  <a class="btn btn-gold btn-sm" href="#download" style="margin-left:auto">免费下载</a>
+</div></nav>
+
+<!-- ============ 156式电影Hero ============ -->
+<header class="cine-hero">
+  <video class="bg" id="heroVideo" src="/hero-combined.mp4" autoplay muted loop playsinline preload="auto"></video>
+  <div class="hero-grade"></div>
+  <div class="hero-vignette"></div>
+  <canvas id="dust"></canvas>
+  <div class="backdrop-word">CAT</div>
+  <div class="wrap hero-copy">
+    <span class="cine-badge"><i></i>DESKTOP PET · 2.0</span>
+    <h1 class="cine-title" id="cineTitle">天才猫桌面</h1>
+    <div class="cine-en">GENIUS CAT DESKTOP</div>
+    <p class="cine-sub">桌面整理助手 —— 一键整理桌面、治愈小组件、智能空间管家，还有一只永远陪你的猫。</p>
+    <div class="cine-cta">
+      <a class="btn btn-gold" href="#download">⬇ 免费下载 Windows 版</a>
+      <a class="btn btn-ghost" href="#features">了解功能 →</a>
     </div>
+    <div class="cine-meta"><span><b>✓</b> 免费使用</span><span><b>✓</b> 无捆绑安装</span><span><b>✓</b> Win10 / Win11</span></div>
+  </div>
+  <button class="data-toggle" id="dataToggle" aria-expanded="false"><span class="pl">＋</span>探索功能</button>
+  <div class="data-panel" id="dataPanel">
+    <h4>为什么是天才猫桌面</h4>
+    <div class="row"><span>⚡ 一键整理桌面</span><span>自动归类 · 可撤销</span></div>
+    <div class="row"><span>🐾 灵动桌宠</span><span>50+ 互动动画</span></div>
+    <div class="row"><span>🎨 皮肤中心</span><span>6 套官方皮肤</span></div>
+    <div class="row"><span>💾 空间管家</span><span>C盘清理 · 安全可逆</span></div>
+  </div>
+  <div class="scroll-cue">向下滚动<i></i></div>
+</header>
 
-    <main>
-      <!-- Hero Section (Apple Keynote Style) -->
-      <section class="apple-hero" style="padding-top:80px; padding-bottom:50px;">
-        <span class="apple-eyebrow">TianCaiMao Desktop 2.0 · 独立自包含运行时版</span>
-        <h1 class="apple-hero__title">
-          灵动抽屉收纳。<br>
-          <em>为 Windows 注入苹果级交互质感。</em>
-        </h1>
-        <p class="apple-hero__subtitle">
-          独创抽屉式侧边吸附把手、Alt+1~9 盲操极速启动矩阵、空间管家 C盘无损搬迁与 TopPeekDock 顶部无感盲操速览。
-        </p>
-        <div class="apple-hero__actions">
-          <a class="apple-btn apple-btn--primary" href="#download" style="padding:14px 28px; font-size:16px;">
-            <span>🔥 立即下载 Windows 官方安装包</span>
-            <i>↓</i>
-          </a>
-          <a class="apple-btn apple-btn--secondary" href="/novadisk.html" target="_blank" style="padding:14px 24px; font-size:16px;">
-            <span>⚡ 在线体验 NovaDisk C盘管家</span>
-            <i>↗</i>
-          </a>
-        </div>
-        <p style="font-size:13px; color:var(--apple-text-tertiary);">
-          完美支持 Windows 10 (19041+) / Windows 11 · 64 位独立免运行库 · 纯净无广告
-        </p>
-      </section>
+<section id="features"><div class="wrap">
+  <div class="sec-head rv"><div class="sec-eyebrow">FEATURES</div><h2>一个软件，六种治愈</h2><p>整理、效率与陪伴，一次全给你。</p></div>
+  <div class="bento">
+    <div class="card rv"><span class="k">整理</span><div class="ic" style="background:rgba(52,211,153,.14)">⚡</div><h3>一键整理桌面</h3><p>自动把散落的文件归类到收纳盒，桌面永远干干净净，可撤销。</p></div>
+    <div class="card rv"><span class="k">小组件</span><div class="ic" style="background:rgba(59,130,246,.14)">🕑</div><h3>桌面小组件</h3><p>时钟、天气、纪念日，一眼即达。毛玻璃质感，和壁纸融为一体。</p></div>
+    <div class="card rv"><span class="k">陪伴</span><div class="ic" style="background:rgba(139,92,246,.14)">🐾</div><h3>灵动桌宠</h3><p>深藏青色的小猫住在桌面上：探头、偷看、打滚，50+ 种互动动画。</p></div>
+    <div class="card rv"><span class="k">空间</span><div class="ic" style="background:rgba(251,191,36,.14)">💾</div><h3>空间管家</h3><p>C 盘一眼看懂该删什么，搬家、清理都安全可逆，新手也不会误删。</p></div>
+    <div class="card rv"><span class="k">效率</span><div class="ic" style="background:rgba(45,212,191,.14)">⌨️</div><h3>快捷键</h3><p>Alt+1~9 秒开常用软件，再按一次收起，指尖上的效率。</p></div>
+    <div class="card rv"><span class="k">美学</span><div class="ic" style="background:rgba(244,114,182,.14)">🎨</div><h3>皮肤中心</h3><p>冰川磨砂、极光幻紫、午夜纯黑……6 套皮肤，桌面随心换。</p></div>
+  </div>
+</div></section>
 
-      <!-- Main Showcase Media -->
-      <section class="apple-section" style="margin-bottom:70px;">
-        <div class="interactive-viewport">
-          <img src="/preview-desktop-widgets.png" alt="天才猫桌面 2.0 桌面小组件与收纳盒全景展示" />
-        </div>
-      </section>
+<section id="pet" style="background:rgba(255,255,255,.015)"><div class="wrap pet-grid">
+  <div class="rv"><div class="video-card">
+    <video src="/video.mp4" autoplay muted loop playsinline></video>
+    <span class="video-tag"><i>●</i>桌宠日常 · 追光</span>
+  </div></div>
+  <div class="pet-copy rv">
+    <div class="sec-eyebrow">DESKTOP PET</div>
+    <h2>不止是工具，<br>更是陪伴</h2>
+    <p>这只深藏青色的小猫住在你的桌面上。它会在窗口后面跟你玩藏露游戏，在你输密码时贱兮兮地偷看，在你加班时安静地陪你。每一个动作，都是为它单独设计的。</p>
+    <div class="chips"><span class="chip">👀 探头点亮</span><span class="chip">😼 WINK 偷瞄</span><span class="chip">🙈 捂眼害羞</span><span class="chip">🦒 长颈鹿脖子</span><span class="chip">🌀 斗鸡眼</span><span class="chip">🎬 开场登场</span></div>
+  </div>
+</div></section>
 
-      <!-- 🌟 Bento Grid: 5 大核心特性 (Apple Bento Cards) -->
-      <section class="apple-section" id="features">
-        <div class="apple-section__head">
-          <span class="apple-eyebrow">Core Innovations</span>
-          <h2>精雕细琢。每一个交互都灵动随心。</h2>
-          <p>遵循 Apple HIG 人机交互原则，融入弹簧物理曲线、边缘吸附与 C 盘深度调优。</p>
-        </div>
+<section id="skins"><div class="wrap">
+  <div class="sec-head rv"><div class="sec-eyebrow">SKINS</div><h2>换肤，换心情</h2><p>6 套官方皮肤，覆盖每一种桌面审美。</p></div>
+  <div class="skins">
+    <div class="skin rv" style="background:linear-gradient(135deg,#1e3a5f,#0ea5e9)"><b>冰川磨砂</b><span>清透浅色磨砂，任何壁纸都好看</span></div>
+    <div class="skin rv" style="background:linear-gradient(135deg,#1e293b,#475569)"><b>深空石墨</b><span>深灰半透明，文字最清楚</span></div>
+    <div class="skin rv" style="background:linear-gradient(135deg,#4c1d95,#a855f7)"><b>极光幻紫</b><span>紫蓝渐变，带一点梦幻感</span></div>
+    <div class="skin rv" style="background:linear-gradient(135deg,#065f46,#34d399)"><b>薄荷森林</b><span>青绿护眼，清新护眼</span></div>
+    <div class="skin rv" style="background:linear-gradient(135deg,#9a3412,#fb923c)"><b>落日暖橙</b><span>暖橙粉色系，温柔柔和</span></div>
+    <div class="skin rv" style="background:linear-gradient(135deg,#000,#27272a)"><b>午夜纯黑</b><span>接近不透明的黑，专注不分心</span></div>
+  </div>
+</div></section>
 
-        <div class="apple-bento">
-          <!-- Bento 1: 抽屉式侧边收纳盒 (Span 8) -->
-          <div class="apple-card apple-card--span-8">
-            <span class="apple-card__eyebrow">Interaction Primitives</span>
-            <h3 class="apple-card__title">抽屉式侧边吸附收纳盒 & 一键整理桌面</h3>
-            <p class="apple-card__desc">
-              贴边自动收缩为细小灵动把手，鼠标掠过或滚轮一划毫秒级无感滑出。支持“一键整理桌面（自动归类到收纳盒 · 可随时撤销）”，告别凌乱满屏图标。
-            </p>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
-              <span class="apple-badge-pill">一键智能收纳 (可撤销)</span>
-              <span class="apple-badge-pill">侧边多抽屉防重叠</span>
-              <span class="apple-badge-pill">毫秒极速滑出</span>
-            </div>
-          </div>
+<section id="ui"><div class="wrap">
+  <div class="sec-head rv"><div class="sec-eyebrow">UI SHOWCASE</div><h2>真实界面，所见即所得</h2><p>以下均为软件实际运行截图，不是效果图。</p></div>
+  <div class="shots">
+    <div class="shot rv"><img src="/preview-desktop-widgets.png" alt="天才猫桌面实际运行效果" loading="lazy"><div class="cap"><b>🖥️ 桌面实拍</b><span>小组件 + 桌宠，和壁纸融为一体</span></div></div>
+    <div class="shot-grid">
+      <div class="shot rv"><img src="/preview-appearance-themes.png" alt="外观设置" loading="lazy"><div class="cap"><b>🎨 外观设置</b><span>6 套皮肤一键换</span></div></div>
+      <div class="shot rv"><img src="/preview-novadisk-clean.png" alt="空间管家" loading="lazy"><div class="cap"><b>💾 空间管家</b><span>C盘清理，安全可逆</span></div></div>
+    </div>
+  </div>
+</div></section>
 
-          <!-- Bento 2: 空间管家 C盘无损搬迁 (Span 4) -->
-          <div class="apple-card apple-card--span-4">
-            <span class="apple-card__eyebrow">System Optimization</span>
-            <h3 class="apple-card__title">空间管家 · C盘无损搬迁</h3>
-            <p class="apple-card__desc">
-              独创<strong>“搬到其他盘，原处留入口照常用”</strong>底层无损软链接技术，缓存直接清理、系统安全瘦身，彻底告别 C 盘爆红。
-            </p>
-            <div class="apple-card__media" style="margin-top:14px;">
-              <img src="/preview-novadisk-clean.png" alt="空间管家界面" style="border-radius:10px; max-height:160px; object-fit:cover;" />
-            </div>
-          </div>
+<section id="download"><div class="wrap"><div class="dl rv">
+  <div class="sec-eyebrow" style="color:var(--green)">DOWNLOAD</div>
+  <h2>把猫带回家吧 🐈‍⬛</h2>
+  <p>免费下载，30 秒安装，桌面从此不一样。</p>
+  <a class="btn btn-green" href="/download/latest/desktop">⬇ 免费下载 天才猫桌面 2.0</a>
+  <div class="meta">Windows 10 / 11 · 约 85MB · 版本 2.0 · 更新于 2026-10</div>
+</div></div></section>
 
-          <!-- Bento 3: TopPeekDock 顶部无感盲操速览 (Span 6) -->
-          <div class="apple-card apple-card--span-6">
-            <span class="apple-card__eyebrow">Peek & Flow</span>
-            <h3 class="apple-card__title">TopPeekDock 顶部悬浮速览</h3>
-            <p class="apple-card__desc">
-              鼠标触碰屏幕顶部正中，瞬间唤出极简全景速览坞。多标签无缝管理与切换常用网址、文件夹与窗口，松开鼠标即刻优雅隐退。
-            </p>
-            <div class="apple-card__media">
-              <img src="/preview-top-peek-dock.png" alt="TopPeekDock 顶部速览效果" />
-            </div>
-          </div>
+<footer><div class="foot-in"><span>© 2026 天才猫桌面 · 桌面整理助手</span><span>免费使用 · 用心陪伴</span></div></footer>
 
-          <!-- Bento 4: Alt 1~9 盲操极速启动矩阵 (Span 6) -->
-          <div class="apple-card apple-card--span-6">
-            <span class="apple-card__eyebrow">Speed & Workflow</span>
-            <h3 class="apple-card__title">Alt+1~9 盲操极速启动矩阵</h3>
-            <p class="apple-card__desc">
-              桌面图标拖拽到卡片上即可秒级绑定。按一下打开常用软件，再按一下隐退收起。前 4 个自动同步至桌面主控盒，支持软件、文件夹、网址与命令。
-            </p>
-            <div class="apple-card__media">
-              <img src="/preview-hotkeys.png" alt="Alt 1~9 快捷键启动矩阵" />
-            </div>
-          </div>
-
-          <!-- Bento 5: 6款高定外观与屏幕边缘呼吸灯 (Span 12) -->
-          <div class="apple-card apple-card--span-12" style="background: linear-gradient(135deg, rgba(22,22,28,0.7) 0%, rgba(12,12,16,0.9) 100%);">
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px; align-items:center;">
-              <div>
-                <span class="apple-card__eyebrow">Design & Aesthetics</span>
-                <h3 class="apple-card__title">6 款高定皮肤与独创屏幕边缘呼吸灯</h3>
-                <p class="apple-card__desc">
-                  冰川磨砂、深空石墨、极光幻紫、薄荷森林、落日暖橙、午夜纯黑。自由微调背景模糊与玻璃浓度，配合琥珀暖金、耀蓝深空等边缘脉冲呼吸灯，操作完成泛起流光涟漪。
-                </p>
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                  <span class="apple-badge-pill">冰川磨砂 / 极光幻紫</span>
-                  <span class="apple-badge-pill">玻璃浓度 0~100% 微调</span>
-                  <span class="apple-badge-pill">持续呼吸灯反馈</span>
-                  <span class="apple-badge-pill">天才猫灵动桌宠</span>
-                </div>
-              </div>
-              <div class="apple-card__media">
-                <img src="/preview-appearance-themes.png" alt="6款高定皮肤与外观设置" style="border-radius:12px;" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 🎮 真实界面交互演示 Tab 区 -->
-      <section class="apple-section" id="screens">
-        <div class="apple-section__head">
-          <span class="apple-eyebrow">Real Interface Walkthrough</span>
-          <h2>真实界面交互。直击每个细节。</h2>
-          <p>点击下方分段胶囊，查看真实运行状态下的高精界面设计。</p>
-        </div>
-
-        <!-- Apple Segmented Control 交互标签 -->
-        <div style="text-align:center; margin-bottom:34px;">
-          <div class="apple-segmented" id="appleScreenTabs" role="tablist">
-            <button class="apple-segmented__btn is-active" data-tab="tab-widgets">桌面小组件与天才猫</button>
-            <button class="apple-segmented__btn" data-tab="tab-novadisk">空间管家 (C盘无损搬家)</button>
-            <button class="apple-segmented__btn" data-tab="tab-hotkeys">Alt 1~9 快捷键矩阵</button>
-            <button class="apple-segmented__btn" data-tab="tab-peek">TopPeek 顶部速览</button>
-            <button class="apple-segmented__btn" data-tab="tab-themes">高定外观与呼吸灯</button>
-          </div>
-        </div>
-
-        <!-- 对应演示视窗 -->
-        <div class="interactive-viewport">
-          <div class="tab-panel-apple is-active" id="tab-widgets">
-            <img src="/preview-desktop-widgets.png" alt="桌面小组件与天才猫萌宠" />
-          </div>
-          <div class="tab-panel-apple" id="tab-novadisk">
-            <img src="/preview-novadisk-clean.png" alt="空间管家 C盘无损搬家" />
-          </div>
-          <div class="tab-panel-apple" id="tab-hotkeys">
-            <img src="/preview-hotkeys.png" alt="Alt 1~9 快捷键矩阵" />
-          </div>
-          <div class="tab-panel-apple" id="tab-peek">
-            <img src="/preview-top-peek-dock.png" alt="TopPeek 顶部速览展示" />
-          </div>
-          <div class="tab-panel-apple" id="tab-themes">
-            <img src="/preview-appearance-themes.png" alt="6款高定外观皮肤与呼吸灯" />
-          </div>
-        </div>
-      </section>
-
-      <!-- 🚀 Apple 级官方下载面板 (Download Box) -->
-      <section class="apple-section" id="download">
-        <div class="download-box">
-          <span class="apple-badge-pill" style="margin-bottom:14px;">Official Release Hub</span>
-          <h2 style="font-size:clamp(32px, 4.2vw, 54px); font-weight:700; line-height:1.12; color:#fff; margin-bottom:14px;">
-            立即下载天才猫桌面 2.0。
-          </h2>
-          <p style="font-size:17px; color:var(--apple-text-secondary); max-width:620px; margin:0 auto 34px;">
-            正式发行版：v2.0.0 (Windows x64 独立自包含版)。内置完全独立运行时，双击极速安装，零外部依赖。
-          </p>
-          <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap; margin-bottom:30px;">
-            <a class="apple-btn apple-btn--primary" href="/download/latest/desktop" style="padding:15px 34px; font-size:16px;">
-              <span>🔥 下载官方安装包 (~85.2 MB)</span>
-              <i>↓</i>
-            </a>
-            <a class="apple-btn apple-btn--secondary" href="/download/latest/desktop" style="padding:15px 30px; font-size:16px;">
-              <span>📦 绿色便携免安装版 (~95.2 MB)</span>
-              <i>↓</i>
-            </a>
-          </div>
-          <div style="display:flex; justify-content:center; gap:24px; font-size:13px; color:var(--apple-text-secondary); flex-wrap:wrap;">
-            <span>✦ 100% 绿色纯净</span>
-            <span>✦ 无广告弹窗</span>
-            <span>✦ 不收集个人隐私</span>
-            <span>✦ 支持无缝在线升级</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- ❓ 常见问题 (FAQ) -->
-      <section class="apple-section" id="faq">
-        <div class="apple-section__head">
-          <span class="apple-eyebrow">FAQ</span>
-          <h2>常见问题解答</h2>
-        </div>
-        <div class="apple-bento">
-          <div class="apple-card apple-card--span-6">
-            <h3 class="apple-card__title" style="font-size:18px;">需要额外安装 .NET 运行库吗？</h3>
-            <p class="apple-card__desc">不需要。天才猫桌面 2.0 为完全自包含版本，所有依赖运行时均已编译内置，在纯净新电脑上双击即可秒启运行。</p>
-          </div>
-          <div class="apple-card apple-card--span-6">
-            <h3 class="apple-card__title" style="font-size:18px;">NovaDisk C盘搬家安全吗？</h3>
-            <p class="apple-card__desc">完全安全。采用 Windows 操作系统底层成熟的 NTFS Directory Junction 机制，文件实际存储在其他盘，系统原路径完全透明直通。</p>
-          </div>
-          <div class="apple-card apple-card--span-6">
-            <h3 class="apple-card__title" style="font-size:18px;">空间管家“搬到其他盘”会损坏软件或丢失数据吗？</h3>
-            <p class="apple-card__desc">绝对不会。采用 Windows 操作系统底层成熟透明的目录符号链接（NTFS Junction）技术，原本安装在 C 盘的软件与资料无损迁移到其他盘后，系统原路径依然直通可用，软件照常运行不丢数据。</p>
-          </div>
-          <div class="apple-card apple-card--span-6">
-            <h3 class="apple-card__title" style="font-size:18px;">支持双屏或多显示器吗？</h3>
-            <p class="apple-card__desc">完美支持。收纳盒可在任意显示器的左右贴边吸附，小组件支持自由拖拽跨屏放置，并能智能记忆每台显示器的布局参数。</p>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <!-- Apple Minimalist Footer -->
-    <footer class="apple-footer">
-      <div class="apple-footer__inner">
-        <div class="apple-footer__grid">
-          <div class="apple-footer__col">
-            <h4>下载与支持</h4>
-            <a href="/download/latest/desktop">Windows 官方安装包</a>
-            <a href="/download/latest/desktop">绿色免安装便携版</a>
-            <a href="/novadisk.html" target="_blank">在线体验 C盘管家</a>
-          </div>
-          <div class="apple-footer__col">
-            <h4>官方生态</h4>
-            <a href="/">官网生态主站</a>
-            <a href="/download.html">全系软件中心</a>
-            <a href="/photo-wall.html">3D 照片墙</a>
-          </div>
-          <div class="apple-footer__col">
-            <h4>文档与授权</h4>
-            <a href="/articles.html">使用教程与文章</a>
-            <a href="/license.html">正版授权购买</a>
-            <a href="/lvtuang" target="_blank">管理后台</a>
-          </div>
-          <div class="apple-footer__col">
-            <h4>关于天才猫</h4>
-            <a href="#">关于我们</a>
-            <a href="#">隐私安全声明</a>
-            <a href="#">服务条款</a>
-          </div>
-        </div>
-        <div class="apple-footer__bottom">
-          <span>Copyright © 2026 天才猫桌面. 保留所有权利.</span>
-          <span style="font-weight:700; color:var(--apple-text-secondary); letter-spacing:0.1em;">TIANCAIMAO DESKTOP</span>
-        </div>
-      </div>
-    </footer>
-
-    <!-- Interactive Script for Screen Tabs -->
-    <script>
-      const tabs = document.querySelectorAll('#appleScreenTabs button');
-      const panels = document.querySelectorAll('.tab-panel-apple');
-
-      tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-          tabs.forEach(t => t.classList.remove('is-active'));
-          panels.forEach(p => p.classList.remove('is-active'));
-
-          tab.classList.add('is-active');
-          const target = tab.dataset.tab;
-          const panel = document.getElementById(target);
-          if (panel) panel.classList.add('is-active');
-        });
-      });
-    </script>
-  </body>
+<script>
+// 标题逐字模糊浮现（156标志性动效）
+(function(){
+  const t=document.getElementById('cineTitle'),txt=t.textContent;t.textContent='';
+  [...txt].forEach((c,i)=>{const s=document.createElement('span');s.className='ch';s.textContent=c;s.style.animationDelay=(0.15+i*0.12)+'s';t.appendChild(s)});
+})();
+// hero视频载入后淡入
+const hv=document.getElementById('heroVideo');
+if(hv.readyState>=2)hv.classList.add('on');else hv.addEventListener('canplay',()=>hv.classList.add('on'),{once:true});
+// 数据面板开合
+const tg=document.getElementById('dataToggle'),pn=document.getElementById('dataPanel');
+tg.addEventListener('click',()=>{const o=pn.classList.toggle('open');tg.classList.toggle('open',o);tg.setAttribute('aria-expanded',o)});
+// 金色尘埃粒子
+(function(){
+  const cv=document.getElementById('dust'),ctx=cv.getContext('2d');let W,H,ps=[];
+  function rs(){W=cv.width=cv.offsetWidth;H=cv.height=cv.offsetHeight}
+  rs();addEventListener('resize',rs);
+  for(let i=0;i<70;i++)ps.push({x:Math.random(),y:Math.random(),r:Math.random()*2.2+.6,s:Math.random()*.0009+.0003,o:Math.random()*.5+.15,ph:Math.random()*6.28});
+  (function loop(t){
+    ctx.clearRect(0,0,W,H);
+    ps.forEach(p=>{p.y-=p.s;if(p.y<-.02){p.y=1.02;p.x=Math.random()}
+      const tw=.5+.5*Math.sin(t*.001+p.ph);
+      ctx.beginPath();ctx.arc(p.x*W,p.y*H,p.r,0,6.28);
+      ctx.fillStyle=`rgba(245,200,110,${(p.o*tw).toFixed(3)})`;ctx.fill()});
+    requestAnimationFrame(loop);
+  })(0);
+})();
+// nav滚动隐藏
+let lastY=0;const nav=document.getElementById('nav');
+addEventListener('scroll',()=>{const y=scrollY;nav.classList.toggle('hide',y>140&&y>lastY);lastY=y},{passive:true});
+// 滚动显现
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}}),{threshold:.12});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+</script>
+</body>
 </html>
+
