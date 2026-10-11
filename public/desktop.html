@@ -20,8 +20,8 @@ body{background:var(--bg);color:var(--ink);font-family:"PingFang SC","Hiragino S
 a{color:inherit;text-decoration:none}
 .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
 /* ================= 156式电影Hero ================= */
-.cine-hero{position:relative;height:100svh;min-height:640px;overflow:hidden;background:#130903;display:flex;align-items:flex-end}
-.cine-hero video.bg{position:absolute;inset:-6%;width:112%;height:112%;object-fit:cover;opacity:0;transition:opacity 1.6s ease;filter:saturate(1.12) sepia(.16) contrast(1.04);animation:slowpush 26s ease-in-out infinite alternate}
+.cine-hero{position:relative;height:100svh;min-height:640px;overflow:hidden;background:#070b16 url('/ui-desktop-full.png') center/cover no-repeat;display:flex;align-items:flex-end}
+.cine-hero video.bg{position:absolute;inset:-4%;width:108%;height:108%;object-fit:cover;opacity:0;transition:opacity 1.2s ease;filter:saturate(1.05) contrast(1.02);animation:slowpush 26s ease-in-out infinite alternate}
 .cine-hero video.bg.on{opacity:1}
 @keyframes slowpush{from{transform:scale(1) translateY(0)}to{transform:scale(1.09) translateY(-1.5%)}}
 .hero-grade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,6,3,.42) 0%,rgba(10,6,3,.05) 34%,rgba(10,6,3,.12) 62%,rgba(7,11,22,.94) 100%);pointer-events:none}
@@ -139,7 +139,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--fai
 
 <!-- ============ 156式电影Hero ============ -->
 <header class="cine-hero">
-  <div class="bg-hero-img" style="position:absolute; inset:-5%; width:110%; height:110%; background:url('/ui-desktop-full.png') center/cover no-repeat; filter:saturate(1.08) contrast(1.02); animation:slowpush 26s ease-in-out infinite alternate;"></div>
+  <video class="bg" id="heroVideo" src="/hero-video.mp4" poster="/ui-desktop-full.png" autoplay muted loop playsinline preload="auto"></video>
   <div class="hero-grade"></div>
   <div class="hero-vignette"></div>
   <canvas id="dust"></canvas>
@@ -240,7 +240,12 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--fai
 })();
 // hero视频载入后淡入（若存在）
 const hv=document.getElementById('heroVideo');
-if(hv){if(hv.readyState>=2)hv.classList.add('on');else hv.addEventListener('canplay',()=>hv.classList.add('on'),{once:true});}
+if(hv){
+  const show=()=>hv.classList.add('on');
+  if(hv.readyState>=2)show();
+  else{hv.addEventListener('canplay',show,{once:true});hv.addEventListener('loadeddata',show,{once:true});}
+  hv.play().catch(()=>{});
+}
 
 // 桌宠绿幕Canvas实时抠像
 (function initPetChromaKey(){
