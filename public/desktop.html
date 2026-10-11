@@ -105,10 +105,12 @@ h2{font-size:clamp(30px,3.6vw,42px);font-weight:900;letter-spacing:1px;margin-bo
 .skin b{font-size:17px}
 .skin span{font-size:13px;color:rgba(255,255,255,.65)}
 .shots{display:grid;gap:18px}
-.shot{border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);transition:transform .35s,box-shadow .35s}
-.shot:hover{transform:translateY(-5px);box-shadow:0 24px 60px rgba(0,0,0,.5)}
-.shot img{display:block;width:100%;height:auto}
-.shot .cap{padding:16px 22px;font-size:14px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.shot{border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);transition:transform .35s,box-shadow .35s,border-color .35s;display:flex;flex-direction:column}
+.shot:hover{transform:translateY(-5px);box-shadow:0 24px 60px rgba(0,0,0,.5);border-color:rgba(245,200,110,.35)}
+.shot .shot-img-wrap{aspect-ratio:16/10;width:100%;overflow:hidden;background:#070b16}
+.shot .shot-img-wrap img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .4s ease}
+.shot:hover .shot-img-wrap img{transform:scale(1.02)}
+.shot .cap{padding:16px 22px;font-size:14px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;border-top:1px solid rgba(255,255,255,.06);background:rgba(10,14,24,.4)}
 .shot .cap b{color:var(--ink);font-size:15px}
 .shot-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .shot-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
@@ -116,9 +118,10 @@ h2{font-size:clamp(30px,3.6vw,42px);font-weight:900;letter-spacing:1px;margin-bo
 .feature-showcase{display:grid;grid-template-columns:1.05fr .95fr;gap:52px;align-items:center;margin-bottom:88px}
 .feature-showcase.reverse{direction:rtl}
 .feature-showcase.reverse > *{direction:ltr}
-.feature-media{border-radius:24px;overflow:hidden;border:1px solid rgba(255,255,255,.1);box-shadow:0 24px 60px rgba(0,0,0,.5);background:rgba(255,255,255,.02);transition:transform .35s,box-shadow .35s}
-.feature-media:hover{transform:translateY(-5px);box-shadow:0 30px 80px rgba(0,0,0,.65)}
-.feature-media img{display:block;width:100%;height:auto}
+.feature-media{aspect-ratio:16/10;border-radius:24px;overflow:hidden;border:1px solid rgba(255,255,255,.1);box-shadow:0 24px 60px rgba(0,0,0,.5);background:#070b16;transition:transform .35s,box-shadow .35s,border-color .35s}
+.feature-media:hover{transform:translateY(-5px);border-color:rgba(245,200,110,.35);box-shadow:0 30px 80px rgba(0,0,0,.65)}
+.feature-media img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .4s ease}
+.feature-media:hover img{transform:scale(1.015)}
 .feature-info .sec-eyebrow{margin-bottom:12px}
 .feature-info h2{font-size:clamp(28px,3.2vw,38px);line-height:1.25;margin-bottom:16px}
 .feature-info p.lead{font-size:15.5px;color:var(--muted);margin-bottom:24px;line-height:1.7}
@@ -229,7 +232,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--fai
 <section id="efficiency" style="background:rgba(255,255,255,.015)"><div class="wrap">
   <div class="feature-showcase rv">
     <div class="feature-media">
-      <img src="/preview-top-peek-dock.png" alt="顶部窗口速览 Top Peek Dock" loading="lazy">
+      <img src="/card-top-dock.png" alt="顶部窗口速览 Top Peek Dock" loading="lazy">
     </div>
     <div class="feature-info">
       <div class="sec-eyebrow">TOP PEEK DOCK</div>
@@ -270,7 +273,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--fai
 
   <div class="feature-showcase reverse rv" style="margin-bottom:0">
     <div class="feature-media">
-      <img src="/preview-hotkeys-new.png" alt="快捷键中心" loading="lazy">
+      <img src="/card-hotkeys.png" alt="快捷键中心" loading="lazy">
     </div>
     <div class="feature-info">
       <div class="sec-eyebrow">HOTKEYS CENTER</div>
@@ -319,7 +322,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--fai
   </div>
   <div class="feature-showcase rv" style="margin-bottom:0">
     <div class="feature-media">
-      <img src="/preview-alchemy-box.png" alt="桌面炼金盒与天才猫全功能菜单" loading="lazy">
+      <img src="/card-alchemy.png" alt="桌面炼金盒与天才猫全功能菜单" loading="lazy">
     </div>
     <div class="feature-info">
       <p class="lead" style="margin-bottom:20px">把文件随手拖给小猫，或者右键呼出炼金盒，一键完成压缩、瘦身、转换与文字提取：</p>
@@ -373,7 +376,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--fai
 <section id="tools" style="background:rgba(255,255,255,.015)"><div class="wrap">
   <div class="feature-showcase reverse rv" style="margin-bottom:0">
     <div class="feature-media">
-      <img src="/preview-screenshot-tool.png" alt="截图与翻译工具" loading="lazy">
+      <img src="/card-screenshot.png" alt="截图、马赛克打码、翻译与置顶贴图工具" loading="lazy">
     </div>
     <div class="feature-info">
       <div class="sec-eyebrow">SCREENSHOT & WORKFLOW</div>
@@ -463,16 +466,37 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--fai
 <section id="ui"><div class="wrap">
   <div class="sec-head rv"><div class="sec-eyebrow">UI SHOWCASE</div><h2>真实界面，所见即所得</h2><p>以下均为软件实际运行截图，不是效果图。</p></div>
   <div class="shots">
-    <div class="shot rv"><img src="/ui-desktop-full.png" alt="天才猫桌面 2.0 实际全屏运行效果" loading="lazy"><div class="cap"><b>🖥️ 桌面实拍</b><span>全景工作台 · 收纳盒 + 实用小组件 + 灵动桌宠</span></div></div>
+    <div class="shot rv">
+      <div class="shot-img-wrap"><img src="/card-desktop-full.png" alt="天才猫桌面 2.0 实际运行全景" loading="lazy"></div>
+      <div class="cap"><b>🖥️ 桌面实拍全景</b><span>全景工作台 · 收纳盒 + 实用小组件 + 灵动桌宠 + 快捷主控</span></div>
+    </div>
     <div class="shot-grid-3">
-      <div class="shot rv"><img src="/preview-alchemy-box.png" alt="桌面炼金盒与菜单" loading="lazy"><div class="cap"><b>🧪 桌面炼金盒</b><span>8 大文件实用神技</span></div></div>
-      <div class="shot rv"><img src="/preview-hotkeys-new.png" alt="快捷键中心" loading="lazy"><div class="cap"><b>⌨️ 快捷键中心</b><span>Alt+1~9 拖拽秒绑</span></div></div>
-      <div class="shot rv"><img src="/preview-top-peek-dock.png" alt="顶部窗口速览" loading="lazy"><div class="cap"><b>🚀 顶部窗口速览</b><span>鼠标划过秒切窗口</span></div></div>
+      <div class="shot rv">
+        <div class="shot-img-wrap"><img src="/card-alchemy.png" alt="桌面炼金盒与菜单" loading="lazy"></div>
+        <div class="cap"><b>🧪 桌面炼金盒</b><span>8 大文件实用神技 · 随手拖拽即炼金</span></div>
+      </div>
+      <div class="shot rv">
+        <div class="shot-img-wrap"><img src="/card-hotkeys.png" alt="快捷键中心" loading="lazy"></div>
+        <div class="cap"><b>⌨️ 快捷键中心</b><span>Alt+1~9 瞬发秒开 · 拖拽桌面图标秒绑</span></div>
+      </div>
+      <div class="shot rv">
+        <div class="shot-img-wrap"><img src="/card-top-dock.png" alt="顶部窗口速览" loading="lazy"></div>
+        <div class="cap"><b>🚀 顶部窗口速览</b><span>光标划过秒切窗口 · 键盘方向键极速轮播</span></div>
+      </div>
     </div>
     <div class="shot-grid-3" style="margin-top:18px">
-      <div class="shot rv"><img src="/preview-screenshot-tool.png" alt="截图与翻译" loading="lazy"><div class="cap"><b>📸 截图与贴图</b><span>马赛克 / 滚动截长图</span></div></div>
-      <div class="shot rv"><img src="/preview-appearance-themes.png" alt="外观设置" loading="lazy"><div class="cap"><b>🎨 外观设置</b><span>6 套皮肤一键换</span></div></div>
-      <div class="shot rv"><img src="/preview-novadisk-clean.png" alt="空间管家" loading="lazy"><div class="cap"><b>💾 空间管家</b><span>C盘清理，安全可逆</span></div></div>
+      <div class="shot rv">
+        <div class="shot-img-wrap"><img src="/card-screenshot.png" alt="高能截图与贴图" loading="lazy"></div>
+        <div class="cap"><b>📸 截图 · 贴图 · 剪贴板</b><span>智能马赛克打码 / 滚动长截图 / 桌面置顶贴图</span></div>
+      </div>
+      <div class="shot rv">
+        <div class="shot-img-wrap"><img src="/card-themes.png" alt="外观设置与皮肤" loading="lazy"></div>
+        <div class="cap"><b>🎨 外观与主题皮肤</b><span>6 套官方审美皮肤 · 呼吸灯提醒 · 玻璃浓度微调</span></div>
+      </div>
+      <div class="shot rv">
+        <div class="shot-img-wrap"><img src="/card-novadisk.png" alt="NovaDisk 空间管家" loading="lazy"></div>
+        <div class="cap"><b>💾 NovaDisk 空间管家</b><span>C 盘大文件分布可视化 · 微信/QQ 无损迁移</span></div>
+      </div>
     </div>
   </div>
 </div></section>
