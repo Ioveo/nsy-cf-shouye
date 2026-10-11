@@ -36,13 +36,13 @@ const vsSource = `
     
     // Wave warp based on scrolling velocity and mesh coordinates
     float curve = cos(position.x * 3.141592) * cos(position.y * 3.141592);
-    float velocityEffect = uVelocity * 0.007;
+    float velocityEffect = clamp(uVelocity * 0.0055, -0.45, 0.45);
     
-    // Liquid bend
-    float zDistortion = curve * velocityEffect * 110.0 * (1.0 - uExpandProgress);
+    // Liquid bend with smooth elastic damping
+    float zDistortion = curve * velocityEffect * 95.0 * (1.0 - uExpandProgress);
     position.z += zDistortion;
     
-    float xDistortion = curve * velocityEffect * 0.12 * (1.0 - uExpandProgress);
+    float xDistortion = curve * velocityEffect * 0.10 * (1.0 - uExpandProgress);
     position.x -= xDistortion;
     
     // Hover high-frequency ripple
@@ -50,7 +50,6 @@ const vsSource = `
     position.z += ripple * 35.0;
     
     // WebGL Liquid Radial Ripple Transition (Aristide Benoist Inspired)
-    // Dynamic glass-water ripple splash when opening or closing
     float dist = length(position.xy);
     float expandWave = sin(dist * 16.0 - uExpandProgress * 22.0) * 0.075 * uExpandProgress * (1.0 - uExpandProgress);
     position.z += expandWave * 150.0;
@@ -77,7 +76,7 @@ const fsSource = `
   uniform sampler2D photoTexture;
   uniform float uHoverProgress;
   uniform float uExpandProgress;
-  uniform float uProximity; // dynamic center spotlight proximity uniform
+  uniform float uProximity;
 
   float getGrayscale(vec3 color) {
     return dot(color, vec3(0.299, 0.587, 0.114));
@@ -87,11 +86,11 @@ const fsSource = `
     vec2 uv = vTextureCoord;
     
     // Liquid texture UV refraction based on wave distortion
-    uv.x += sin(uv.y * 14.0 + vDistortion * 8.0) * vDistortion * 0.05;
-    uv.y += cos(uv.x * 14.0 + vDistortion * 8.0) * vDistortion * 0.05;
+    uv.x += sin(uv.y * 14.0 + vDistortion * 8.0) * vDistortion * 0.045;
+    uv.y += cos(uv.x * 14.0 + vDistortion * 8.0) * vDistortion * 0.045;
     
-    // Chromatic Aberration (RGB shift based on movement distortion)
-    float shift = vDistortion * 0.12;
+    // Chromatic Aberration (soft clamped RGB shift)
+    float shift = clamp(vDistortion * 0.09, -0.022, 0.022);
     
     vec4 colorRed = texture2D(photoTexture, uv + vec2(shift, 0.0));
     vec4 colorGreen = texture2D(photoTexture, uv);
@@ -104,10 +103,10 @@ const fsSource = `
     float ep = uExpandProgress;
     float up = uProximity;
     
-    // Spotlight ambient lighting: active/centered cards are beautifully lit up, side cards fade to elegant dim darkness
-    float spotlight = 0.28 + 0.72 * up;
+    // Spotlight ambient lighting
+    float spotlight = 0.32 + 0.68 * up;
     
-    // Grayscale blend: center is fully colorful, flat sides are elegant monochrome grayscale
+    // Grayscale blend: center is colorful, sides are elegant monochrome
     float targetGrayscale = (1.0 - up) * (1.0 - hp) * (1.0 - ep);
     
     // Blending filters
@@ -123,30 +122,45 @@ const fsSource = `
 `;
 
 let items = [];
+
+// =========================================================================
+// Pure Semi-Implicit Euler Fluid Mechanics & Kinetic Engine (零滞后流体力学引擎)
+// =========================================================================
 const state = {
-  active: 0,
-  current: 0,
-  target: 0,
+  // Continuous physical coordinates
+  x: 0,
   velocity: 0,
+  fluidVelocity: 0,
+  
+  // Dragging & Pointer state
   dragging: false,
-  startX: 0,
-  startTarget: 0,
-  lastDelta: 0,
-  lastTime: 0,
-  lastFrameTime: 0,
-  moved: false,
   pointerId: null,
+  startX: 0,
+  lastPointerX: 0,
+  pointerHistory: [],
   clickIndex: null,
-  wavePower: 0,
-  waveTarget: 0,
-  raf: 0,
-  hoveredIndex: null,
-  hoverProgress: [],
+  moved: false,
+
+  // Geometry Cache (Zero-Reflow Engine)
+  cardWidth: 110,
+  gap: 10,
+  T: 0,
+  stageWidth: typeof window !== "undefined" ? window.innerWidth : 1200,
+  stageCenter: typeof window !== "undefined" ? window.innerWidth * 0.5 : 600,
+
+  // Interaction indices & progress
+  active: 0,
   selectedIndex: null,
   expandProgress: 0,
-  stageWidth: 0,
+  hoveredIndex: null,
+  hoverProgress: [],
+
+  // Timing & Animation
+  lastTime: 0,
+  lastFrameTime: 0,
+  lastInteractionTime: performance.now(),
   baseLength: 8,
-  lastInteractionTime: performance.now()
+  raf: 0
 };
 
 let curtainsInstance = null;
@@ -162,7 +176,7 @@ async function init() {
     if (typeof window.Curtains !== "undefined") {
       curtainsInstance = new window.Curtains({
         container: "photo-wall-canvas",
-        pixelRatio: Math.min(1.25, window.devicePixelRatio),
+        pixelRatio: Math.min(1.25, window.devicePixelRatio || 1),
         production: true
       });
       curtainsInstance.onError(() => {
@@ -209,7 +223,6 @@ function bindEvents() {
   stage.addEventListener("pointerdown", event => {
     resetIdle();
     if (state.selectedIndex !== null) {
-      // Close if clicking outside the selected card
       const card = event.target.closest?.(".photo-wall-card");
       const cardIndex = card ? Number(card.dataset.index || 0) : null;
       if (cardIndex !== state.selectedIndex) {
@@ -223,10 +236,9 @@ function bindEvents() {
     state.pointerId = event.pointerId;
     state.clickIndex = card ? Number(card.dataset.index || 0) : null;
     state.startX = event.clientX;
-    state.startTarget = state.target;
-    state.lastDelta = 0;
-    state.lastTime = performance.now();
-    state.lastFrameTime = state.lastTime;
+    state.lastPointerX = event.clientX;
+    state.pointerHistory = [{ x: event.clientX, time: performance.now() }];
+    state.velocity = 0;
     state.moved = false;
     stage.classList.add("is-dragging");
     stage.setPointerCapture?.(event.pointerId);
@@ -234,20 +246,29 @@ function bindEvents() {
   });
 
   document.addEventListener("pointermove", event => {
-    resetIdle();
     if (!state.dragging) return;
     event.preventDefault();
-    const delta = event.clientX - state.startX;
+    resetIdle();
+
     const now = performance.now();
-    const elapsed = Math.max(8, now - state.lastTime);
-    const frameVelocity = ((delta - state.lastDelta) / elapsed) * 16.67;
-    state.velocity = lerp(state.velocity, clamp(frameVelocity, -110, 110), 0.28);
-    state.waveTarget = clamp(frameVelocity, -180, 180);
-    state.lastTime = now;
-    state.lastDelta = delta;
-    state.target = state.startTarget + delta;
-    state.moved = state.moved || Math.abs(delta) > 8;
-    updateActiveFromCenter();
+    const currentX = event.clientX;
+    const dx = currentX - state.lastPointerX;
+    state.lastPointerX = currentX;
+
+    // 1:1 Direct Coupling (手指动多少屏幕走多少，零延迟)
+    state.x += dx;
+
+    const totalDelta = currentX - state.startX;
+    if (Math.abs(totalDelta) > 7) {
+      state.moved = true;
+    }
+
+    // 滑动窗口：记录最近 70ms 的速度特征
+    state.pointerHistory.push({ x: currentX, time: now });
+    const cutoff = now - 70;
+    state.pointerHistory = state.pointerHistory.filter(p => p.time >= cutoff);
+
+    animate();
   });
 
   document.addEventListener("pointerup", finishDrag);
@@ -262,7 +283,6 @@ function bindEvents() {
   shell.addEventListener("wheel", event => {
     resetIdle();
     if (state.selectedIndex !== null) {
-      // Pull down/scroll wheel down to return/close the lightbox
       if (event.deltaY > 15) {
         closeLightbox();
       }
@@ -270,11 +290,9 @@ function bindEvents() {
     }
     event.preventDefault();
     const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-    const push = -delta * 0.85;
-    state.velocity = clamp(state.velocity + push * 0.12, -90, 90);
-    state.waveTarget = clamp(state.waveTarget + push * 0.42, -190, 190);
-    state.target += push;
-    updateActiveFromCenter();
+    // 动力学冲量注入 (Smooth Impulse)，完美适配 Mac/触控板与传统滚轮
+    const impulse = -delta * 0.38;
+    state.velocity = clamp(state.velocity + impulse, -55, 55);
     animate();
   }, { passive: false });
 
@@ -288,12 +306,10 @@ function bindEvents() {
     const dx = (event.clientX - cx) / cx;
     const dy = (event.clientY - cy) / cy;
     
-    // Up to 12 degrees X and Y tilt
     const tiltX = -dy * 12;
     const tiltY = dx * 12;
     
     lightboxImage.style.transform = `translate(-50%, -50%) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(1.02)`;
-    // Dynamic soft light shadow following mouse
     lightboxImage.style.filter = `brightness(1.04) drop-shadow(${dx * -16}px ${dy * -16}px 38px rgba(0,0,0,0.58))`;
   });
 
@@ -304,7 +320,6 @@ function bindEvents() {
     }
   });
   
-  // Back key also closes the lightbox
   document.addEventListener("keydown", event => {
     if (event.key === "Escape") closeLightbox();
   });
@@ -317,17 +332,30 @@ function finishDrag(event) {
   state.dragging = false;
   state.pointerId = null;
   stage.classList.remove("is-dragging");
+
   if (!state.moved && state.clickIndex !== null) {
     openItem(state.clickIndex);
     state.clickIndex = null;
     state.velocity = 0;
-    state.wavePower = 0;
-    state.waveTarget = 0;
     return;
   }
   state.clickIndex = null;
-  state.velocity = clamp(state.velocity * 1.18, -120, 120);
-  state.waveTarget = state.velocity;
+
+  // 根据脱手前最后 70ms 计算真实动量 (True Moving-Average Velocity)
+  const now = performance.now();
+  const history = state.pointerHistory.filter(p => p.time >= now - 80);
+  if (history.length >= 2) {
+    const oldest = history[0];
+    const newest = history[history.length - 1];
+    const dt = newest.time - oldest.time;
+    if (dt > 8) {
+      const vx = ((newest.x - oldest.x) / dt) * 16.67;
+      state.velocity = clamp(vx * 1.08, -65, 65);
+    }
+  } else {
+    state.velocity = 0;
+  }
+  state.pointerHistory = [];
   animate();
 }
 
@@ -338,7 +366,6 @@ function renderWall(source) {
   while (repeated.length < 30) repeated.push(...base);
   items = repeated.slice(0, Math.max(30, base.length));
 
-  // Clean old WebGL planes
   if (curtainsInstance) {
     planes.forEach(plane => {
       try {
@@ -362,7 +389,7 @@ function renderWall(source) {
     const image = document.createElement("img");
     image.src = item.thumbUrl || item.imageUrl;
     image.alt = item.title || "";
-    image.dataset.sampler = "photoTexture"; // match WebGL shader sampler uniform name
+    image.dataset.sampler = "photoTexture";
     image.decoding = "async";
     image.loading = index < 12 ? "eager" : "lazy";
     image.draggable = false;
@@ -401,8 +428,8 @@ function renderWall(source) {
     track.append(card);
   });
 
-  // Compile WebGL planes once DOM cards are appended
   updateBounds();
+
   if (curtainsInstance && window.Curtains) {
     const cards = [...track.children];
     cards.forEach((card, index) => {
@@ -423,7 +450,6 @@ function renderWall(source) {
 
       const plane = new window.Plane(curtainsInstance, card, planeParams);
       plane.onReady(() => {
-        // Smoothly hide the original HTML img when WebGL renderer compiles successfully
         image.style.opacity = "0";
       }).onRender(() => {
         plane.uniforms.uTime.value += 1.0;
@@ -433,19 +459,18 @@ function renderWall(source) {
         
         plane.uniforms.uHoverProgress.value = hp;
         plane.uniforms.uExpandProgress.value = ep;
-        plane.uniforms.uVelocity.value = state.wavePower;
+        plane.uniforms.uVelocity.value = state.fluidVelocity;
         
-        // Compute precise mesh center proximity for spotlight lighting
+        // Zero-Reflow Proximity Calculation (利用纯缓存静态坐标计算聚光灯)
         const left = card._offsetLeft !== undefined ? card._offsetLeft : card.offsetLeft;
-        const width = card._offsetWidth || card.offsetWidth || 110;
-        const cardCenter = left + width / 2;
-        const x = cardCenter + state.current;
-        const C = (state.stageWidth || stage.clientWidth || window.innerWidth) / 2;
-        const gap = parseFloat(window.getComputedStyle(track).gap) || 8;
-        const T = items.length * (width + gap);
-        const offset = ((x - C + T/2) % T + T) % T - T/2;
+        const width = state.cardWidth;
+        const cardCenter = left + width * 0.5;
+        const worldX = cardCenter + state.x;
+        const C = state.stageCenter;
+        const T = state.T || 1;
+        const offset = ((worldX - C + T * 0.5) % T + T) % T - T * 0.5;
         const distance = Math.abs(offset);
-        const maxDist = Math.max(1, (state.stageWidth || stage.clientWidth || window.innerWidth) * 0.6);
+        const maxDist = Math.max(1, state.stageWidth * 0.55);
         const proximity = Math.max(0, 1 - distance / maxDist);
         
         plane.uniforms.uProximity.value = proximity;
@@ -457,8 +482,7 @@ function renderWall(source) {
 
   setActive(0);
   requestAnimationFrame(() => {
-    state.current = 0;
-    state.target = 0;
+    state.x = 0;
     updateBounds();
     animate();
   });
@@ -470,251 +494,170 @@ function animate() {
     state.raf = 0;
     const now = performance.now();
     const previous = state.lastFrameTime || now;
-    const dt = clamp((now - previous) / 16.67, 0.55, 2.2);
+    const dt = clamp((now - previous) / 16.67, 0.4, 2.0);
     state.lastFrameTime = now;
-    const follow = state.dragging ? 0.34 : 0.105;
-    state.current += (state.target - state.current) * (1 - Math.pow(1 - follow, dt));
 
-    const idleDuration = performance.now() - state.lastInteractionTime;
-    const isIdle = idleDuration > 2000 && state.selectedIndex === null && !state.dragging;
+    const isIdle = (now - state.lastInteractionTime > 2200) && state.selectedIndex === null && !state.dragging;
 
-    if (isIdle) {
-      // 1. Slow Auto-Scroll from right to left (conveyor loop)
-      state.target -= 0.34 * dt;
-      
-      // 2. Drive active highlights from physical center card to perfectly match speed and keep centered card lit up
-      updateActiveFromCenter();
-      state.hoveredIndex = state.active;
-    }
+    if (state.dragging) {
+      // 拖拽时：直接 1:1 跟随手指，无额外滞后
+    } else {
+      if (isIdle && Math.abs(state.velocity) < 0.25) {
+        // 静止慢速自动巡航 (Conveyor Loop)
+        state.velocity = -0.45;
+      }
 
-    if (!state.dragging) {
-      state.target += state.velocity * dt;
-      state.velocity *= Math.pow(0.946, dt);
-    }
-    state.wavePower += (state.waveTarget - state.wavePower) * (1 - Math.pow(0.84, dt));
-    state.waveTarget *= Math.pow(state.dragging ? 0.92 : 0.82, dt);
+      // 1. 半隐式欧拉单积分位移更新
+      state.x += state.velocity * dt;
 
-    const cards = [...track.children];
-    if (!cards.length) return;
+      // 2. 流体粘滞阻尼衰减 (Viscous Hydrodynamic Friction)
+      const friction = Math.pow(0.962, dt);
+      state.velocity *= friction;
 
-    const cardWidth = cards[0]._offsetWidth || 110;
-    const gap = parseFloat(window.getComputedStyle(track).gap) || 20;
-    const T = items.length * (cardWidth + gap);
-
-    // Seamless wrapping
-    if (T > 0 && Math.abs(state.current) > T) {
-      const shift = Math.trunc(state.current / T) * T;
-      state.current -= shift;
-      state.target -= shift;
-    }
-
-    const C = state.stageWidth / 2;
-
-    // --- Magnetic spring to center ---
-    // Low speed motion gets a soft spring, high speed motion keeps its inertia.
-    if (!state.dragging && Math.abs(state.velocity) < 1.8 && state.selectedIndex === null) {
-      const activeCard = cards[state.active];
-      if (activeCard) {
-        const cardCenter = activeCard._offsetLeft + cardWidth / 2;
-        const x = cardCenter + state.current;
-        const offset = ((x - C + T/2) % T + T) % T - T/2; // Distance from center
-        const spring = -offset * 0.014;
-        const damping = -state.velocity * 0.035;
-        state.velocity += (spring + damping) * dt;
-        state.target -= offset * 0.006 * dt;
+      // 3. 临界阻尼磁吸回正系统 (Critically Damped Magnetic Spring, 无冲击震荡)
+      if (Math.abs(state.velocity) < 1.6 && !isIdle && state.selectedIndex === null) {
+        const nearestOffset = getClosestCardCenterOffset();
+        if (Math.abs(nearestOffset) > 0.15) {
+          const k = 0.0064; // 劲度系数
+          const c = 0.16;   // 阻尼系数 c = 2 * sqrt(k) = 0.16 (临界阻尼)
+          const springAcc = -nearestOffset * k - state.velocity * c;
+          state.velocity += springAcc * dt;
+        } else if (Math.abs(state.velocity) < 0.04) {
+          state.x -= nearestOffset;
+          state.velocity = 0;
+        }
       }
     }
 
-    // Handle expand progress
+    // 4. 流体速度平滑滤波 (给 WebGL Shader 表面张力水波弯曲)
+    state.fluidVelocity += (state.velocity - state.fluidVelocity) * (1 - Math.pow(0.82, dt));
+
+    // 5. 周期性无限连续折叠 (Seamless Periodic Boundary)
+    if (state.T > 0) {
+      state.x = ((state.x % state.T) + state.T) % state.T;
+    }
+
+    // 6. 从物理中心更新高亮焦点卡片
+    updateActiveFromCenter();
+
+    // 7. 展开大图进度插值
     const targetExpand = (state.selectedIndex !== null) ? 1 : 0;
-    state.expandProgress = lerp(state.expandProgress, targetExpand, 0.125);
+    state.expandProgress += (targetExpand - state.expandProgress) * (1 - Math.pow(0.86, dt));
     const globalEp = state.expandProgress;
 
-    let hasActiveHover = false;
-    if (Math.abs(globalEp - targetExpand) > 0.001) {
-      hasActiveHover = true;
-    }
+    let hasActiveMotion = Math.abs(state.velocity) > 0.02 || Math.abs(globalEp - targetExpand) > 0.001;
 
-    // 1. Update Hover Progresses
-    cards.forEach((card, index) => {
+    // 8. 纯 GPU Transform 渲染卡片 (零 getComputedStyle 调用)
+    const cards = track.children;
+    const count = cards.length;
+    const C = state.stageCenter;
+    const T = state.T;
+    const cardWidth = state.cardWidth;
+
+    for (let index = 0; index < count; index++) {
+      const card = cards[index];
+      const isSelected = (index === state.selectedIndex);
       const isHovered = (index === state.hoveredIndex);
       const targetHover = isHovered ? 1 : 0;
-      if (state.hoverProgress[index] === undefined) {
-        state.hoverProgress[index] = 0;
-      }
-      state.hoverProgress[index] = lerp(state.hoverProgress[index], targetHover, 0.12);
-      if (Math.abs(state.hoverProgress[index] - targetHover) > 0.001) {
-        hasActiveHover = true;
-      }
-    });
 
-    // 2. Render Cards in 3D Cylinder & Handle Centering/Expand
-    cards.forEach((card, index) => {
-      const isSelected = (index === state.selectedIndex);
-      const cardCenter = card._offsetLeft + cardWidth / 2;
-      const x = cardCenter + state.current;
+      state.hoverProgress[index] = state.hoverProgress[index] || 0;
+      state.hoverProgress[index] += (targetHover - state.hoverProgress[index]) * (1 - Math.pow(0.84, dt));
+      if (Math.abs(state.hoverProgress[index] - targetHover) > 0.001) hasActiveMotion = true;
 
-      // Wrapped offset from stage center
-      const offset = ((x - C + T/2) % T + T) % T - T/2;
-      const distance = Math.abs(offset);
-
-      // Proximity to viewport center (ranges 0 to 1)
-      const proximity = Math.max(0, 1 - distance / Math.max(1, state.stageWidth * 0.6));
-
-      const speed = Math.min(Math.abs(state.wavePower), 220);
-      const motion = easeOutCubic(Math.min(speed / 170, 1));
-      const hp = state.hoverProgress[index] || 0;
+      const hp = state.hoverProgress[index];
       const ep = isSelected ? globalEp : 0;
 
+      const cardCenter = (card._offsetLeft !== undefined ? card._offsetLeft : card.offsetLeft) + cardWidth * 0.5;
+      const worldX = cardCenter + state.x;
+
+      const offset = ((worldX - C + T * 0.5) % T + T) % T - T * 0.5;
+      const distance = Math.abs(offset);
+
+      const maxDistance = state.stageWidth * 0.55;
+      const proximity = Math.max(0, 1 - distance / Math.max(1, maxDistance));
+
       const sideOfCenter = offset < 0 ? -1 : 1;
-      const direction = state.wavePower < 0 ? -1 : 1;
-      const phase = index * 0.48 + state.current * 0.01;
+      const absSpeed = Math.abs(state.fluidVelocity);
+      const speedFactor = easeOutCubic(Math.min(absSpeed / 45, 1));
 
-      // --- 3D Curve Base Layout (Static Cylinder - Flattened for straight alignment) ---
-      const baseRotateY = 0;
-      const baseDepth = 0;
-      const baseScale = 0.94;
-      const baseFloat = 0;
+      // 仿生空间曲率柱面 (即便在完全静止时也维持深邃的优雅弧形微弯曲)
+      const baseRotateY = -sideOfCenter * (1 - proximity) * 16;
+      const baseDepth = (proximity * 75 - (1 - proximity) * 85);
+      const baseScale = 0.94 + proximity * 0.06;
 
-      // --- Spherical 3D speed-distortion bulge (Aristide Benoist Inspired - Amplified) ---
-      const speedFactor = motion; 
-      
-      // Center card bulges forward (positive depth), side cards fold back (negative depth)
-      const motionDepth = speedFactor * (proximity * 260 - (1 - proximity) * 160);
-      
-      // Center card scales up (positive scale), side cards shrink down (negative scale)
-      const motionScale = speedFactor * (proximity * 0.14 - (1 - proximity) * 0.105);
-      
-      // Side cards rotate on Y axis to look like they wrap around a sphere
-      const motionRotateY = -sideOfCenter * (1 - proximity) * 38 * speedFactor;
-      
-      // Center card floats slightly up, side cards curve down slightly
-      const motionFloat = speedFactor * (proximity * -22 + (1 - proximity) * 12);
-      
-      // Subtle Z tilt ripple wave and rotation
-      const motionRotateZ = clamp(Math.sin(phase) * speedFactor * 2.4, -3.6, 3.6);
-      const motionRotateX = -speedFactor * proximity * 4.5;
-      const motionLag = clamp(state.wavePower * 0.075, -20, 20) * (1 - proximity * 0.35);
+      // 流体动压形变 (随速度平滑浮动)
+      const motionDepth = speedFactor * (proximity * 160 - (1 - proximity) * 100);
+      const motionRotateY = -sideOfCenter * (1 - proximity) * 20 * speedFactor;
+      const motionScale = speedFactor * (proximity * 0.08 - (1 - proximity) * 0.06);
+      const motionFloat = speedFactor * (proximity * -16 + (1 - proximity) * 10);
+      const motionLag = clamp(state.fluidVelocity * 0.045, -12, 12) * (1 - proximity * 0.4);
 
-      // --- Blend Base, Motion, Hover, and Expand ---
       const rotateY = (baseRotateY + motionRotateY) * (1 - hp * 0.15) * (1 - globalEp);
-      const rotateX = motionRotateX * (1 - hp * 0.15) * (1 - globalEp);
-      const rotateZ = motionRotateZ * (1 - hp * 0.15) * (1 - globalEp);
+      const rotateX = -speedFactor * proximity * 3.5 * (1 - globalEp);
+      const rotateZ = clamp(state.fluidVelocity * 0.02, -2.5, 2.5) * (1 - globalEp);
 
-      // Disable physical hover scaling to focus purely on color/brightness 'light up' feel
-      const hoverScale = 0; 
-      const neighborScale = 0;
+      let scaleX = baseScale + motionScale;
+      let scaleY = scaleX;
 
-      let scaleX, scaleY;
       if (isSelected) {
-        const startScaleX = baseScale + motionScale;
-        const startScaleY = baseScale + motionScale;
-        
-        // Dynamically compute target scales matching the image's original aspect ratio (e.g. 9:16 or 16:9)
-        const image = card.querySelector("img");
-        let aspect = 16 / 9;
-        if (image && image.naturalWidth && image.naturalHeight) {
-          aspect = image.naturalWidth / image.naturalHeight;
-        }
-        
-        const maxTargetWidth = state.stageWidth * 0.95;
-        const maxTargetHeight = window.innerHeight * 0.95;
-        
-        let targetWidth, targetHeight;
-        if (aspect > maxTargetWidth / maxTargetHeight) {
-          // Horizontal/Widescreen images (e.g. 16:9) fit to width
-          targetWidth = maxTargetWidth;
-          targetHeight = maxTargetWidth / aspect;
+        const aspect = card._aspect || (16 / 9);
+        const maxTargetW = state.stageWidth * 0.94;
+        const maxTargetH = window.innerHeight * 0.94;
+        let targetW, targetH;
+        if (aspect > maxTargetW / maxTargetH) {
+          targetW = maxTargetW;
+          targetH = maxTargetW / aspect;
         } else {
-          // Vertical/Portrait images (e.g. 9:16) fit to height
-          targetHeight = maxTargetHeight;
-          targetWidth = maxTargetHeight * aspect;
+          targetH = maxTargetH;
+          targetW = maxTargetH * aspect;
         }
-        
-        const cardHeight = card.offsetHeight || 450;
-        const targetScaleX = targetWidth / cardWidth;
-        const targetScaleY = targetHeight / cardHeight;
-        
-        scaleX = lerp(startScaleX, targetScaleX, globalEp);
-        scaleY = lerp(startScaleY, targetScaleY, globalEp);
-      } else {
-        scaleX = baseScale + motionScale;
-        scaleY = baseScale + motionScale;
+        const cardH = card.offsetHeight || 450;
+        const targetScaleX = targetW / cardWidth;
+        const targetScaleY = targetH / cardH;
+        scaleX = lerp(scaleX, targetScaleX, globalEp);
+        scaleY = lerp(scaleY, targetScaleY, globalEp);
       }
-      scaleX = Math.max(0.001, scaleX);
-      scaleY = Math.max(0.001, scaleY);
 
-      // Soft physical 3D lift on hover (extremely subtle to maintain slick feel)
-      const hoverDepth = hp * 16;
-      const expandDepth = ep * 320;
-      const depth = (baseDepth + motionDepth + hoverDepth) * (1 - globalEp) + expandDepth;
-
-      const hoverFloat = 0;
-      const expandFloat = ep * -12;
-      const float = (baseFloat + motionFloat + hoverFloat) * (1 - globalEp) + expandFloat;
-
+      const depth = (baseDepth + motionDepth + hp * 18) * (1 - globalEp) + ep * 320;
+      const float = motionFloat * (1 - globalEp) + ep * -12;
       const lag = motionLag * (1 - globalEp);
 
-      // --- Pushing Neighbors ---
       let push = 0;
       if (state.selectedIndex !== null && !isSelected) {
-        const pushDirection = offset < 0 ? -1 : 1;
-        push = pushDirection * state.stageWidth * 0.8 * globalEp;
+        push = (offset < 0 ? -1 : 1) * state.stageWidth * 0.85 * globalEp;
       }
 
-      // --- Center alignment ---
-      const targetCenterOffset = isSelected ? offset * (1 - globalEp) : (offset + push + lag);
-      const tx = C + targetCenterOffset - cardCenter;
+      const tx = C + (isSelected ? offset * (1 - globalEp) : (offset + push + lag)) - cardCenter;
 
       card.style.transformOrigin = "center center";
-      card.style.transform = `translate3d(${tx}px, ${float}px, ${depth}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotate(${rotateZ}deg) scale(${scaleX}, ${scaleY})`;
+      card.style.transform = `translate3d(${tx.toFixed(2)}px, ${float.toFixed(2)}px, ${depth.toFixed(2)}px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) rotate(${rotateZ.toFixed(2)}deg) scale(${scaleX.toFixed(3)}, ${scaleY.toFixed(3)})`;
 
-      // --- Soft Floating Shadows ---
-      card.style.boxShadow = "none";
-      const shadowBlur = Math.round(18 + proximity * 24 + hp * 36 + ep * 40);
-      const shadowOpacity = 0.22 + proximity * 0.22 + hp * 0.26 + ep * 0.28;
-      const shadowX = Math.round(-sideOfCenter * (1 - proximity) * 12 * (1 - hp) * (1 - globalEp));
-      const shadowY = Math.round(14 + proximity * 20 + hp * 28 + ep * 20);
+      // 柔和浮动阴影
+      const shadowBlur = Math.round(16 + proximity * 24 + hp * 32 + ep * 40);
+      const shadowOpacity = 0.2 + proximity * 0.22 + hp * 0.24 + ep * 0.26;
+      const shadowX = Math.round(-sideOfCenter * (1 - proximity) * 10 * (1 - hp) * (1 - globalEp));
+      const shadowY = Math.round(12 + proximity * 18 + hp * 22 + ep * 20);
+      card.style.filter = `drop-shadow(${shadowX}px ${shadowY}px ${shadowBlur}px rgba(0,0,0,${shadowOpacity.toFixed(2)}))`;
 
-      // WebGL handles filters internally in Fragment Shader, but we keep CSS box shadow and filters as fallback if WebGL is missing
-      if (!curtainsInstance) {
-        const grayscale = 1.0 - 0.88 * hp - 0.12 * ep;
-        const brightness = 0.48 + 0.48 * hp + 0.52 * ep;
-        const contrast = 1.15 - 0.11 * hp - 0.15 * ep;
-        card.style.filter = `grayscale(${grayscale}) brightness(${brightness}) contrast(${contrast}) drop-shadow(${shadowX}px ${shadowY}px ${shadowBlur}px rgba(0,0,0,${shadowOpacity}))`;
-      } else {
-        card.style.filter = `drop-shadow(${shadowX}px ${shadowY}px ${shadowBlur}px rgba(0,0,0,${shadowOpacity}))`;
-      }
-
-      // --- Smooth Z-Indexing ---
       const baseZIndex = 100 - Math.round(Math.abs(index - state.active));
       card.style.zIndex = isSelected ? "1000" : String(baseZIndex);
+      card.style.opacity = isSelected ? "1" : String(1 - globalEp);
 
-      // --- Opacity ---
-      const opacity = isSelected ? 1 : 1 - globalEp;
-      card.style.opacity = String(opacity);
-
-      // Store visibility status to avoid layout thrashing in updatePosition
-      const isVisible = (C + offset + cardWidth / 2 >= -100) && (C + offset - cardWidth / 2 <= state.stageWidth + 100);
-      card._isVisible = isVisible;
-    });
-
-    // Force curtains.js planes to update positions aligned with DOM cards (optimized to avoid layout thrashing)
-    if (curtainsInstance) {
-      planes.forEach((plane, idx) => {
-        if (idx === state.selectedIndex || track.children[idx]?._isVisible) {
-          plane.updatePosition();
-        }
-      });
+      const cardLeftInView = C + offset - cardWidth * 0.5;
+      const cardRightInView = C + offset + cardWidth * 0.5;
+      card._isVisible = (cardRightInView >= -80) && (cardLeftInView <= state.stageWidth + 80);
     }
 
-    const settled = Math.abs(state.target - state.current) < 0.35 && 
-                    Math.abs(state.velocity) < 0.06 && 
-                    Math.abs(state.wavePower) < 0.06 &&
-                    Math.abs(state.waveTarget) < 0.06 &&
-                    !hasActiveHover;
-                    
-    if (!settled || state.dragging || state.selectedIndex === null) {
+    if (curtainsInstance) {
+      for (let i = 0; i < planes.length; i++) {
+        if (i === state.selectedIndex || cards[i]?._isVisible) {
+          planes[i].updatePosition();
+        }
+      }
+    }
+
+    const settled = !hasActiveMotion && !state.dragging && state.selectedIndex === null;
+    if (!settled || isIdle) {
       state.raf = requestAnimationFrame(frame);
     }
   };
@@ -723,41 +666,78 @@ function animate() {
 
 function updateBounds() {
   if (!stage || !track) return;
-  state.stageWidth = stage.clientWidth;
+  state.stageWidth = stage.clientWidth || window.innerWidth;
+  state.stageCenter = state.stageWidth * 0.5;
 
   const cards = [...track.children];
   if (!cards.length) return;
+
+  const style = window.getComputedStyle(track);
+  state.gap = parseFloat(style.gap) || 8;
+  state.cardWidth = cards[0].offsetWidth || 110;
+  state.T = items.length * (state.cardWidth + state.gap);
 
   cards.forEach(card => {
     card._offsetLeft = card.offsetLeft;
     card._offsetWidth = card.offsetWidth;
+    const img = card.querySelector("img");
+    if (img && img.naturalWidth && img.naturalHeight) {
+      card._aspect = img.naturalWidth / img.naturalHeight;
+    }
   });
 }
 
-function updateActiveFromCenter() {
-  if (!state.stageWidth) return;
-  const C = state.stageWidth / 2;
-  const cards = [...track.children];
-  if (!cards.length) return;
-  const cardWidth = cards[0]._offsetWidth || 110;
-  const gap = parseFloat(window.getComputedStyle(track).gap) || 20;
-  const T = items.length * (cardWidth + gap);
+function getClosestCardCenterOffset() {
+  const cards = track.children;
+  const count = cards.length;
+  if (!count || !state.T) return 0;
 
-  let nextActive = 0;
+  const C = state.stageCenter;
+  const T = state.T;
+  const cardWidth = state.cardWidth;
+
   let minDistance = Infinity;
+  let closestOffset = 0;
 
-  cards.forEach((card, index) => {
-    const cardCenter = card._offsetLeft + cardWidth / 2;
-    const x = cardCenter + state.current;
-    const offset = ((x - C + T/2) % T + T) % T - T/2;
+  for (let i = 0; i < count; i++) {
+    const cardCenter = (cards[i]._offsetLeft !== undefined ? cards[i]._offsetLeft : cards[i].offsetLeft) + cardWidth * 0.5;
+    const worldX = cardCenter + state.x;
+    const offset = ((worldX - C + T * 0.5) % T + T) % T - T * 0.5;
     const distance = Math.abs(offset);
     if (distance < minDistance) {
       minDistance = distance;
-      nextActive = index;
+      closestOffset = offset;
     }
-  });
+  }
+  return closestOffset;
+}
 
-  setActive(nextActive);
+function updateActiveFromCenter() {
+  const cards = track.children;
+  const count = cards.length;
+  if (!count || !state.T) return;
+
+  const C = state.stageCenter;
+  const T = state.T;
+  const cardWidth = state.cardWidth;
+
+  let minDistance = Infinity;
+  let nextActive = 0;
+
+  for (let i = 0; i < count; i++) {
+    const cardCenter = (cards[i]._offsetLeft !== undefined ? cards[i]._offsetLeft : cards[i].offsetLeft) + cardWidth * 0.5;
+    const worldX = cardCenter + state.x;
+    const offset = ((worldX - C + T * 0.5) % T + T) % T - T * 0.5;
+    const distance = Math.abs(offset);
+    if (distance < minDistance) {
+      minDistance = distance;
+      nextActive = i;
+    }
+  }
+
+  if (nextActive !== state.active) {
+    setActive(nextActive);
+  }
 }
 
 function setActive(index) {
@@ -772,7 +752,6 @@ function setActive(index) {
   if (totalCount) totalCount.textContent = String(state.baseLength).padStart(2, "0");
   if (activeTitle && item) activeTitle.textContent = item.title || "NSY Gallery";
 
-  // Update the full-screen blurred background image
   const bgImage = document.querySelector("[data-photo-wall-bg-image]");
   if (bgImage && item) {
     const url = item.imageUrl || item.thumbUrl;
@@ -814,17 +793,13 @@ function openItem(index) {
     });
   }
 
-  // Scroll the selected card to center
-  const cards = [...track.children];
+  // 平滑滑移选中卡片到屏幕中心
+  const cards = track.children;
   if (cards.length) {
-    const cardWidth = cards[0]._offsetWidth || 110;
-    const gap = parseFloat(window.getComputedStyle(track).gap) || 20;
-    const T = items.length * (cardWidth + gap);
-    const C = state.stageWidth / 2;
-    const cardCenter = cards[index]._offsetLeft + cardWidth / 2;
-    const x = cardCenter + state.target;
-    const offset = ((x - C + T/2) % T + T) % T - T/2;
-    state.target -= offset;
+    const cardCenter = (cards[index]._offsetLeft !== undefined ? cards[index]._offsetLeft : cards[index].offsetLeft) + state.cardWidth * 0.5;
+    const worldX = cardCenter + state.x;
+    const offset = ((worldX - state.stageCenter + state.T * 0.5) % state.T + state.T) % state.T - state.T * 0.5;
+    state.x -= offset;
   }
 
   animate();
@@ -836,7 +811,6 @@ function closeLightbox() {
   if (lightbox) {
     lightbox.classList.remove("is-active");
     if (lightboxImage) {
-      // Clear inline 3D tilt styles immediately so the CSS scale-down transition takes over beautifully!
       lightboxImage.style.transform = "";
       lightboxImage.style.filter = "";
     }
@@ -869,7 +843,6 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-// Cubic bezier or spring interpolation
 function lerp(from, to, amount) {
   return from + (to - from) * amount;
 }
