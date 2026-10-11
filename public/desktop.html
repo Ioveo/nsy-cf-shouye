@@ -111,6 +111,30 @@ h2{font-size:clamp(30px,3.6vw,42px);font-weight:900;letter-spacing:1px;margin-bo
 .shot .cap{padding:16px 22px;font-size:14px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
 .shot .cap b{color:var(--ink);font-size:15px}
 .shot-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.shot-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+/* 特色功能专栏与炼金盒样式 */
+.feature-showcase{display:grid;grid-template-columns:1.05fr .95fr;gap:52px;align-items:center;margin-bottom:88px}
+.feature-showcase.reverse{direction:rtl}
+.feature-showcase.reverse > *{direction:ltr}
+.feature-media{border-radius:24px;overflow:hidden;border:1px solid rgba(255,255,255,.1);box-shadow:0 24px 60px rgba(0,0,0,.5);background:rgba(255,255,255,.02);transition:transform .35s,box-shadow .35s}
+.feature-media:hover{transform:translateY(-5px);box-shadow:0 30px 80px rgba(0,0,0,.65)}
+.feature-media img{display:block;width:100%;height:auto}
+.feature-info .sec-eyebrow{margin-bottom:12px}
+.feature-info h2{font-size:clamp(28px,3.2vw,38px);line-height:1.25;margin-bottom:16px}
+.feature-info p.lead{font-size:15.5px;color:var(--muted);margin-bottom:24px;line-height:1.7}
+.bullet-list{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.bullet-item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;display:flex;gap:12px;align-items:flex-start;transition:all .25s}
+.bullet-item:hover{border-color:rgba(245,200,110,.35);background:rgba(255,255,255,.05);transform:translateY(-2px)}
+.bullet-item .b-ic{font-size:22px;line-height:1;flex-shrink:0;margin-top:2px}
+.bullet-item h4{font-size:14.5px;font-weight:700;margin-bottom:4px;color:var(--ink)}
+.bullet-item p{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0}
+.alchemy-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.alchemy-card{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px 16px;transition:all .25s;text-align:left}
+.alchemy-card:hover{border-color:var(--teal);transform:translateY(-3px);background:rgba(45,212,191,.04);box-shadow:0 12px 30px rgba(0,0,0,.35)}
+.alchemy-card .a-ic{font-size:24px;margin-bottom:10px}
+.alchemy-card h4{font-size:15px;font-weight:700;margin-bottom:4px;color:var(--ink)}
+.alchemy-card p{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
+.kbd{display:inline-block;padding:2px 7px;font-size:12px;font-family:monospace;font-weight:700;color:var(--gold);background:rgba(245,200,110,.12);border:1px solid rgba(245,200,110,.28);border-radius:6px;margin:0 2px;vertical-align:baseline}
 .dl{background:linear-gradient(135deg,rgba(52,211,153,.1),rgba(45,212,191,.05));border:1px solid rgba(52,211,153,.25);border-radius:28px;padding:64px 40px;text-align:center}
 .dl p{color:var(--muted);margin:12px 0 32px}
 .dl .meta{margin-top:22px;font-size:13px;color:var(--faint)}
@@ -121,6 +145,11 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--fai
 .rv{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.3,1)}
 .rv.on{opacity:1;transform:none}
 @media(max-width:900px){
+  .feature-showcase{grid-template-columns:1fr;gap:32px;margin-bottom:60px}
+  .feature-showcase.reverse{direction:ltr}
+  .bullet-list{grid-template-columns:1fr}
+  .alchemy-grid{grid-template-columns:1fr 1fr}
+  .shot-grid-3{grid-template-columns:1fr 1fr}
   .pet-grid{grid-template-columns:1fr}
   .bento,.skins{grid-template-columns:1fr 1fr}
   .nav-links{display:none}
@@ -128,7 +157,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--fai
   .data-panel{right:20px;bottom:84px}
   .scroll-cue{display:none}
 }
-@media(max-width:600px){.bento,.skins{grid-template-columns:1fr}}
+@media(max-width:600px){.bento,.skins,.alchemy-grid,.shot-grid-3{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}.cine-hero video.bg{animation:none}.video-card{animation:none}.cine-title .ch{opacity:1;filter:none;transform:none;animation:none}}
 </style>
 </head>
@@ -136,7 +165,16 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--fai
 
 <nav id="nav"><div class="nav-in">
   <a class="brand" href="/"><img src="/desktop-logo.png" alt="天才猫桌面" />天才猫桌面<small>2.0</small></a>
-  <div class="nav-links"><a href="#features">功能</a><a href="#pet">桌宠</a><a href="#skins">皮肤</a><a href="#ui">界面</a><a href="#download">下载</a></div>
+  <div class="nav-links">
+    <a href="#features">全景功能</a>
+    <a href="#efficiency">效率速览</a>
+    <a href="#alchemy">桌面炼金盒</a>
+    <a href="#tools">截图剪贴板</a>
+    <a href="#pet">灵动桌宠</a>
+    <a href="#skins">皮肤</a>
+    <a href="#ui">界面实拍</a>
+    <a href="#download">下载</a>
+  </div>
   <a class="btn btn-gold btn-sm" href="#download" style="margin-left:auto">免费下载</a>
 </div></nav>
 
@@ -160,24 +198,232 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--fai
   </div>
   <button class="data-toggle" id="dataToggle" aria-expanded="false"><span class="pl">＋</span>探索功能</button>
   <div class="data-panel" id="dataPanel">
-    <h4>为什么是天才猫桌面</h4>
+    <h4>全能效率中枢 · 核心速查</h4>
     <div class="row"><span>⚡ 一键整理桌面</span><span>自动归类 · 可撤销</span></div>
-    <div class="row"><span>🐾 灵动桌宠</span><span>50+ 互动动画</span></div>
-    <div class="row"><span>🎨 皮肤中心</span><span>6 套官方皮肤</span></div>
-    <div class="row"><span>💾 空间管家</span><span>C盘清理 · 安全可逆</span></div>
+    <div class="row"><span>🚀 顶部窗口速览</span><span>鼠标划过即切 · 左右键</span></div>
+    <div class="row"><span>⌨️ 快捷键中心</span><span>Alt+1~9 秒开 · 拖拽秒绑</span></div>
+    <div class="row"><span>🧪 桌面炼金盒</span><span>压缩/瘦身/格式互转/OCR</span></div>
+    <div class="row"><span>📸 截图与贴图</span><span>马赛克/长截图/置顶贴图</span></div>
+    <div class="row"><span>📋 剪贴板历史</span><span>Ctrl+` 随查随粘</span></div>
+    <div class="row"><span>🐾 灵动桌宠</span><span>50+ 动作 · 待办与专注</span></div>
   </div>
   <div class="scroll-cue">向下滚动<i></i></div>
 </header>
 
 <section id="features"><div class="wrap">
-  <div class="sec-head rv"><div class="sec-eyebrow">FEATURES</div><h2>一个软件，六种治愈</h2><p>整理、效率与陪伴，一次全给你。</p></div>
+  <div class="sec-head rv"><div class="sec-eyebrow">FEATURES OVERVIEW</div><h2>一个软件，效率全能中枢</h2><p>桌面整理、闪电流转、文件百宝箱与深度陪伴，一次全给你。</p></div>
   <div class="bento">
-    <div class="card rv"><span class="k">整理</span><div class="ic" style="background:rgba(52,211,153,.14)">⚡</div><h3>一键整理桌面</h3><p>自动把散落的文件归类到收纳盒，桌面永远干干净净，可撤销。</p></div>
-    <div class="card rv"><span class="k">小组件</span><div class="ic" style="background:rgba(59,130,246,.14)">🕑</div><h3>桌面小组件</h3><p>时钟、天气、纪念日，一眼即达。毛玻璃质感，和壁纸融为一体。</p></div>
-    <div class="card rv"><span class="k">陪伴</span><div class="ic" style="background:rgba(139,92,246,.14)">🐾</div><h3>灵动桌宠</h3><p>深藏青色的小猫住在桌面上：探头、偷看、打滚，50+ 种互动动画。</p></div>
-    <div class="card rv"><span class="k">空间</span><div class="ic" style="background:rgba(251,191,36,.14)">💾</div><h3>空间管家</h3><p>C 盘一眼看懂该删什么，搬家、清理都安全可逆，新手也不会误删。</p></div>
-    <div class="card rv"><span class="k">效率</span><div class="ic" style="background:rgba(45,212,191,.14)">⌨️</div><h3>快捷键</h3><p>Alt+1~9 秒开常用软件，再按一次收起，指尖上的效率。</p></div>
-    <div class="card rv"><span class="k">美学</span><div class="ic" style="background:rgba(244,114,182,.14)">🎨</div><h3>皮肤中心</h3><p>冰川磨砂、极光幻紫、午夜纯黑……6 套皮肤，桌面随心换。</p></div>
+    <div class="card rv"><span class="k">收纳</span><div class="ic" style="background:rgba(52,211,153,.14)">⚡</div><h3>一键整理桌面</h3><p>智能把散落的文件自动归类到分类磨砂收纳盒，桌面瞬间清爽整洁，完全可撤销防误删。</p></div>
+    <div class="card rv"><span class="k">流转</span><div class="ic" style="background:rgba(59,130,246,.14)">🚀</div><h3>顶部窗口速览</h3><p>屏幕顶端轻量常驻，鼠标滑过即切换窗口，或轻按键盘左右键极速轮播，比 Alt+Tab 更轻快。</p></div>
+    <div class="card rv"><span class="k">按键</span><div class="ic" style="background:rgba(245,200,110,.14)">⌨️</div><h3>快捷键中心</h3><p>Alt+1~9 秒开常用软件再按收起；图标拖到卡片秒绑定，前 4 个自动同步到桌面主控盒。</p></div>
+    <div class="card rv"><span class="k">百宝箱</span><div class="ic" style="background:rgba(45,212,191,.14)">🧪</div><h3>桌面炼金盒</h3><p>文件的随身瑞士军刀！打包压缩、图片瘦身、JPG/PNG/PDF 互转、文字提取与即时翻译。</p></div>
+    <div class="card rv"><span class="k">刚需</span><div class="ic" style="background:rgba(239,68,68,.14)">📸</div><h3>高能截图与贴图</h3><p>Ctrl+Alt+A 极速截图，马赛克隐私打码、滚动长截图、置顶贴图比对与画笔批注一应俱全。</p></div>
+    <div class="card rv"><span class="k">记忆</span><div class="ic" style="background:rgba(168,85,247,.14)">📋</div><h3>剪贴板历史</h3><p>Ctrl+` 秒开剪贴板历史，所有文字、代码段、历史截图一键回溯粘贴，绝不丢失关键灵感。</p></div>
+    <div class="card rv"><span class="k">无界</span><div class="ic" style="background:rgba(14,165,233,.14)">🌐</div><h3>框选即时翻译</h3><p>Alt+CapsLock 划词框选即翻，屏幕上任意文字、游戏字幕、海报文献一秒扫清语言障碍。</p></div>
+    <div class="card rv"><span class="k">陪伴</span><div class="ic" style="background:rgba(139,92,246,.14)">🐾</div><h3>灵动桌宠 & 专注</h3><p>深藏青色小猫 50+ 互动动画；右键可随手记录待办清单、一键开启 25 分钟番茄专注时钟。</p></div>
+    <div class="card rv"><span class="k">空间</span><div class="ic" style="background:rgba(251,191,36,.14)">💾</div><h3>NovaDisk 空间管家</h3><p>C 盘一眼看清大文件分布，微信/QQ 数据无损 NTFS Junction 迁移释放几十 GB，安全可逆。</p></div>
+  </div>
+</div></section>
+
+<!-- ============ 效率神器：顶部速览 & 快捷键 ============ -->
+<section id="efficiency" style="background:rgba(255,255,255,.015)"><div class="wrap">
+  <div class="feature-showcase rv">
+    <div class="feature-media">
+      <img src="/preview-top-peek-dock.png" alt="顶部窗口速览 Top Peek Dock" loading="lazy">
+    </div>
+    <div class="feature-info">
+      <div class="sec-eyebrow">TOP PEEK DOCK</div>
+      <h2>顶部窗口速览<br>鼠标轻拂，多任务行云流水</h2>
+      <p class="lead">日常多开十几个窗口，频繁按 Alt+Tab 眼花缭乱？天才猫桌面将多窗口管理升维到屏幕顶端，轻盈无感。</p>
+      <div class="bullet-list">
+        <div class="bullet-item">
+          <div class="b-ic">🖱️</div>
+          <div>
+            <h4>鼠标经过即切换窗口</h4>
+            <p>光标移到顶栏对应窗口标签，无需点击，瞬间秒切激活目标窗口。</p>
+          </div>
+        </div>
+        <div class="bullet-item">
+          <div class="b-ic">↔️</div>
+          <div>
+            <h4>键盘左右键极速轮播</h4>
+            <p>使用键盘 <span class="kbd">←</span> <span class="kbd">→</span> 方向键，走马灯式平滑切换所有前台任务。</p>
+          </div>
+        </div>
+        <div class="bullet-item">
+          <div class="b-ic">🪶</div>
+          <div>
+            <h4>轻量隐形，不挡视线</h4>
+            <p>平时优雅隐匿在屏幕顶端，贴边即现，不挤占任何宝贵的工作显示空间。</p>
+          </div>
+        </div>
+        <div class="bullet-item">
+          <div class="b-ic">➕</div>
+          <div>
+            <h4>多任务一键新建</h4>
+            <p>自带便捷加号与导航控件，窗口管理直观高效，媲美专业级桌面工作台。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feature-showcase reverse rv" style="margin-bottom:0">
+    <div class="feature-media">
+      <img src="/preview-hotkeys-new.png" alt="快捷键中心" loading="lazy">
+    </div>
+    <div class="feature-info">
+      <div class="sec-eyebrow">HOTKEYS CENTER</div>
+      <h2>Alt + 1 ~ 9 秒开常用<br>拖拽即绑，指尖上的生产力</h2>
+      <p class="lead">把最常用的工具握在指尖。一键唤起、一键收起，彻底告别满桌面找图标的繁琐。</p>
+      <div class="bullet-list">
+        <div class="bullet-item">
+          <div class="b-ic">⚡</div>
+          <div>
+            <h4>按一下打开，再按一下收起</h4>
+            <p><span class="kbd">Alt+1~9</span> 瞬发启动，再按立即隐藏收拢，随用随隐。</p>
+          </div>
+        </div>
+        <div class="bullet-item">
+          <div class="b-ic">🎯</div>
+          <div>
+            <h4>拖拽桌面图标秒绑定</h4>
+            <p>从桌面直接把软件图标拖进卡片格子即可完成绑定，操作直觉自然。</p>
+          </div>
+        </div>
+        <div class="bullet-item">
+          <div class="b-ic">🔄</div>
+          <div>
+            <h4>前 4 项同步桌面主控盒</h4>
+            <p>最核心的 4 个常用应用自动映射到主控制小组件，多端联动。</p>
+          </div>
+        </div>
+        <div class="bullet-item">
+          <div class="b-ic">🌐</div>
+          <div>
+            <h4>支持网址与命令行</h4>
+            <p>不仅是软件，还能绑定常用网址、文件夹、脚本命令，卡片拖拽随意调序。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 桌面炼金盒：文件百宝箱 ============ -->
+<section id="alchemy"><div class="wrap">
+  <div class="sec-head rv">
+    <div class="sec-eyebrow">DESKTOP ALCHEMY BOX</div>
+    <h2>桌面炼金盒 · 文件百宝箱</h2>
+    <p>日常繁杂的文件处理，无需打开庞大的专用软件。右键桌面或小猫，8 大炼金神技随手即得。</p>
+  </div>
+  <div class="feature-showcase rv" style="margin-bottom:0">
+    <div class="feature-media">
+      <img src="/preview-alchemy-box.png" alt="桌面炼金盒与天才猫全功能菜单" loading="lazy">
+    </div>
+    <div class="feature-info">
+      <p class="lead" style="margin-bottom:20px">把文件随手拖给小猫，或者右键呼出炼金盒，一键完成压缩、瘦身、转换与文字提取：</p>
+      <div class="alchemy-grid" style="grid-template-columns:1fr 1fr">
+        <div class="alchemy-card">
+          <div class="a-ic">📦</div>
+          <h4>打包压缩</h4>
+          <p>单文件或整个文件夹，一键快速打包为 Zip 压缩包，免去第三方解压软件。</p>
+        </div>
+        <div class="alchemy-card">
+          <div class="a-ic">🖼️</div>
+          <h4>图片瘦身</h4>
+          <p>照片体积大幅缩减，智能保留高清画质，邮件与微信传输瞬间即达。</p>
+        </div>
+        <div class="alchemy-card">
+          <div class="a-ic">🔄</div>
+          <h4>图片格式互转</h4>
+          <p>JPG · PNG · PDF 格式无缝自由互转，完美解决平台上传格式限制。</p>
+        </div>
+        <div class="alchemy-card">
+          <div class="a-ic">📑</div>
+          <h4>PDF 转图片</h4>
+          <p>多页 PDF 文档智能拆分，每页自动渲染导出为独立超清图片。</p>
+        </div>
+        <div class="alchemy-card">
+          <div class="a-ic">📝</div>
+          <h4>高精提取文字 (OCR)</h4>
+          <p>图片、扫描件、PDF 页面内容一秒识别为可编辑文本，告别手打摘录。</p>
+        </div>
+        <div class="alchemy-card">
+          <div class="a-ic">🌐</div>
+          <h4>多语种极速翻译</h4>
+          <p>划选图片、文本或 PDF 内容一键精准直译，多语种跨界阅读无忧。</p>
+        </div>
+        <div class="alchemy-card">
+          <div class="a-ic">📅</div>
+          <h4>按日期批量改名</h4>
+          <p>一键自动格式化命名为“日期_原名”，摄影原片与办公素材归档利器。</p>
+        </div>
+        <div class="alchemy-card">
+          <div class="a-ic">📁</div>
+          <h4>收进新文件夹</h4>
+          <p>多选桌面凌乱文件，一秒打包归拢到独立新文件夹，治愈强迫症。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 截图 · 贴图 · 剪贴板 ============ -->
+<section id="tools" style="background:rgba(255,255,255,.015)"><div class="wrap">
+  <div class="feature-showcase reverse rv" style="margin-bottom:0">
+    <div class="feature-media">
+      <img src="/preview-screenshot-tool.png" alt="截图与翻译工具" loading="lazy">
+    </div>
+    <div class="feature-info">
+      <div class="sec-eyebrow">SCREENSHOT & WORKFLOW</div>
+      <h2>截图、长截图、置顶贴图<br>配齐生产力全家桶</h2>
+      <p class="lead">从随手打码到长图拼接，从屏幕取词到剪贴板回溯，每个常用痛点都替你想好了。</p>
+      <div class="bullet-list">
+        <div class="bullet-item">
+          <div class="b-ic">📸</div>
+          <div>
+            <h4>Ctrl + Alt + A 专业截图</h4>
+            <p>自带智能马赛克隐私打码、几何画笔、箭头标号，敏捷截取所需画面。</p>
+          </div>
+        </div>
+        <div class="bullet-item">
+          <div class="b-ic">📜</div>
+          <div>
+            <h4>无缝滚动截长图</h4>
+            <p>长网页、聊天记录、长文档一键平滑滚动长截屏，自动对齐拼接。</p>
+          </div>
+        </div>
+        <div class="bullet-item">
+          <div class="b-ic">📌</div>
+          <div>
+            <h4>钉在桌面贴图</h4>
+            <p>截图一键置顶悬浮在桌面上，多屏比对代码、参考设计稿不用反复切屏。</p>
+          </div>
+        </div>
+        <div class="bullet-item">
+          <div class="b-ic">🌐</div>
+          <div>
+            <h4>Alt + CapsLock 框选就翻译</h4>
+            <p>无论网页还是客户端，框选屏幕任意区域即时翻译，所见即懂。</p>
+          </div>
+        </div>
+        <div class="bullet-item">
+          <div class="b-ic">📋</div>
+          <div>
+            <h4>Ctrl + ` 剪贴板历史</h4>
+            <p>随叫随到的剪贴板历史记录，文本、代码、图片一键粘贴找回。</p>
+          </div>
+        </div>
+        <div class="bullet-item">
+          <div class="b-ic">🍅</div>
+          <div>
+            <h4>专注 25 分钟 & 桌面待办</h4>
+            <p>右键小猫一键开启番茄专注时钟，随手记录待办清单，高效自律。</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div></section>
 
@@ -218,7 +464,13 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:34px 0;color:var(--fai
   <div class="sec-head rv"><div class="sec-eyebrow">UI SHOWCASE</div><h2>真实界面，所见即所得</h2><p>以下均为软件实际运行截图，不是效果图。</p></div>
   <div class="shots">
     <div class="shot rv"><img src="/ui-desktop-full.png" alt="天才猫桌面 2.0 实际全屏运行效果" loading="lazy"><div class="cap"><b>🖥️ 桌面实拍</b><span>全景工作台 · 收纳盒 + 实用小组件 + 灵动桌宠</span></div></div>
-    <div class="shot-grid">
+    <div class="shot-grid-3">
+      <div class="shot rv"><img src="/preview-alchemy-box.png" alt="桌面炼金盒与菜单" loading="lazy"><div class="cap"><b>🧪 桌面炼金盒</b><span>8 大文件实用神技</span></div></div>
+      <div class="shot rv"><img src="/preview-hotkeys-new.png" alt="快捷键中心" loading="lazy"><div class="cap"><b>⌨️ 快捷键中心</b><span>Alt+1~9 拖拽秒绑</span></div></div>
+      <div class="shot rv"><img src="/preview-top-peek-dock.png" alt="顶部窗口速览" loading="lazy"><div class="cap"><b>🚀 顶部窗口速览</b><span>鼠标划过秒切窗口</span></div></div>
+    </div>
+    <div class="shot-grid-3" style="margin-top:18px">
+      <div class="shot rv"><img src="/preview-screenshot-tool.png" alt="截图与翻译" loading="lazy"><div class="cap"><b>📸 截图与贴图</b><span>马赛克 / 滚动截长图</span></div></div>
       <div class="shot rv"><img src="/preview-appearance-themes.png" alt="外观设置" loading="lazy"><div class="cap"><b>🎨 外观设置</b><span>6 套皮肤一键换</span></div></div>
       <div class="shot rv"><img src="/preview-novadisk-clean.png" alt="空间管家" loading="lazy"><div class="cap"><b>💾 空间管家</b><span>C盘清理，安全可逆</span></div></div>
     </div>
