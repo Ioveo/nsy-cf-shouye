@@ -43,6 +43,8 @@ export async function onRequestPost({ request, env }) {
     refType: String(body.refType || ""),
     refId: String(body.refId || "")
   });
-  if (!asset) return json({ success: false, msg: `文件已上传到 ${fileKey}，但 D1 未配置，资源记录保存失败` }, 500);
-  return json({ success: true, asset: withAssetUrl(asset) });
+  const url = `/${fileKey.split("/").map(encodeURIComponent).join("/")}`;
+  // 没配 D1 时文件已经在 R2 里了，照样返回成功，只是资源库列表里看不到
+  if (!asset) return json({ success: true, fileKey, url, warning: "D1 未配置，资源记录未保存（文件已上传）" });
+  return json({ success: true, fileKey, url, asset: withAssetUrl(asset) });
 }

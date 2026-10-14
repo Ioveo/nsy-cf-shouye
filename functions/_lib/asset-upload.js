@@ -7,6 +7,7 @@ export const ASSET_LIMITS = {
   image: 8 * 1024 * 1024,
   audio: 50 * 1024 * 1024,
   software: MAX_MULTIPART_SIZE,
+  hotupdate: MAX_MULTIPART_SIZE,
   site: 8 * 1024 * 1024,
   other: 30 * 1024 * 1024
 };
@@ -17,6 +18,7 @@ export function normalizeKind(kind, name, type) {
   if (kind === "image" && ["png", "jpg", "jpeg", "gif", "webp", "avif"].includes(ext)) return "image";
   if (kind === "audio" && ["mp3", "m4a", "aac", "wav", "ogg", "oga", "webm", "flac"].includes(ext)) return "audio";
   if (kind === "software" && ["zip", "7z", "rar", "exe", "msi"].includes(ext)) return "software";
+  if (kind === "hotupdate" && ["zip", "7z", "rar", "exe", "msi", "dll", "gz", "bin", "json"].includes(ext)) return "hotupdate";
   if (kind === "site" && ["png", "jpg", "jpeg", "gif", "webp", "avif", "ico"].includes(ext)) return "site";
   if (kind === "other") return "other";
   return "";
@@ -26,6 +28,8 @@ export function keyFor(kind, folder, fileName) {
   const safeFolder = slugify(folder || kind);
   const ym = new Date().toISOString().slice(0, 7).replace("-", "/");
   if (kind === "software") return `software/manual/${Date.now()}-${fileName}`;
+  // 热更新文件放在 apps/<应用>/ 下，由 /apps/* 路由直接提供下载
+  if (kind === "hotupdate") return `apps/${slugify(folder || "desktop")}/${Date.now()}-${fileName}`;
   if (kind === "site") return `site/${safeFolder}/${Date.now()}-${fileName}`;
   if (kind === "audio") return `media/audio/${ym}/${id("audio")}-${fileName}`;
   if (kind === "image") return `media/images/${ym}/${id("image")}-${fileName}`;

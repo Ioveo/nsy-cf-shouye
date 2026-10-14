@@ -19,7 +19,21 @@ export const DEFAULT_NAVIGATION = [
   { id: "buy", label: "购买授权", href: "https://mk.nsy.me/buy", sortOrder: 50, status: "active", external: true }
 ];
 
+// 网站模式：software 软件下载站 / portal 综合门户 / blog 博客
+export const SITE_MODES = ["software", "portal", "blog"];
+const MODE_HIDDEN_HREFS = {
+  software: ["/photo-wall.html", "/gallery.html", "/music.html"],
+  portal: [],
+  blog: ["/download.html", "/desktop.html", "/license.html", "/photo-wall.html"]
+};
+
+export function navigationForMode(navigation, mode) {
+  const hidden = MODE_HIDDEN_HREFS[mode] || [];
+  return (navigation || []).filter(item => !hidden.includes(String(item.href || "").split(/[?#]/)[0]));
+}
+
 export const DEFAULT_SITE = {
+  siteMode: "portal",
   homeHeroKicker: "Tiancaimao Command Center",
   homeHeroTitle: "把直播运营入口，压缩成一次打开。",
   homeHeroDescription: "像 Raycast 一样快，但内容全部换成天才猫自己的业务：软件下载、数据中心、DY 辅助、图库素材、音乐频道、文章教程和正版授权。",
@@ -221,7 +235,7 @@ export function publicCatalog(catalog) {
   return {
     product: catalog.product,
     categories: catalog.categories.filter(item => item.status !== "disabled"),
-    navigation: (catalog.navigation || DEFAULT_NAVIGATION).filter(item => item.status !== "disabled"),
+    navigation: navigationForMode((catalog.navigation || DEFAULT_NAVIGATION).filter(item => item.status !== "disabled"), normalizeSite(catalog.site || {}).siteMode),
     site: normalizeSite(catalog.site || {}),
     siteCarousel: (catalog.siteCarousel || []).filter(item => item.status === "published"),
     photoWall: (catalog.photoWall || []).filter(item => item.status === "published"),
@@ -240,7 +254,9 @@ export function publicCatalog(catalog) {
 }
 
 export function normalizeSite(site) {
-  return Object.fromEntries(Object.entries(DEFAULT_SITE).map(([key, fallback]) => [key, String(site?.[key] || fallback)]));
+  const normalized = Object.fromEntries(Object.entries(DEFAULT_SITE).map(([key, fallback]) => [key, String(site?.[key] || fallback)]));
+  if (!SITE_MODES.includes(normalized.siteMode)) normalized.siteMode = DEFAULT_SITE.siteMode;
+  return normalized;
 }
 
 export function normalizeSiteCarousel(items) {

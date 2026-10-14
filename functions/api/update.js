@@ -349,7 +349,9 @@ export async function onRequestPost(context) {
   try {
     const catalog = await loadCatalog(env);
     let software = (catalog.software || []).find(s => (s.slug || s.id) === app || (app === "desktop" && /桌面/i.test(s.name)));
-    if (software) {
+    // 引用的是已发布版本（/download/<id>），版本库里已有记录，不需要再同步
+    const referencesRelease = /^(https?:\/\/[^/]+)?\/download\//i.test(String(versionPayload.fullSetupUrl || ""));
+    if (software && !referencesRelease) {
       // 只有全量包在 R2 中真实存在（或是外部直链）时才写入下载信息，避免把已上传版本的 fileKey 覆盖成不存在的路径
       const setup = await resolveSetupFile(bucket, versionPayload.fullSetupUrl, getPublicUrl(env));
       if (!setup) {

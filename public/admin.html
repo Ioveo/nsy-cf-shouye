@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>天才猫下载管理后台</title>
     <link rel="icon" type="image/png" href="/logo.png?v=20260509" />
-    <link rel="stylesheet" href="/admin.css?v=20260510-editor-tools" />
+    <link rel="stylesheet" href="/admin.css?v=20261014-admin-v2" />
   </head>
   <body>
     <div class="toast" id="toast"></div>
@@ -70,7 +70,15 @@
             <h1>软件下载管理</h1>
             <p>上传版本、维护分类、控制前台下载卡片。</p>
           </div>
-          <button class="ghost" id="logoutButton">退出登录</button>
+          <div class="workspace__tools">
+            <div class="site-mode-switch" id="siteModeSwitch" role="group" aria-label="网站模式">
+              <span class="site-mode-switch__label">网站模式</span>
+              <button type="button" data-site-mode="software" title="首页显示下载中心，隐藏画廊/音乐/照片墙">软件站</button>
+              <button type="button" data-site-mode="portal" title="完整门户首页，所有栏目">综合门户</button>
+              <button type="button" data-site-mode="blog" title="首页显示文章列表，隐藏下载相关栏目">博客</button>
+            </div>
+            <button class="ghost" id="logoutButton">退出登录</button>
+          </div>
         </header>
 
         <div class="module-nav" id="moduleNav"></div>
@@ -136,8 +144,8 @@
               <div style="font-weight: 600; color: #60a5fa; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
                 <span>💡 安装包两种上传方案对比与指引：</span>
               </div>
-              <div>⚡ <strong>方案 A · 极速秒级直传（80MB+ 大安装包强烈推荐）：</strong>在 Cloudflare 控制台直接将大安装包拖拽上传到 R2 桶 <code>dy-ldms-downloads</code>（走 CF 全球高速通道跑满家庭宽带几十 MB/s），然后直接在下方<strong>“登记已上传 R2 文件”</strong>填入路径，<strong>1秒瞬间完成登记与发版</strong>！</div>
-              <div style="margin-top: 4px;">🌐 <strong>方案 B · 网页分片直传（中等文件）：</strong>在下方选择本地文件提交，支持自动分片断点续传（国内普通公网直连 Cloudflare 边缘节点受限，速度约 200~500 KB/s，大文件建议使用方案 A）。</div>
+              <div>🚀 <strong>网页上传（推荐）：</strong>超过 10MB 自动分片，8 路并行上传，支持默认 R2 和外部 R2，单个安装包最大 10GB，失败分片自动重试。</div>
+              <div style="margin-top: 4px;">⚡ <strong>备选 · 控制台直传后登记：</strong>在 Cloudflare 控制台直接将大安装包拖拽上传到 R2 桶 <code>dy-ldms-downloads</code>（走 CF 全球高速通道跑满家庭宽带几十 MB/s），然后直接在下方<strong>“登记已上传 R2 文件”</strong>填入路径，<strong>1秒瞬间完成登记与发版</strong>！</div>
               <div style="margin-top: 4px; color: #f59e0b;">⚡ <strong>老用户在线热更新去哪里发？</strong>如果只需推送几 MB 的单 exe 或差量包给老用户，请前往左侧<strong>【热更控制台】</strong>发布。</div>
             </div>
           </div>
@@ -160,6 +168,20 @@
             <label><input id="registerLatest" type="checkbox" checked /> 设为最新版</label>
             <div class="form-actions span-2"><button class="ghost" type="submit">登记已上传 R2 文件</button></div>
           </form>
+          <form class="form-grid release-edit" id="releaseEditForm" hidden>
+            <input type="hidden" id="editReleaseId" />
+            <div class="span-2 release-edit__title"><strong>编辑版本</strong> <span id="editReleaseSoftware"></span></div>
+            <label>版本号<input id="editReleaseVersion" required /></label>
+            <label>状态<select id="editReleaseStatus"><option value="published">已发布</option><option value="draft">草稿</option><option value="disabled">隐藏</option></select></label>
+            <label class="span-2">下载文件名<input id="editReleaseFileName" placeholder="用户下载时看到的文件名" /></label>
+            <label class="span-2">更新说明<textarea id="editReleaseChangelog" rows="4"></textarea></label>
+            <label><input id="editReleaseLatest" type="checkbox" /> 设为最新版</label>
+            <div class="form-actions span-2"><button type="submit">保存版本</button><button class="ghost" type="button" id="cancelReleaseEdit">取消</button></div>
+          </form>
+          <div class="release-filter">
+            <select id="releaseFilterSoftware"><option value="all">全部软件</option></select>
+            <input id="releaseFilterSearch" placeholder="搜索版本号 / 文件名" />
+          </div>
           <div class="table-wrap"><table><thead><tr><th>软件</th><th>版本</th><th>文件</th><th>大小</th><th>最新</th><th>下载</th><th>操作</th></tr></thead><tbody id="releaseRows"></tbody></table></div>
         </section>
 
@@ -620,6 +642,6 @@
       </section>
     </main>
 
-    <script src="/admin.js?v=20260518-wordmark-admin" type="module"></script>
+    <script src="/admin.js?v=20261014-admin-v2" type="module"></script>
   </body>
 </html>

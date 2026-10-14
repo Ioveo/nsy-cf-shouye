@@ -17,6 +17,25 @@ export async function onRequestPost({ request, env }) {
     match.release.status = "published";
   } else if (action === "toggle") {
     match.release.status = match.release.status === "disabled" ? "published" : "disabled";
+  } else if (action === "edit") {
+    // 编辑版本信息：版本号、更新说明、状态、文件名、是否最新
+    const body = auth.body || {};
+    const version = String(body.version ?? match.release.version).trim();
+    if (!version) return json({ success: false, msg: "版本号不能为空" }, 400);
+    if (match.software.releases.some(item => item.id !== releaseId && item.version === version)) {
+      return json({ success: false, msg: `版本 ${version} 已存在` }, 400);
+    }
+    const status = String(body.status || match.release.status);
+    if (!["published", "draft", "disabled"].includes(status)) return json({ success: false, msg: "未知状态" }, 400);
+    match.release.version = version;
+    match.release.status = status;
+    if (body.changelog !== undefined) match.release.changelog = String(body.changelog);
+    if (body.fileName) match.release.fileName = String(body.fileName).replace(/["\\\r\n]/g, "");
+    if (body.isLatest === true || body.isLatest === "1") {
+      for (const release of match.software.releases) release.isLatest = release.id === releaseId;
+    } else if (body.isLatest === false || body.isLatest === "0") {
+      match.release.isLatest = false;
+    }
   } else {
     return json({ success: false, msg: "未知操作" }, 400);
   }

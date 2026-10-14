@@ -9,6 +9,10 @@ export async function onRequestPost({ request, env }) {
   if (!body.name || !body.slug) return json({ success: false, msg: "请填写软件名称和标识" }, 400);
 
   const catalog = await loadCatalog(env);
+  const slug = slugify(body.slug);
+  if (catalog.software.some(entry => entry.slug === slug && entry.id !== body.id)) {
+    return json({ success: false, msg: `软件标识 ${slug} 已被其它软件使用` }, 400);
+  }
   const now = Date.now();
   const item = normalizeSoftware({
     id: body.id || id("soft"),

@@ -127,6 +127,11 @@ byId("articleForm").addEventListener("submit", saveArticle);
 byId("musicForm").addEventListener("submit", saveMusic);
 byId("galleryForm").addEventListener("submit", saveGallery);
 byId("releaseForm").addEventListener("submit", uploadRelease);
+byId("releaseEditForm")?.addEventListener("submit", saveReleaseEdit);
+byId("cancelReleaseEdit")?.addEventListener("click", closeReleaseEdit);
+byId("releaseFilterSoftware")?.addEventListener("change", renderReleaseRows);
+byId("releaseFilterSearch")?.addEventListener("input", debounce(renderReleaseRows, 200));
+document.querySelectorAll("[data-site-mode]").forEach(button => button.addEventListener("click", () => setSiteMode(button.dataset.siteMode)));
 byId("releaseRegisterForm").addEventListener("submit", registerUploadedRelease);
 byId("uploadSoftwareCover").addEventListener("click", uploadSoftwareCover);
 byId("useSoftwareCoverAsset").addEventListener("click", useSoftwareCoverAsset);
@@ -278,7 +283,81 @@ function render(nextCatalog) {
   renderGalleryRows();
   renderSiteCarouselRows();
   renderPhotoWallRows();
+  renderReleaseFilterOptions();
   renderReleaseRows();
+  renderSiteMode();
+  syncHotAppSelect();
+}
+
+const SITE_MODE_LABELS = { software: "软件站", portal: "综合门户", blog: "博客" };
+
+function renderSiteMode() {
+  const mode = catalog?.site?.siteMode || "portal";
+  document.querySelectorAll("[data-site-mode]").forEach(button => {
+    button.classList.toggle("is-active", button.dataset.siteMode === mode);
+  });
+}
+
+// 一键切换网站模式（首页内容和导航栏目随之变化）
+async function setSiteMode(mode) {
+  if (!mode || mode === (catalog?.site?.siteMode || "portal")) return;
+  if (!confirm(`切换为「${SITE_MODE_LABELS[mode]}」模式？前台首页和导航会立即变化，可随时切回。`)) return;
+  const buttons = document.querySelectorAll("[data-site-mode]");
+  buttons.forEach(button => { button.disabled = true; });
+  try {
+    const result = await api("/api/admin/site-mode", { mode });
+    if (!result.success) return toast(result.msg || "切换失败", true);
+    render(result.catalog);
+    toast(`已切换为「${SITE_MODE_LABELS[mode]}」模式`);
+  } catch (error) {
+    toast(`切换失败：${error.message || "网络异常"}`, true);
+  } finally {
+    buttons.forEach(button => { button.disabled = false; });
+  }
+}
+
+function renderReleaseFilterOptions() {
+  const select = byId("releaseFilterSoftware");
+  if (!select) return;
+  const current = select.value || "all";
+  select.innerHTML = `<option value="all">全部软件</option>${catalog.software.map(item => `<option value="${escapeAttr(item.id)}">${escapeHtml(item.name)}</option>`).join("")}`;
+  select.value = [...select.options].some(option => option.value === current) ? current : "all";
+}
+
+function openReleaseEdit(software, release) {
+  byId("editReleaseId").value = release.id;
+  byId("editReleaseSoftware").textContent = `${software.name} · ${release.fileName || ""}`;
+  byId("editReleaseVersion").value = release.version || "";
+  byId("editReleaseStatus").value = ["published", "draft", "disabled"].includes(release.status) ? release.status : "published";
+  byId("editReleaseFileName").value = release.fileName || "";
+  byId("editReleaseChangelog").value = release.changelog || "";
+  byId("editReleaseLatest").checked = Boolean(release.isLatest);
+  const form = byId("releaseEditForm");
+  form.hidden = false;
+  form.scrollIntoView({ block: "center", behavior: "smooth" });
+}
+
+function closeReleaseEdit() {
+  byId("releaseEditForm").hidden = true;
+}
+
+async function saveReleaseEdit(event) {
+  event.preventDefault();
+  const payload = {
+    releaseId: byId("editReleaseId").value,
+    action: "edit",
+    version: byId("editReleaseVersion").value.trim(),
+    status: byId("editReleaseStatus").value,
+    fileName: byId("editReleaseFileName").value.trim(),
+    changelog: byId("editReleaseChangelog").value.trim(),
+    isLatest: byId("editReleaseLatest").checked
+  };
+  if (!payload.version) return toast("版本号不能为空", true);
+  const result = await api("/api/admin/releases/update", payload);
+  if (!result.success) return toast(result.msg || "保存失败", true);
+  closeReleaseEdit();
+  render(result.catalog);
+  toast("版本已更新");
 }
 
 function renderSiteCarouselRows() {
@@ -505,10 +584,16 @@ function renderArticleRows() {
 function renderReleaseRows() {
   const rows = byId("releaseRows");
   rows.innerHTML = "";
+  const filterSoftware = byId("releaseFilterSoftware")?.value || "all";
+  const keyword = (byId("releaseFilterSearch")?.value || "").trim().toLowerCase();
+  const statusText = { published: "已发布", draft: "草稿", disabled: "已隐藏" };
   for (const item of catalog.software) {
+    if (filterSoftware !== "all" && item.id !== filterSoftware) continue;
     for (const release of item.releases) {
+      if (keyword && !`${release.version} ${release.fileName || ""} ${release.fileKey || ""}`.toLowerCase().includes(keyword)) continue;
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${escapeHtml(item.name)}</td><td>${escapeHtml(release.version)}<br><small class="status-${release.status === "disabled" ? "disabled" : "active"}">${release.status === "disabled" ? "已隐藏" : "已发布"}</small></td><td class="code">${escapeHtml(release.fileName || "-")}<br><small>${escapeHtml(release.storageId || "default")}</small></td><td>${escapeHtml(release.size || "-")}</td><td>${release.isLatest ? "是" : "否"}</td><td>${release.downloadCount || 0}</td><td class="row-actions"></td>`;
+      const statusClass = release.status === "disabled" ? "disabled" : release.status === "draft" ? "draft" : "active";
+      tr.innerHTML = `<td>${escapeHtml(item.name)}</td><td>${escapeHtml(release.version)}<br><small class="status-${statusClass}">${statusText[release.status] || "已发布"}</small></td><td class="code">${escapeHtml(release.fileName || "-")}<br><small>${escapeHtml(release.storageId || "default")}</small></td><td>${escapeHtml(release.size || "-")}</td><td>${release.isLatest ? "是" : "否"}</td><td>${release.downloadCount || 0}</td><td class="row-actions"></td>`;
       const link = `/download/${encodeURIComponent(release.id)}`;
       const replaceInput = document.createElement("input");
       replaceInput.type = "file";
@@ -516,10 +601,11 @@ function renderReleaseRows() {
       replaceInput.hidden = true;
       replaceInput.addEventListener("change", () => replaceReleaseFile(release.id, replaceInput));
       tr.lastElementChild.append(
+        actionButton("编辑", () => openReleaseEdit(item, release)),
         actionButton("设最新", () => updateRelease(release.id, "latest")),
         actionButton(release.status === "disabled" ? "恢复" : "隐藏", () => updateRelease(release.id, "toggle")),
         actionButton("替换文件", () => replaceInput.click()),
-        actionButton("复制链接", () => copyText(link)),
+        actionButton("复制链接", () => copyText(new URL(link, location.origin).href)),
         actionButton("删除", () => deleteRelease(release.id), "danger"),
         replaceInput
       );
@@ -1561,8 +1647,9 @@ async function replaceReleaseFile(releaseId, input) {
 }
 
 async function deleteRelease(releaseId) {
-  if (!confirm("确定删除这个版本记录吗？R2 文件不会自动删除。")) return;
-  const result = await api("/api/admin/releases/delete", { releaseId });
+  if (!confirm("确定删除这个版本记录吗？")) return;
+  const deleteFile = confirm("是否同时删除 R2 里的安装包文件？\n\n确定 = 一起删除（不可恢复）\n取消 = 只删记录，保留文件");
+  const result = await api("/api/admin/releases/delete", { releaseId, deleteFile });
   if (!result.success) return toast(result.msg || "删除失败", true);
   render(result.catalog);
   toast("版本已删除");
@@ -1628,8 +1715,12 @@ function musicPlayableUrl(item) {
 }
 
 async function deleteSoftware(id) {
-  if (!confirm("确定删除这个软件及其版本记录吗？R2 文件不会自动删除。")) return;
-  const result = await api("/api/admin/software/delete", { id });
+  if (!confirm("确定删除这个软件吗？")) return;
+  let result = await api("/api/admin/software/delete", { id });
+  if (!result.success && result.needForce) {
+    if (!confirm(`这个软件还有 ${result.releaseCount} 个版本记录，删除软件会一并删除这些记录（R2 文件保留）。确定继续？`)) return;
+    result = await api("/api/admin/software/delete", { id, force: true });
+  }
   if (!result.success) return toast(result.msg || "删除失败", true);
   render(result.catalog);
 }
@@ -2411,6 +2502,19 @@ async function uploadFileInParts(file, options) {
   return result;
 }
 
+async function isDownloadUrlReachable(value) {
+  try {
+    const url = new URL(value, location.origin);
+    // 外部域名受跨域限制无法检测，视为可用
+    if (url.origin !== location.origin) return true;
+    const response = await fetch(url, { method: "HEAD", cache: "no-store" });
+    const type = response.headers.get("Content-Type") || "";
+    return response.ok && !type.includes("text/html");
+  } catch {
+    return true;
+  }
+}
+
 async function refreshAdminToken() {
   const response = await fetch("/api/admin/refresh", {
     method: "POST",
@@ -2619,37 +2723,56 @@ function updateHotPatchSizeDisplay() {
   if (el) el.textContent = `${(bytes / (1024 * 1024)).toFixed(2)} MB (${formatBytes(bytes)})`;
 }
 
-function handleLocalPatchFile(event) {
-  const file = event.target.files?.[0];
+// 热更新文件真实上传到 R2 的 apps/<应用>/ 目录（分片并行），完成后自动填好地址、大小和校验码
+async function uploadHotUpdateFile(file) {
+  return uploadFileInParts(file, {
+    title: "正在上传热更新文件",
+    initUrl: "/api/admin/assets/presign",
+    initPayload: { kind: "hotupdate", folder: currentHotApp, storageId: "default" },
+    completeUrl: "/api/admin/assets/complete-upload",
+    completePayload: { kind: "hotupdate", folder: currentHotApp, refType: "hotupdate", refId: currentHotApp },
+    doneText: "热更新文件已上传到 R2"
+  });
+}
+
+async function handleLocalPatchFile(event) {
+  const input = event.target;
+  const file = input.files?.[0];
+  input.value = "";
   if (!file) return;
+  const result = await uploadHotUpdateFile(file);
+  if (!result.success) return toast(result.msg || "补丁上传失败", true);
   byId("hotPatchSize").value = file.size;
   updateHotPatchSizeDisplay();
   const patchInput = byId("hotPatchUrl");
-  patchInput.value = `/apps/${currentHotApp}/${file.name}`;
+  patchInput.value = result.url || `/${result.fileKey}`;
   delete patchInput.dataset.autoGenerated;
-
-  computeFileHash(file).then(hash => {
-    if (hash) byId("hotPatchMd5").value = hash;
-  });
-  toast(`已选择补丁: ${file.name} (${formatBytes(file.size)})`);
+  byId("hotPatchMd5").value = "";
+  toast(`补丁已上传：${file.name}（${formatBytes(file.size)}），正在计算校验码...`);
+  const hash = await computeFileHash(file);
+  if (hash) byId("hotPatchMd5").value = hash;
+  toast(hash ? "补丁已上传，SHA256 已填好" : "补丁已上传（文件过大，未自动计算校验码）");
 }
 
-function handleLocalSetupFile(event) {
-  const file = event.target.files?.[0];
+async function handleLocalSetupFile(event) {
+  const input = event.target;
+  const file = input.files?.[0];
+  input.value = "";
   if (!file) return;
+  const result = await uploadHotUpdateFile(file);
+  if (!result.success) return toast(result.msg || "全量包上传失败", true);
   const setupInput = byId("hotFullSetupUrl");
-  setupInput.value = `/apps/${currentHotApp}/${file.name}`;
+  setupInput.value = result.url || `/${result.fileKey}`;
   delete setupInput.dataset.autoGenerated;
-  toast(`已选择全量包: ${file.name} (${formatBytes(file.size)})`);
+  toast(`全量包已上传：${file.name}（${formatBytes(file.size)}）`);
 }
 
+// 计算整个文件的 SHA256（超过 512MB 跳过，避免浏览器内存不足）
 async function computeFileHash(file) {
+  if (!file || file.size > 512 * 1024 * 1024) return "";
   try {
-    const slice = file.slice(0, 16 * 1024 * 1024);
-    const buffer = await slice.arrayBuffer();
-    const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    const hashBuffer = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
   } catch {
     return "";
   }
@@ -2716,6 +2839,13 @@ async function submitHotUpdate(event) {
   if (!version) return toast("请填写发布版本号", true);
   if (!patchUrl && !fullSetupUrl) return toast("补丁 URL 和全量安装包 URL 至少需填写一项", true);
 
+  // 发布前检查下载地址是否真的能下载，避免客户端拿到 404
+  const missing = [];
+  for (const [label, value] of [["补丁", patchUrl], ["全量安装包", fullSetupUrl]]) {
+    if (value && !(await isDownloadUrlReachable(value))) missing.push(`${label}：${value}`);
+  }
+  if (missing.length && !confirm(`以下地址当前无法下载：\n${missing.join("\n")}\n\n请先用“本地上传”或“从 R2 选取”。仍然要发布吗？`)) return;
+
   const statusEl = byId("hotPublishStatus");
   const submitBtn = byId("submitHotUpdateBtn");
   if (statusEl) statusEl.textContent = "正在发布至 Cloudflare R2 并同步版本历史...";
@@ -2745,14 +2875,18 @@ async function submitHotUpdate(event) {
 
     const result = await res.json();
     if (!res.ok || !result.success) {
-      if (statusEl) statusEl.textContent = "发布失败: " + (result.msg || "接口错误");
-      return toast(result.msg || "发布失败", true);
+      const message = result.msg || result.error || `HTTP ${res.status}`;
+      if (statusEl) statusEl.textContent = "发布失败: " + message;
+      return toast(message, true);
     }
 
-    if (statusEl) statusEl.textContent = `发布成功！已写入 R2 (apps/${app}/version.json)`;
-    toast(`🚀 [${app}] v${version} 热更新配置已发布并写入 R2!`);
+    if (statusEl) statusEl.textContent = `发布成功！已写入 R2 (apps/${app}/version.json)${result.warning ? `；注意：${result.warning}` : ""}`;
+    toast(result.warning ? `已发布，但${result.warning}` : `🚀 [${app}] v${version} 热更新配置已发布并写入 R2!`, Boolean(result.warning));
 
-    if (result.catalog) render(result.catalog);
+    // 热更新会同步官网版本库，刷新一次后台数据
+    const fresh = await api("/api/admin/catalog").catch(() => null);
+    if (fresh?.catalog) render(fresh.catalog);
+    else if (result.catalog) render(result.catalog);
     await loadHotUpdateData(app);
   } catch (e) {
     if (statusEl) statusEl.textContent = "发布网络异常: " + e.message;
