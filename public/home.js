@@ -383,9 +383,19 @@ function initDesktopFeatureSwitcher() {
 
 function initFloatingDock() {
   const scrollTopBtn = document.getElementById("dockScrollTop");
+  const searchBtn = document.getElementById("dockSearchBtn");
+  const searchInput = document.getElementById("launcherSearchInput");
+
   if (scrollTopBtn) {
     scrollTopBtn.addEventListener("click", () => {
       window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
+  if (searchBtn && searchInput) {
+    searchBtn.addEventListener("click", () => {
+      searchInput.focus();
+      searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
     });
   }
 }

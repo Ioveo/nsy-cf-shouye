@@ -24,28 +24,20 @@
         <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></symbol>
         <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
         <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
+        <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></symbol>
         <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
       </defs>
     </svg>
 
-    <!-- Translucent Navigation -->
+    <!-- Minimal Top Brand Bar -->
     <header class="apple-nav">
       <div class="apple-nav__inner">
         <a class="apple-nav__brand" href="/">
           <img src="/logo.png" alt="天才猫" />
           <span>天才猫</span>
         </a>
-        <nav class="apple-nav__links" aria-label="主导航" data-nav>
-          <a href="/desktop.html" class="is-highlight">桌面 2.0</a>
-          <a href="/download.html">下载中心</a>
-          <a href="/photo-wall.html">3D照片墙</a>
-          <a href="/gallery.html">图片画廊</a>
-          <a href="/music.html">音乐频道</a>
-          <a href="/articles.html">文章教程</a>
-          <a href="/license.html">正版授权</a>
-        </nav>
         <a class="apple-btn apple-btn--primary apple-btn--sm" href="/desktop.html">
-          <span>下载体验</span>
+          <span>体验桌面 2.0</span>
           <i>→</i>
         </a>
       </div>
@@ -354,9 +346,38 @@
       </div>
     </footer>
 
-    <!-- 浮动返回顶部按钮 -->
+    <!-- 底部灵动悬浮导航 (Primary Floating Navigation Dock) -->
     <aside class="apple-floating-dock" aria-label="快捷全局导航">
-      <button type="button" id="dockScrollTop" class="dock-scroll-btn" title="返回页面顶部">
+      <button type="button" id="dockSearchBtn" title="命令搜索 (⌘K 或 /)">
+        <svg class="ico"><use href="#i-search"/></svg>
+        <span>搜索</span>
+        <kbd>⌘K</kbd>
+      </button>
+      <a href="/desktop.html" class="dock-highlight" title="天才猫桌面 2.0 专属落地页">
+        <svg class="ico"><use href="#i-dock"/></svg>
+        <span>桌面 2.0</span>
+      </a>
+      <a href="/download.html" title="全系软件中心">
+        <svg class="ico"><use href="#i-download"/></svg>
+        <span>软件</span>
+      </a>
+      <a href="/articles.html" title="官方博客与教程">
+        <svg class="ico"><use href="#i-book"/></svg>
+        <span>博客</span>
+      </a>
+      <a href="/photo-wall.html" title="3D 沉浸照片墙">
+        <svg class="ico"><use href="#i-camera"/></svg>
+        <span>照片墙</span>
+      </a>
+      <a href="/music.html" title="直播暖场音乐台">
+        <svg class="ico"><use href="#i-music"/></svg>
+        <span>音乐台</span>
+      </a>
+      <a href="/license.html" title="正版授权购买">
+        <svg class="ico"><use href="#i-shield"/></svg>
+        <span>授权</span>
+      </a>
+      <button type="button" id="dockScrollTop" title="返回页面顶部">
         <svg class="ico"><use href="#i-arrow-up"/></svg>
         <span>顶部</span>
       </button>
