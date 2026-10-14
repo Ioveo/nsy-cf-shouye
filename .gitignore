@@ -13,4 +13,5 @@ releases/
 __pycache__/
 *.pyc
 screenshot_*.png
+download_*.png
 tmp_chrome*/
