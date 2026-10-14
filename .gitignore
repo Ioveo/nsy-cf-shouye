@@ -12,3 +12,5 @@ pnpm-debug.log*
 releases/
 __pycache__/
 *.pyc
+screenshot_*.png
+tmp_chrome*/

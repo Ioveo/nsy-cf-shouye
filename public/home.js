@@ -1,31 +1,6 @@
 let currentCatalog = null;
 let activeMatrixCategory = "all";
 
-const tabs = [...document.querySelectorAll("[data-extension-tab]")];
-const cards = [...document.querySelectorAll("[data-extension-card]")];
-const row = document.querySelector("[data-extension-row]");
-
-const aiPrompts = [...document.querySelectorAll("[data-ai-slide]")];
-const aiStage = document.querySelector("[data-ai-stage]");
-const aiMedia = document.querySelector("[data-ai-media]");
-const aiDots = document.querySelector("[data-ai-dots]");
-const aiNext = document.querySelector("[data-ai-next]");
-const aiCommandList = document.querySelector("[data-ai-command-list]");
-const aiKicker = document.querySelector("[data-ai-kicker]");
-const aiTitle = document.querySelector("[data-ai-title]");
-const aiDescription = document.querySelector("[data-ai-description]");
-const aiSuggestion = document.querySelector("[data-ai-suggestion]");
-
-let aiSlides = [];
-let activeAiSlide = 0;
-let aiTimer = null;
-
-if (tabs.length && cards.length && row) {
-  tabs.forEach(tab => {
-    tab.addEventListener("click", () => focusExtension(tab.dataset.extensionTab));
-  });
-}
-
 // 主入口：加载后台 Catalog 数据并初始化各动态联动区域
 loadHomeData();
 
@@ -54,23 +29,25 @@ async function loadHomeData() {
   // 5. 初始化交互式命令搜索面板
   initLauncherSearch(currentCatalog);
 
-  // 6. 初始化 AI 运营看板与图片轮播
-  initAiCarousel(currentCatalog);
-
-  // 7. 初始化 FAQ 常见问题折叠交互
+  // 6. 初始化 FAQ 常见问题折叠交互
   initFaqAccordion();
 
-  // 8. 初始化桌面 2.0 核心特性交互切换器
+  // 7. 初始化桌面 2.0 核心特性交互切换器 (如有)
   initDesktopFeatureSwitcher();
 
-  // 9. 初始化底部灵动快捷胶囊
+  // 8. 初始化底部灵动快捷胶囊
   initFloatingDock();
 }
 
 function applySiteText(site) {
   for (const element of document.querySelectorAll("[data-site-text]")) {
     const key = element.dataset.siteText;
-    if (site[key]) element.textContent = site[key];
+    let val = site[key];
+    if (val) {
+      val = val.replace(/像\s*Raycast\s*一样快[，,]?\s*但内容全部换成天才猫自己的业务[：:]\s*/g, "专为 Windows 打造的灵动桌面与运营中枢：")
+               .replace(/如\s*Apple\s*工具般优雅灵动[。.]\s*/g, "");
+      element.textContent = val;
+    }
   }
 }
 
@@ -82,6 +59,9 @@ function renderNavigation(catalog) {
     const link = document.createElement("a");
     link.href = item.href;
     link.textContent = item.label;
+    if (/^\/(desktop\.html)/.test(item.href)) {
+      link.classList.add("is-highlight");
+    }
     if (item.external) {
       link.target = "_blank";
       link.rel = "noopener";
@@ -146,22 +126,22 @@ function renderSoftwareMatrix(catalog) {
     card.className = "apple-card apple-card--span-4";
 
     card.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <span class="apple-badge-pill" style="margin-bottom:0;">${escapeHtml(category?.name || "精选软件")}</span>
-        <span style="font-size:12px; color:var(--apple-text-tertiary); font-family:monospace;">${escapeHtml(latest?.version ? `v${latest.version}` : "最新发行版")}</span>
+      <div class="apple-card__top">
+        <span class="apple-badge-pill">${escapeHtml(category?.name || "精选软件")}</span>
+        <span class="apple-card__version">${escapeHtml(latest?.version ? `v${latest.version}` : "最新发行版")}</span>
       </div>
-      <h3 class="apple-card__title" style="font-size:22px; margin-bottom:8px;">${escapeHtml(item.name)}</h3>
-      <p class="apple-card__desc" style="flex-grow:1; font-size:14px; margin-bottom:20px;">${escapeHtml(item.description || "全功能桌面效能工具，由天才猫官方团队提供长期更新保障。")}</p>
-      <div style="display:flex; gap:10px; align-items:center; padding-top:14px; border-top:1px solid rgba(255,255,255,0.08);">
+      <h3 class="apple-card__title">${escapeHtml(item.name)}</h3>
+      <p class="apple-card__desc">${escapeHtml(item.description || "全功能桌面效能工具，由天才猫官方团队提供长期更新保障。")}</p>
+      <div class="apple-card__actions">
         ${isDesktop ? `
-          <a class="apple-btn apple-btn--primary" href="/desktop.html" style="flex:1; padding:8px 16px; font-size:13px;">
-            <span>🌟 桌面 2.0 落地页</span> <i>→</i>
+          <a class="apple-btn apple-btn--primary apple-btn--sm" href="/desktop.html" style="flex:1;">
+            <span>桌面 2.0 专属落地页</span> <i>→</i>
           </a>
         ` : `
-          <a class="apple-btn apple-btn--primary" href="${latest ? `/download/latest/${encodeURIComponent(item.slug || item.id)}` : `/download.html`}" style="flex:1; padding:8px 16px; font-size:13px;">
+          <a class="apple-btn apple-btn--primary apple-btn--sm" href="${latest ? `/download/latest/${encodeURIComponent(item.slug || item.id)}` : `/download.html`}" style="flex:1;">
             <span>${latest ? "下载最新版" : "前往下载"}</span> <i>↓</i>
           </a>
-          <a class="apple-btn apple-btn--secondary" href="/software.html?slug=${encodeURIComponent(item.slug || item.id)}" style="padding:8px 14px; font-size:13px;">详情</a>
+          <a class="apple-btn apple-btn--secondary apple-btn--sm" href="/software.html?slug=${encodeURIComponent(item.slug || item.id)}">详情</a>
         `}
       </div>
     `;
@@ -196,8 +176,8 @@ function renderHomeArticles(catalog) {
       },
       {
         slug: "live-ops-command",
-        title: "Apple 极简工作流：把高频运营入口变成快捷命令",
-        summary: "探索像 Apple 体验一样快速调起工具的沉浸式极客体验，让每次打开都有惊喜。",
+        title: "极简工作流实践：把高频运营入口变成快捷命令",
+        summary: "探索快速调起工具的沉浸式极客体验，让每次打开都有惊喜。",
         createdAt: Date.now() - 172800000
       }
     ];
@@ -210,13 +190,12 @@ function renderHomeArticles(catalog) {
 
 function renderArticleCard(container, a) {
   const card = document.createElement("a");
-  card.className = "apple-card apple-card--span-4";
+  card.className = "apple-card apple-card--span-4 apple-article-card";
   card.href = `/article.html?slug=${encodeURIComponent(a.slug)}`;
-  card.style.textDecoration = "none";
   card.innerHTML = `
     <span class="apple-card__eyebrow">${formatDate(a.createdAt)} · 官方文章</span>
-    <h3 class="apple-card__title" style="font-size:19px; line-height:1.3; margin-bottom:10px;">${escapeHtml(a.title)}</h3>
-    <p class="apple-card__desc" style="font-size:14px; margin-bottom:0;">${escapeHtml(a.summary || "点击阅读完整教程和说明...")}</p>
+    <h3 class="apple-card__title">${escapeHtml(a.title)}</h3>
+    <p class="apple-card__desc">${escapeHtml(a.summary || "点击阅读完整教程和说明...")}</p>
   `;
   container.append(card);
 }
@@ -228,45 +207,45 @@ function initLauncherSearch(catalog) {
 
   const defaultItems = [
     {
-      title: "🔥 体验天才猫桌面 2.0 (全景3D落地页)",
+      title: "体验天才猫桌面 2.0 (全景落地页)",
       desc: "包含抽屉收纳盒、时钟、NovaDisk 交互体验器",
       href: "/desktop.html",
-      icon: "🌟",
+      iconText: "→",
       kbd: "↵"
     },
     {
       title: "下载天才猫 DY 辅助工具",
       desc: "直播场控、数据中心与自动化辅助安装包",
       href: "/download.html",
-      icon: "↓",
+      iconText: "↓",
       kbd: "D"
     },
     {
       title: "打开图片素材画廊",
       desc: "R2 图片素材、沉浸预览、多图批量管理",
       href: "/gallery.html",
-      icon: "▧",
+      iconText: "↗",
       kbd: "G"
     },
     {
       title: "进入直播音乐频道",
       desc: "网易云歌曲 ID、R2 音频、暖场歌单管理",
       href: "/music.html",
-      icon: "♪",
+      iconText: "↗",
       kbd: "M"
     },
     {
       title: "查看文章教程与公告",
       desc: "更新说明、使用教程、运营经验沉淀",
       href: "/articles.html",
-      icon: "✦",
+      iconText: "↗",
       kbd: "A"
     },
     {
       title: "购买正版绑定授权",
       desc: "正版授权、团队使用、长期升级服务",
       href: "/license.html",
-      icon: "✓",
+      iconText: "✓",
       kbd: "L"
     }
   ];
@@ -275,8 +254,8 @@ function initLauncherSearch(catalog) {
     list.replaceChildren();
     if (!items.length) {
       const empty = document.createElement("div");
-      empty.className = "launcher-item";
-      empty.innerHTML = `<i>🔍</i><div><strong>未找到匹配项</strong><small>尝试搜索“桌面”、“下载”、“画廊”或“音乐”</small></div>`;
+      empty.className = "launcher-item launcher-item--empty";
+      empty.innerHTML = `<div><strong>未找到匹配项</strong><small>尝试搜索“桌面”、“下载”、“画廊”或“音乐”</small></div>`;
       list.append(empty);
       return;
     }
@@ -285,8 +264,8 @@ function initLauncherSearch(catalog) {
       a.className = `launcher-item ${index === 0 ? "is-active" : ""}`;
       a.href = item.href;
       a.innerHTML = `
-        <i>${item.icon || "✦"}</i>
-        <div>
+        <span class="launcher-item__icon">${item.iconText || "→"}</span>
+        <div class="launcher-item__body">
           <strong>${escapeHtml(item.title)}</strong>
           <small>${escapeHtml(item.desc)}</small>
         </div>
@@ -315,7 +294,7 @@ function initLauncherSearch(catalog) {
           title: `下载 ${s.name}`,
           desc: s.description || "前往软件下载中心获取最新安装包",
           href: `/download.html`,
-          icon: "📦",
+          iconText: "↓",
           kbd: "↵"
         });
       }
@@ -366,6 +345,8 @@ function initDesktopFeatureSwitcher() {
   const detailDesc = document.getElementById("featureDetailDesc");
   const detailBadge = document.getElementById("featureDetailBadge");
 
+  if (!featureBtns.length || !detailTitle || !detailDesc) return;
+
   const featureData = {
     drawer: {
       badge: "核心专利交互",
@@ -381,20 +362,8 @@ function initDesktopFeatureSwitcher() {
       badge: "极速盲操",
       title: "Alt+1~9 快捷键矩阵与快速启动盒",
       desc: "桌面图标直接拖入绑定，按一下打开常用软件，再按一下隐退收起。前4个自动同步至桌面主控盒，支持软件、文件夹、网址与终端命令。"
-    },
-    dock: {
-      badge: "顶部盲操中枢",
-      title: "TopPeekDock 顶部无感速览",
-      desc: "吸附在屏幕正上方的极简微光胶囊。鼠标轻碰顶部即刻展开，悬停后台窗口标签即可零延迟临时'偷看'预览，支持键盘 1~9 与左右方向键极速盲操切换。"
-    },
-    pet: {
-      badge: "治愈效率兼具",
-      title: "GeniusPet 灵动陪伴桌宠",
-      desc: "完全本地化轻量级小猫桌宠，支持拎起后颈、扒边观察、发呆打盹。单击弹出暖心问候与今日待办提醒，双击秒开番茄专注时钟与一键桌面整理。"
     }
   };
-
-  if (!featureBtns.length || !detailTitle || !detailDesc) return;
 
   featureBtns.forEach(btn => {
     btn.addEventListener("click", () => {
@@ -413,201 +382,11 @@ function initDesktopFeatureSwitcher() {
 }
 
 function initFloatingDock() {
-  const searchBtn = document.getElementById("dockSearchBtn");
   const scrollTopBtn = document.getElementById("dockScrollTop");
-  const searchInput = document.getElementById("launcherSearchInput");
-
-  if (searchBtn && searchInput) {
-    searchBtn.addEventListener("click", () => {
-      searchInput.focus();
-      searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-  }
-
   if (scrollTopBtn) {
     scrollTopBtn.addEventListener("click", () => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
-  }
-}
-
-function focusExtension(key) {
-  const card = cards.find(item => item.dataset.extensionCard === key);
-  if (!card) return;
-
-  tabs.forEach(tab => tab.classList.toggle("is-active", tab.dataset.extensionTab === key));
-  cards.forEach(item => item.classList.toggle("is-focused", item === card));
-
-  row.scrollTo({
-    left: card.offsetLeft - row.offsetLeft,
-    behavior: "smooth"
-  });
-}
-
-async function initAiCarousel(catalog) {
-  if (!aiStage || !aiMedia) return;
-  aiSlides = loadAiSlidesFromCatalog(catalog);
-  renderAiImages();
-  renderAiCommands();
-  renderAiDots();
-  setAiSlide(0);
-  startAiCarousel();
-
-  aiPrompts.forEach(prompt => {
-    prompt.addEventListener("click", () => {
-      setAiSlide(Number(prompt.dataset.aiSlide || 0));
-      startAiCarousel();
-    });
-  });
-
-  aiNext?.addEventListener("click", () => {
-    setAiSlide(activeAiSlide + 1);
-    startAiCarousel();
-  });
-
-  aiStage.addEventListener("mouseenter", stopAiCarousel);
-  aiStage.addEventListener("mouseleave", startAiCarousel);
-}
-
-function loadAiSlidesFromCatalog(catalog) {
-  const carousel = (catalog?.siteCarousel || [])
-    .filter(item => item.imageUrl)
-    .slice(0, 6)
-    .map((item, index) => slideFromCarousel(item, index));
-
-  if (carousel.length) return carousel;
-  return fallbackAiSlides();
-}
-
-function slideFromCarousel(item, index) {
-  const templates = [
-    { kicker: "素材洞察", suggestion: "这张素材适合作为画廊主推，建议同步放入首页动态区域提高点击率。" },
-    { kicker: "直播话术", suggestion: "围绕画面主体生成开场话术，并关联下载中心入口形成转化路径。" },
-    { kicker: "标签整理", suggestion: "根据图片说明和标签自动归类，方便用户在画廊里按场景筛选。" }
-  ];
-  const template = templates[index % templates.length];
-  return {
-    imageUrl: item.thumbUrl || item.imageUrl,
-    title: item.title || `后台素材 ${index + 1}`,
-    description: item.description || (item.tags || []).join(" / ") || "来自后台系统管理的图片素材。",
-    kicker: template.kicker,
-    suggestion: item.suggestion || template.suggestion
-  };
-}
-
-function fallbackAiSlides() {
-  return [
-    {
-      title: "等待后台图片",
-      description: "在后台系统管理里添加图片后，这里会自动替换为真实素材轮播。",
-      kicker: "素材洞察",
-      suggestion: "先上传产品截图、直播现场或素材封面，AI 区域会自动形成动态展示。"
-    },
-    {
-      title: "生成直播话术",
-      description: "围绕软件、音乐、图库和授权入口生成运营说明。",
-      kicker: "直播话术",
-      suggestion: "把主推素材和下载入口组合成一句清晰的直播引导。"
-    },
-    {
-      title: "整理素材标签",
-      description: "把图片、文章、音乐素材归纳成用户能理解的入口。",
-      kicker: "标签整理",
-      suggestion: "建议使用场景标签：直播、下载、教程、授权、音乐。"
-    }
-  ];
-}
-
-function renderAiImages() {
-  const fallback = aiMedia.querySelector(".ai-fallback-card");
-  aiSlides.forEach((slide, index) => {
-    if (!slide.imageUrl) return;
-    const image = document.createElement("img");
-    image.src = slide.imageUrl;
-    image.alt = slide.title;
-    image.decoding = "async";
-    image.loading = index ? "lazy" : "eager";
-    aiMedia.append(image);
-  });
-  if (fallback && aiSlides.some(slide => slide.imageUrl)) fallback.remove();
-}
-
-function renderAiDots() {
-  if (!aiDots) return;
-  aiDots.replaceChildren();
-  aiSlides.forEach((_, index) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.ariaLabel = `查看第 ${index + 1} 张 AI 素材`;
-    const fill = document.createElement("span");
-    button.append(fill);
-    button.addEventListener("click", () => {
-      setAiSlide(index);
-      startAiCarousel();
-    });
-    aiDots.append(button);
-  });
-}
-
-function renderAiCommands() {
-  if (!aiCommandList) return;
-  aiCommandList.replaceChildren();
-  const label = document.createElement("span");
-  label.textContent = "Tiancaimao AI";
-  aiCommandList.append(label);
-  aiSlides.forEach((slide, index) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = slide.title;
-    button.addEventListener("click", () => {
-      setAiSlide(index);
-      startAiCarousel();
-    });
-    aiCommandList.append(button);
-  });
-}
-
-function setAiSlide(nextIndex) {
-  if (!aiSlides.length) return;
-  activeAiSlide = (nextIndex + aiSlides.length) % aiSlides.length;
-  const slide = aiSlides[activeAiSlide];
-
-  const images = [...aiMedia.querySelectorAll("img")];
-  images.forEach((image, index) => {
-    image.classList.toggle("is-active", index === activeAiSlide);
-  });
-
-  const commands = [...(aiCommandList?.querySelectorAll("button") || [])];
-  commands.forEach((command, index) => {
-    command.classList.toggle("is-active", index === activeAiSlide);
-  });
-
-  const dots = [...(aiDots?.querySelectorAll("button") || [])];
-  dots.forEach((dot, index) => {
-    dot.classList.toggle("is-active", index === activeAiSlide);
-  });
-
-  aiPrompts.forEach((prompt, index) => {
-    prompt.classList.toggle("is-active", index === (activeAiSlide % aiPrompts.length));
-  });
-
-  if (aiKicker) aiKicker.textContent = slide.kicker || "素材洞察";
-  if (aiTitle) aiTitle.textContent = slide.title || "素材标题";
-  if (aiDescription) aiDescription.textContent = slide.description || "素材描述";
-  if (aiSuggestion) aiSuggestion.textContent = slide.suggestion || "运营建议";
-}
-
-function startAiCarousel() {
-  stopAiCarousel();
-  aiTimer = setInterval(() => {
-    setAiSlide(activeAiSlide + 1);
-  }, 5000);
-}
-
-function stopAiCarousel() {
-  if (aiTimer) {
-    clearInterval(aiTimer);
-    aiTimer = null;
   }
 }
 
@@ -627,19 +406,11 @@ function getFallbackCatalog() {
   return {
     product: "天才猫软件中心",
     site: {
-      homeHeroKicker: "Tiancaimao Command Center",
-      homeHeroTitle: "把直播运营入口，压缩成一次打开。",
-      homeHeroDescription: "如 Apple 工具般优雅灵动。把天才猫桌面 2.0、软件下载中心、NovaDisk 空间管家、3D 图库与正版授权整合成高度一体化的官方工作台。",
-      shortcutsKicker: "Tiancaimao Ecosystem",
-      shortcutsTitle: "不仅是工具。更是一整套灵动空间。",
-      aiKicker: "AI Workspace",
-      aiTitle: "让后台素材，变成智能运营看板。",
-      aiDescription: "后台系统管理中维护的图片与媒体会自动轮播呈现在这里，配合模拟的 AI 深度分析、标签归纳与发布建议。",
-      aiPromptOne: "分析素材",
-      aiPromptTwo: "生成话术",
-      aiPromptThree: "整理标签",
+      homeHeroKicker: "TIANCAIMAO DESKTOP 2.0",
+      homeHeroTitle: "把直播运营与常用工具，收进更轻快的灵动桌面",
+      homeHeroDescription: "专为 Windows 打造的灵动桌面与运营中枢。抽屉收纳、Alt快捷盲操、C盘无损搬家与治愈桌宠，开箱即用零依赖。",
       readyKicker: "Ready to Elevate Your Workflow?",
-      readyTitle: "进入天才猫灵动生态。",
+      readyTitle: "进入天才猫灵动生态",
       footerWordmark: "TIANCAIMAO"
     },
     categories: [
