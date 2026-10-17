@@ -1,7 +1,7 @@
 {
   "functions/_lib/asset-upload.js": "1bfbcbc0868cf1a59b19cbf12ee67117dda600e2ba649ed7ba3663cd4ad6630a",
   "functions/_lib/assets-db.js": "e2564b165fa3f5f7002016aefc9234557f0076f13caad0735ca5ac4ef7e1fe3b",
-  "functions/_lib/catalog.js": "466576e2f45d564b966cb56f17cbffe75df69d56a64936e0bfff0f9e7cf8a854",
+  "functions/_lib/catalog.js": "c07078184fb2db6971de11f3fc27dc013d0e11ae686f7750adb434c6d892f2b1",
   "functions/_lib/crypto.js": "53bb408c56370dd58ee73a762b2792b3271c52e6c065578a4b3ad80f9402dea0",
   "functions/_lib/download-stats.js": "7b08473913ed66135190066ec47e7815cbb5a45256633ae53d724f7fc0c8277d",
   "functions/_lib/multipart.js": "7b7d97cb58bde4c024f55a04e619b776123f38a799f36e9dc8c353e720d36faa",
@@ -24,7 +24,7 @@
   "functions/api/admin/releases/replace.js": "ce35518dbec8129189c780f70be22f3f2ff262d733874d4effda25ac7c41b2d1",
   "functions/api/admin/releases/update.js": "b27c839b059193b6fd0567555a875363bb9300e9b3da427a5b4c91913b057890",
   "functions/api/admin/releases/upload-part.js": "f6ea43b8e0eee6cf1b23af095333c0911f651262600ea820f48369eceddc8ae5",
-  "functions/api/admin/software.js": "612dabdf33dccf4b45b37c8dfc2c000196014052dc5a4270348d87b575528d35",
+  "functions/api/admin/software.js": "29e73a7ce276dfddcffd641489598a19b9f0763a97b1e4a6c3155c961b84257d",
   "functions/api/admin/software/delete.js": "13c8f3128cc4ac3c49e66d6f92dc133c7e5d598a682faf49d0a74a3c1187333a",
   "functions/api/admin/storage/delete.js": "3877acd26ef719447ce52f82337b04a51a20e6f4a3ef3947d97173f4d98a5041",
   "functions/api/admin/storage/test.js": "b1a85c1a8d58b72ff61b28d9f4842218ec5104398423ca0068979f26eeb6fc3d",

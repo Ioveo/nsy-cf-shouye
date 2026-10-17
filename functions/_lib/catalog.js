@@ -179,6 +179,15 @@ export function normalizeSoftware(item, index = 0, now = Date.now()) {
     requirements: String(item.requirements || ""),
     landingUrl: String(item.landingUrl || ""),
     highlights: normalizeHighlights(item.highlights),
+    // 软件中心 v2：图标、截图组、主推、价格标签、开发者/官网
+    iconUrl: String(item.iconUrl || ""),
+    screenshots: (Array.isArray(item.screenshots) ? item.screenshots : String(item.screenshots || "").split(/\r?\n/))
+      .map(url => String(url || "").trim()).filter(Boolean).slice(0, 12),
+    featured: item.featured === true || item.featured === "1" || item.featured === "true",
+    featuredOrder: Number(item.featuredOrder || 0),
+    priceLabel: String(item.priceLabel || "免费").slice(0, 20),
+    developer: String(item.developer || "").slice(0, 60),
+    website: String(item.website || "").slice(0, 300),
     sortOrder: Number(item.sortOrder ?? item.sort_order ?? index),
     status: item.status || "active",
     createdAt: Number(item.createdAt || now),
@@ -271,8 +280,9 @@ export function publicCatalog(catalog) {
     site: normalizeSite(catalog.site || {}),
     siteCarousel: (catalog.siteCarousel || []).filter(item => item.status === "published"),
     photoWall: (catalog.photoWall || []).filter(item => item.status === "published"),
+    // 只公开“上架”的软件；draft 草稿和 disabled 下架都不出现在前台
     software: catalog.software
-      .filter(item => item.status !== "disabled")
+      .filter(item => (item.status || "active") === "active")
       .map(item => ({
         ...item,
         releases: (item.releases || []).filter(release => release.status !== "disabled")
