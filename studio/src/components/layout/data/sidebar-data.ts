@@ -8,6 +8,10 @@ import {
   FolderArchive,
   ShieldCheck,
   Terminal,
+  Music,
+  Image,
+  Sliders,
+  Compass,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -51,7 +55,32 @@ export const sidebarData: SidebarData = {
       ],
     },
     {
-      title: '展示与门户',
+      title: '内容模块',
+      items: [
+        {
+          title: '文章管理',
+          url: '/content?tab=articles',
+          icon: FileText,
+        },
+        {
+          title: '音乐频道',
+          url: '/content?tab=music',
+          icon: Music,
+        },
+        {
+          title: '画廊相册',
+          url: '/content?tab=gallery',
+          icon: Image,
+        },
+        {
+          title: '照片墙',
+          url: '/content?tab=photowall',
+          icon: FolderArchive,
+        },
+      ],
+    },
+    {
+      title: '站点与展示',
       items: [
         {
           title: '落地页配置',
@@ -59,9 +88,14 @@ export const sidebarData: SidebarData = {
           icon: LayoutTemplate,
         },
         {
-          title: '内容与导航',
-          url: '/content',
-          icon: FileText,
+          title: '首页轮播',
+          url: '/content?tab=carousel',
+          icon: Sliders,
+        },
+        {
+          title: '顶部导航',
+          url: '/content?tab=nav',
+          icon: Compass,
         },
         {
           title: '资源库',

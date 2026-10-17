@@ -2,8 +2,23 @@ loadArticle();
 initReadingTools();
 
 async function loadArticle() {
-  const slug = new URLSearchParams(location.search).get("slug");
+  const params = new URLSearchParams(location.search);
+  const isPreview = params.get("preview") === "1";
+  const slug = params.get("slug");
   const root = document.getElementById("articleDetail");
+
+  if (isPreview) {
+    window.addEventListener("message", event => {
+      if (event.origin !== location.origin) return;
+      if (event.data && event.data.type === "studio-preview" && event.data.article) {
+        document.title = `${event.data.article.title || "文章预览"} - 天才猫软件中心`;
+        renderArticle(event.data.article, event.data.relatedSoftware || []);
+      }
+    });
+    try { window.parent?.postMessage({ type: "preview-ready" }, location.origin); } catch {}
+    if (!slug) return;
+  }
+
   if (!slug) {
     root.innerHTML = "<section class='page-hero'><h1>文章不存在。</h1></section>";
     return;
@@ -307,7 +322,8 @@ function inlineMarkdown(value) {
   return escapeHtml(value)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)/g, `<a href="$2" target="_blank" rel="noopener">$1</a>`);
+    .replace(/!\[([^\]]*)\]\(((?:https?:\/\/|\/)[^\s)]+)\)/g, `<img src="$2" alt="$1" loading="lazy">`)
+    .replace(/(?<!\!)\[([^\]]+)\]\(((?:https?:\/\/|\/)[^\s)]+)\)/g, `<a href="$2" target="_blank" rel="noopener">$1</a>`);
 }
 
 function formatDate(timestamp) {
