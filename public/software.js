@@ -649,51 +649,63 @@
       }
     }
 
+    const CACHE_KEY = "software_center_catalog_cache_v3";
+    let hasRendered = false;
+
+    function tryRenderFromCatalog(cat) {
+      if (!cat || !Array.isArray(cat.software)) return false;
+      const list = cat.software || [];
+      let m = null;
+      if (targetId) m = list.find(s => String(s.id) === String(targetId));
+      if (!m && targetSlug) m = list.find(s => s.slug === targetSlug);
+      if (!m && list.length) m = list[0];
+      if (m) {
+        renderSoftware(m);
+        return true;
+      }
+      return false;
+    }
+
+    // 1. 同步秒开：读取本地缓存
+    if (!isPreviewMode) {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (raw) {
+          const cached = JSON.parse(raw);
+          if (tryRenderFromCatalog(cached)) {
+            hasRendered = true;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 2. 异步网络刷新
     try {
-      const res = await fetch("/api/catalog", { cache: "no-store" });
-      if (!res.ok) throw new Error("加载软件目录失败");
-      catalog = await res.json();
-    } catch (err) {
-      console.error("加载 catalog 异常:", err);
-      if (!isPreviewMode) {
-        const skeleton = $("detailSkeleton");
-        if (skeleton) {
-          skeleton.innerHTML = `
-            <div class="sc-empty sc-glass">
-              <h3 class="sc-empty__title">无法加载软件详情</h3>
-              <p class="sc-empty__desc">请返回软件中心重新选择应用</p>
-              <a href="/download.html" class="sc-btn sc-btn--primary sc-btn--sm">返回软件中心</a>
-            </div>
-          `;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch("/api/catalog", { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        catalog = await res.json();
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(catalog));
+        } catch (e) {}
+        if (tryRenderFromCatalog(catalog)) {
+          return;
         }
       }
-      return;
+    } catch (err) {
+      console.warn("加载 catalog 异常/超时:", err);
     }
 
-    // 匹配软件
-    const list = catalog.software || [];
-    let matched = null;
-
-    if (targetId) {
-      matched = list.find(s => String(s.id) === String(targetId));
-    }
-    if (!matched && targetSlug) {
-      matched = list.find(s => s.slug === targetSlug);
-    }
-    if (!matched && list.length) {
-      matched = list[0];
-    }
-
-    if (matched) {
-      renderSoftware(matched);
-    } else if (!isPreviewMode) {
+    if (!hasRendered && !isPreviewMode) {
       const skeleton = $("detailSkeleton");
       if (skeleton) {
         skeleton.innerHTML = `
           <div class="sc-empty sc-glass">
-            <h3 class="sc-empty__title">未找到指定软件</h3>
-            <p class="sc-empty__desc">该软件可能已下架或链接有误</p>
-            <a href="/download.html" class="sc-btn sc-btn--primary sc-btn--sm">浏览全部软件</a>
+            <h3 class="sc-empty__title">无法加载软件详情</h3>
+            <p class="sc-empty__desc">请返回软件中心重新选择应用</p>
+            <a href="/download.html" class="sc-btn sc-btn--primary sc-btn--sm">返回软件中心</a>
           </div>
         `;
       }

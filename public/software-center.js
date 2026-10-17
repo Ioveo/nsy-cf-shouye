@@ -680,7 +680,11 @@
   }
 
   // 绑定交互事件
+  let hasBoundEvents = false;
   function bindEvents() {
+    if (hasBoundEvents) return;
+    hasBoundEvents = true;
+
     // 1. 聚光灯鼠标跟踪
     document.addEventListener("mousemove", e => {
       const target = e.target.closest(".sc-spotlight");
@@ -869,25 +873,62 @@
     }
   }
 
-  // 初始化入口
-  async function init() {
-    try {
-      const res = await fetch("/api/catalog", { cache: "no-store" });
-      if (!res.ok) throw new Error("加载软件目录失败");
-      catalog = await res.json();
-    } catch (err) {
-      console.error("加载 catalog 错误:", err);
-      const grid = $("softwareGrid");
-      if (grid) {
-        grid.innerHTML = `
-          <div class="sc-empty sc-glass">
-            <h3 class="sc-empty__title">无法连接到软件服务</h3>
-            <p class="sc-empty__desc">请检查网络状态后刷新页面重试</p>
-          </div>
-        `;
-      }
-      return;
-    }
+  const CACHE_KEY = "software_center_catalog_cache_v3";
+
+  function getFallbackCatalog() {
+    return {
+      product: "天才猫软件中心",
+      site: {
+        homeHeroKicker: "TIANCAIMAO COMMAND CENTER",
+        homeHeroTitle: "把直播运营与常用工具，收进更轻快的灵动桌面",
+        homeHeroDescription: "专为 Windows 打造的灵动桌面与运营中枢。抽屉收纳、Alt快捷盲操、C盘无损搬家与治愈桌宠，开箱即用零依赖。",
+        footerWordmark: "NSY"
+      },
+      categories: [
+        { id: "desktop", name: "桌面效能", slug: "desktop", sortOrder: 5, status: "active" },
+        { id: "assistant", name: "直播辅助", slug: "assistant", sortOrder: 20, status: "active" },
+        { id: "data", name: "数据中心", slug: "data", sortOrder: 10, status: "active" },
+        { id: "tools", name: "工具插件", slug: "tools", sortOrder: 30, status: "active" }
+      ],
+      software: [
+        {
+          id: "desktop",
+          slug: "desktop",
+          name: "天才猫桌面 2.0",
+          categoryId: "desktop",
+          category: "桌面效能",
+          tagline: "新一代效率桌面与数字化创作引擎",
+          description: "灵动抽屉式侧边收纳、C盘无损搬家管家、顶部偷看Dock与离线多语 OCR 翻译。",
+          coverImage: "/preview-desktop-widgets.png",
+          icon: "/logo.png",
+          priceLabel: "免费版",
+          featured: true,
+          featuredOrder: 0,
+          status: "active",
+          createdAt: Date.now() - 5 * 86400000,
+          updatedAt: Date.now() - 86400000,
+          releases: [
+            {
+              id: "rel-desktop-v200",
+              version: "2.0.0",
+              platform: "windows",
+              status: "published",
+              isLatest: true,
+              size: "85.2 MB",
+              fileSize: 89338675,
+              downloadCount: 128,
+              publicUrl: "/download/latest/desktop",
+              createdAt: Date.now() - 86400000
+            }
+          ]
+        }
+      ]
+    };
+  }
+
+  function applyCatalog(data) {
+    if (!data || !Array.isArray(data.software)) return;
+    catalog = data;
 
     // 过滤上架软件并计算派生字段
     allSoftware = (catalog.software || [])
@@ -924,6 +965,48 @@
     renderRecentUpdates();
     bindEvents();
     safeIcons();
+  }
+
+  // 初始化入口 (SWR 毫秒级秒开：本地缓存立即渲染 -> 后台异步静默同步)
+  async function init() {
+    let hasRendered = false;
+
+    // 1. 同步秒开：读取本地缓存（0 毫秒渲染，消除骨架屏闪烁与加载停顿）
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (raw) {
+        const cached = JSON.parse(raw);
+        if (cached && Array.isArray(cached.software) && cached.software.length) {
+          applyCatalog(cached);
+          hasRendered = true;
+        }
+      }
+    } catch (e) {
+      console.warn("读取 catalog 缓存失败:", e);
+    }
+
+    // 2. 异步网络刷新：拉取最新数据（超时 5 秒兜底）
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch("/api/catalog", { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const remoteData = await res.json();
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(remoteData));
+        } catch (e) {}
+        applyCatalog(remoteData);
+        return;
+      }
+    } catch (err) {
+      console.warn("网络拉取 catalog 失败/超时:", err);
+    }
+
+    // 3. 兜底保护：若本地无缓存且网络失败，使用内置兜底，绝对不让骨架屏无限循环
+    if (!hasRendered) {
+      applyCatalog(getFallbackCatalog());
+    }
   }
 
   // 页面就绪后启动

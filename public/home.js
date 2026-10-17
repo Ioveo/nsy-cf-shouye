@@ -1,38 +1,60 @@
 let currentCatalog = null;
 let activeMatrixCategory = "all";
 
+const CACHE_KEY = "software_center_catalog_cache_v3";
+
+function renderHomeViews(cat) {
+  applySiteText(cat.site || {});
+  renderNavigation(cat);
+  renderFlagship(cat);
+  renderSoftwareMatrix(cat);
+  renderHomeArticles(cat);
+}
+
 // 主入口：加载后台 Catalog 数据并初始化各动态联动区域
 loadHomeData();
 
 async function loadHomeData() {
+  let hasRendered = false;
+
+  // 1. 同步读取缓存秒开
   try {
-    const response = await fetch("/api/catalog", { cache: "no-store" });
-    if (!response.ok) throw new Error("catalog request failed");
-    currentCatalog = await response.json();
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (raw) {
+      currentCatalog = JSON.parse(raw);
+      if (currentCatalog && Array.isArray(currentCatalog.software)) {
+        renderHomeViews(currentCatalog);
+        hasRendered = true;
+      }
+    }
+  } catch (e) {}
+
+  // 2. 异步网络刷新
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch("/api/catalog", { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (response.ok) {
+      currentCatalog = await response.json();
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(currentCatalog));
+      } catch (e) {}
+      renderHomeViews(currentCatalog);
+    } else if (!hasRendered) {
+      currentCatalog = getFallbackCatalog();
+      renderHomeViews(currentCatalog);
+    }
   } catch (e) {
-    console.warn("未能读取 /api/catalog，采用内置兜底配置:", e);
-    currentCatalog = getFallbackCatalog();
+    if (!hasRendered) {
+      console.warn("未能读取 /api/catalog，采用内置兜底配置:", e);
+      currentCatalog = getFallbackCatalog();
+      renderHomeViews(currentCatalog);
+    }
   }
 
-  // 1. 动态填充后台配置的首页文案
-  applySiteText(currentCatalog.site || {});
-
-  // 2. 动态同步主导航
-  renderNavigation(currentCatalog);
-
-  // 3. 动态渲染官方旗舰产品 (sortOrder 最小的软件)
-  renderFlagship(currentCatalog);
-
-  // 4. 动态渲染全系软件矩阵 (最多 6 款)
-  renderSoftwareMatrix(currentCatalog);
-
-  // 5. 动态渲染最新文章教程 (最多 3 篇)
-  renderHomeArticles(currentCatalog);
-
-  // 6. 初始化 FAQ 常见问题折叠交互
+  // 3. 初始化交互组件
   initFaqAccordion();
-
-  // 7. 初始化回到顶部按钮
   initBackToTop();
 }
 
