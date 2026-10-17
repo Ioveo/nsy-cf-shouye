@@ -174,6 +174,11 @@ export function normalizeSoftware(item, index = 0, now = Date.now()) {
     slug,
     description: String(item.description || ""),
     coverUrl: String(item.coverUrl || item.cover_url || ""),
+    // 软件中心展示字段：一句话介绍、系统要求、详情页链接、特性亮点（[{title, text}]）
+    tagline: String(item.tagline || ""),
+    requirements: String(item.requirements || ""),
+    landingUrl: String(item.landingUrl || ""),
+    highlights: normalizeHighlights(item.highlights),
     sortOrder: Number(item.sortOrder ?? item.sort_order ?? index),
     status: item.status || "active",
     createdAt: Number(item.createdAt || now),
@@ -201,12 +206,39 @@ export function normalizeRelease(release, softwareSlug) {
     fileSize,
     size: String(release.size || formatBytes(fileSize)),
     sha256: String(release.sha256 || ""),
+    // 同一版本可有多个下载包：platform 平台、label 包名称（如“绿色便携版”）、arch 架构
+    platform: RELEASE_PLATFORMS.includes(release.platform) ? release.platform : inferPlatform(release.fileName || release.file_name || release.fileKey || release.key || ""),
+    label: String(release.label || ""),
+    arch: String(release.arch || ""),
     isLatest: release.isLatest !== false,
     status: release.status || (isPlaceholder ? "draft" : "published"),
     downloadCount: Number(release.downloadCount || release.download_count || 0),
     createdAt: Number(release.createdAt || parseDate(release.date) || Date.now()),
     updatedAt: Number(release.updatedAt || Date.now())
   };
+}
+
+export const RELEASE_PLATFORMS = ["windows", "portable", "macos", "linux", "android", "other"];
+
+export function inferPlatform(fileName) {
+  const name = String(fileName || "").toLowerCase();
+  if (/(portable|绿色|便携|免安装)/.test(name) || /\.(zip|7z|rar)$/.test(name)) return "portable";
+  if (/\.(exe|msi)$/.test(name)) return "windows";
+  if (/\.(dmg|pkg)$/.test(name)) return "macos";
+  if (/\.(deb|rpm|appimage|tar\.gz)$/.test(name)) return "linux";
+  if (/\.apk$/.test(name)) return "android";
+  return "other";
+}
+
+export function normalizeHighlights(value) {
+  const list = Array.isArray(value) ? value : String(value || "").split(/\r?\n/).filter(Boolean).map(line => {
+    const [title, ...rest] = line.split(/[|｜]/);
+    return { title, text: rest.join("|") };
+  });
+  return list
+    .map(item => ({ title: String(item?.title || "").trim().slice(0, 60), text: String(item?.text || "").trim().slice(0, 300) }))
+    .filter(item => item.title)
+    .slice(0, 12);
 }
 
 export function findRelease(catalog, releaseId) {

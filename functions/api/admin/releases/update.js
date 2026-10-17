@@ -22,9 +22,15 @@ export async function onRequestPost({ request, env }) {
     const body = auth.body || {};
     const version = String(body.version ?? match.release.version).trim();
     if (!version) return json({ success: false, msg: "版本号不能为空" }, 400);
-    if (match.software.releases.some(item => item.id !== releaseId && item.version === version)) {
-      return json({ success: false, msg: `版本 ${version} 已存在` }, 400);
+    // 同一版本允许多个下载包（不同平台/包名），完全相同的才算重复
+    const platform = String(body.platform || match.release.platform || "");
+    const label = String(body.label ?? match.release.label ?? "");
+    if (match.software.releases.some(item => item.id !== releaseId && item.version === version && item.platform === platform && (item.label || "") === label)) {
+      return json({ success: false, msg: `版本 ${version} 已有相同平台和名称的下载包` }, 400);
     }
+    if (body.platform) match.release.platform = platform;
+    if (body.label !== undefined) match.release.label = String(body.label).slice(0, 40);
+    if (body.arch !== undefined) match.release.arch = String(body.arch).slice(0, 40);
     const status = String(body.status || match.release.status);
     if (!["published", "draft", "disabled"].includes(status)) return json({ success: false, msg: "未知状态" }, 400);
     match.release.version = version;

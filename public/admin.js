@@ -289,6 +289,8 @@ function render(nextCatalog) {
   syncHotAppSelect();
 }
 
+const RELEASE_PLATFORM_LABELS = { windows: "Windows", portable: "绿色版", macos: "macOS", linux: "Linux", android: "Android", other: "其他" };
+
 const SITE_MODE_LABELS = { software: "软件站", portal: "综合门户", blog: "博客" };
 
 function renderSiteMode() {
@@ -332,6 +334,8 @@ function openReleaseEdit(software, release) {
   byId("editReleaseFileName").value = release.fileName || "";
   byId("editReleaseChangelog").value = release.changelog || "";
   byId("editReleaseLatest").checked = Boolean(release.isLatest);
+  byId("editReleasePlatform").value = release.platform || "other";
+  byId("editReleaseLabel").value = release.label || "";
   const form = byId("releaseEditForm");
   form.hidden = false;
   form.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -350,7 +354,9 @@ async function saveReleaseEdit(event) {
     status: byId("editReleaseStatus").value,
     fileName: byId("editReleaseFileName").value.trim(),
     changelog: byId("editReleaseChangelog").value.trim(),
-    isLatest: byId("editReleaseLatest").checked
+    isLatest: byId("editReleaseLatest").checked,
+    platform: byId("editReleasePlatform").value,
+    label: byId("editReleaseLabel").value.trim()
   };
   if (!payload.version) return toast("版本号不能为空", true);
   const result = await api("/api/admin/releases/update", payload);
@@ -593,7 +599,7 @@ function renderReleaseRows() {
       if (keyword && !`${release.version} ${release.fileName || ""} ${release.fileKey || ""}`.toLowerCase().includes(keyword)) continue;
       const tr = document.createElement("tr");
       const statusClass = release.status === "disabled" ? "disabled" : release.status === "draft" ? "draft" : "active";
-      tr.innerHTML = `<td>${escapeHtml(item.name)}</td><td>${escapeHtml(release.version)}<br><small class="status-${statusClass}">${statusText[release.status] || "已发布"}</small></td><td class="code">${escapeHtml(release.fileName || "-")}<br><small>${escapeHtml(release.storageId || "default")}</small></td><td>${escapeHtml(release.size || "-")}</td><td>${release.isLatest ? "是" : "否"}</td><td>${release.downloadCount || 0}</td><td class="row-actions"></td>`;
+      tr.innerHTML = `<td>${escapeHtml(item.name)}</td><td>${escapeHtml(release.version)} <small>${escapeHtml(RELEASE_PLATFORM_LABELS[release.platform] || "")}${release.label ? " · " + escapeHtml(release.label) : ""}</small><br><small class="status-${statusClass}">${statusText[release.status] || "已发布"}</small></td><td class="code">${escapeHtml(release.fileName || "-")}<br><small>${escapeHtml(release.storageId || "default")}</small></td><td>${escapeHtml(release.size || "-")}</td><td>${release.isLatest ? "是" : "否"}</td><td>${release.downloadCount || 0}</td><td class="row-actions"></td>`;
       const link = `/download/${encodeURIComponent(release.id)}`;
       const replaceInput = document.createElement("input");
       replaceInput.type = "file";
@@ -1324,6 +1330,10 @@ async function saveSoftware(event) {
     categoryId: byId("softwareCategory").value,
     coverUrl: byId("softwareCover").value.trim(),
     description: byId("softwareDescription").value.trim(),
+    tagline: byId("softwareTagline").value.trim(),
+    requirements: byId("softwareRequirements").value.trim(),
+    landingUrl: byId("softwareLandingUrl").value.trim(),
+    highlights: byId("softwareHighlights").value,
     sortOrder: Number(byId("softwareSort").value || 0),
     status: byId("softwareStatus").value
   };
@@ -1761,6 +1771,10 @@ function fillSoftwareForm(item) {
   byId("softwareCategory").value = item.categoryId;
   byId("softwareCover").value = item.coverUrl || "";
   byId("softwareDescription").value = item.description || "";
+  byId("softwareTagline").value = item.tagline || "";
+  byId("softwareRequirements").value = item.requirements || "";
+  byId("softwareLandingUrl").value = item.landingUrl || "";
+  byId("softwareHighlights").value = (item.highlights || []).map(h => h.text ? `${h.title}｜${h.text}` : h.title).join("\n");
   byId("softwareSort").value = item.sortOrder || 0;
   byId("softwareStatus").value = item.status || "active";
 }

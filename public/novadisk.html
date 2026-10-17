@@ -50,7 +50,7 @@
     .animate-pulse-slow { animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
   </style>
 </head>
-<body class="mica-backdrop min-h-screen flex flex-col p-4 text-slate-200 overflow-x-hidden">
+<body class="mica-backdrop min-h-screen flex flex-col p-4 text-slate-200 overflow-x-hidden" data-landing-page="novadisk">
 
   <!-- 顶部状态栏与导航栏 -->
   <header class="acrylic-card rounded-2xl p-4 mb-3 flex flex-wrap items-center justify-between gap-4">
@@ -62,14 +62,14 @@
       </div>
       <div>
         <div class="flex items-center space-x-2">
-          <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">NovaDisk</h1>
+          <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent" data-landing="heroTitle">NovaDisk</h1>
           <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Release v1.5</span>
           <div id="engine-badge" class="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span id="engine-status-text">检测调度引擎中...</span>
           </div>
         </div>
-        <p class="text-xs text-slate-400">Windows 空间智能管家 • 真实扫描与无损软链接搬家 • 100% 可直接点击实操</p>
+        <p class="text-xs text-slate-400" data-landing="heroSubtitle">Windows 空间智能管家 • 真实扫描与无损软链接搬家 • 100% 可直接点击实操</p>
       </div>
     </div>
 
@@ -1015,5 +1015,6 @@
       }
     }
   </script>
+  <script src="/js/landing-bind.js?v=20261017"></script>
 </body>
 </html>

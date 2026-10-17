@@ -176,7 +176,7 @@ h1,h2,h3,.cine-title{text-wrap:balance}
 @media (max-width:900px){.hero-grade{background:linear-gradient(180deg,rgba(7,9,15,.45) 0%,rgba(7,9,15,.55) 45%,rgba(7,9,15,.96) 100%)}}
 </style>
 </head>
-<body>
+<body data-landing-page="desktop">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="i-tidy" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
 <symbol id="i-dock" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M7 6.5h.01"/></symbol>
@@ -225,18 +225,18 @@ h1,h2,h3,.cine-title{text-wrap:balance}
 
 <!-- ============ 156式电影Hero ============ -->
 <header class="cine-hero">
-  <video class="bg" id="heroVideo" src="/hero-video.mp4" poster="/ui-desktop-full.png" autoplay muted loop playsinline preload="auto"></video>
+  <video class="bg" id="heroVideo" src="/hero-video.mp4" poster="/ui-desktop-full.png" data-landing-src="heroVideo" autoplay muted loop playsinline preload="auto"></video>
   <div class="hero-grade"></div>
   <div class="hero-vignette"></div>
   <canvas id="dust"></canvas>
   <div class="backdrop-word">CAT</div>
   <div class="wrap hero-copy">
     <span class="cine-badge"><i></i>DESKTOP PET · 2.0</span>
-    <h1 class="cine-title" id="cineTitle">天才猫桌面</h1>
+    <h1 class="cine-title" id="cineTitle" data-landing="heroTitle">天才猫桌面</h1>
     <div class="cine-en">GENIUS CAT DESKTOP</div>
-    <p class="cine-sub">桌面整理助手 —— 一键整理桌面、治愈小组件、智能空间管家，还有一只永远陪你的猫。</p>
+    <p class="cine-sub" data-landing="heroSubtitle">桌面整理助手 —— 一键整理桌面、治愈小组件、智能空间管家，还有一只永远陪你的猫。</p>
     <div class="cine-cta">
-      <a class="btn btn-gold" href="#download"><svg class="ico" aria-hidden="true"><use href="#i-download"/></svg>免费下载 Windows 版</a>
+      <a class="btn btn-gold" href="#download" data-landing="ctaText" data-landing-href="ctaHref"><svg class="ico" aria-hidden="true"><use href="#i-download"/></svg>免费下载 Windows 版</a>
       <a class="btn btn-ghost" href="#features">了解功能 →</a>
     </div>
     <div class="cine-meta"><span><b>✓</b> 免费使用</span><span><b>✓</b> 无捆绑安装</span><span><b>✓</b> Win10 / Win11</span></div>
@@ -721,6 +721,7 @@ document.querySelectorAll('.rv').forEach(el=>io.observe(el));
   });
 })();
 </script>
+<script src="/js/landing-bind.js?v=20261017"></script>
 </body>
 </html>
 

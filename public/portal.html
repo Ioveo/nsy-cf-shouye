@@ -4,12 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>天才猫 - 官方软件生态中心与灵动桌面工作台</title>
-    <meta name="description" content="天才猫桌面 2.0：专为 Windows 打造的灵动桌面与直播运营中枢。抽屉收纳盒、Alt快捷盲操、NovaDisk C盘无损搬家与治愈桌宠，免装环境开箱即用。" />
+    <meta name="description" content="天才猫桌面 2.0：专为 Windows 打造的灵动桌面与运营中枢。抽屉收纳盒、Alt快捷盲操、NovaDisk C盘无损搬家与治愈桌宠，免装环境开箱即用。" />
     <link rel="icon" type="image/png" href="/logo.png?v=20260509" />
     <link rel="apple-touch-icon" href="/logo.png?v=20260509" />
-    <link rel="stylesheet" href="/apple-design.css?v=20261014-gold" />
+    <link rel="stylesheet" href="/apple-design.css?v=20261017-gold" />
   </head>
-  <body>
+  <body data-landing-page="portal">
     <!-- SVG Sprite Definitions -->
     <svg width="0" height="0" class="svg-sprite-defs" aria-hidden="true">
       <defs>
@@ -29,107 +29,64 @@
       </defs>
     </svg>
 
-    <!-- Minimal Top Brand Bar -->
+    <!-- 顶部唯一导航栏 (Unified Brand Nav) -->
     <header class="apple-nav">
       <div class="apple-nav__inner">
         <a class="apple-nav__brand" href="/">
           <img src="/logo.png" alt="天才猫" />
           <span>天才猫</span>
         </a>
-        <a class="apple-btn apple-btn--primary apple-btn--sm" href="/desktop.html">
-          <span>体验桌面 2.0</span>
-          <i>→</i>
-        </a>
+        <nav class="apple-nav__links" data-nav></nav>
+        <div class="apple-nav__actions">
+          <a class="apple-btn apple-btn--primary apple-btn--sm" href="/desktop.html">
+            <span>体验桌面 2.0</span>
+            <i>→</i>
+          </a>
+        </div>
       </div>
     </header>
 
     <main>
-      <!-- Hero Section -->
+      <!-- 首屏：品牌门户核心主张 -->
       <section class="apple-hero">
-        <span class="apple-eyebrow" data-site-text="homeHeroKicker">Tiancaimao Command Center</span>
-        <h1 class="apple-hero__title" data-site-text="homeHeroTitle">
+        <span class="apple-eyebrow" data-site-text="homeHeroKicker">TIANCAIMAO COMMAND CENTER</span>
+        <h1 class="apple-hero__title" data-landing="heroTitle" data-site-text="homeHeroTitle">
           把直播运营与常用工具，<br>
           <em>收进更轻快的灵动桌面</em>
         </h1>
-        <p class="apple-hero__subtitle" data-site-text="homeHeroDescription">
+        <p class="apple-hero__subtitle" data-landing="heroSubtitle" data-site-text="homeHeroDescription">
           专为 Windows 打造的灵动桌面与运营中枢。抽屉收纳、Alt快捷盲操、C盘无损搬家与治愈桌宠，开箱即用零依赖。
         </p>
         <div class="apple-hero__actions">
-          <a class="apple-btn apple-btn--primary" href="/desktop.html">
+          <a class="apple-btn apple-btn--primary" href="/desktop.html" data-landing-href="ctaHref">
             <svg class="ico"><use href="#i-dock"/></svg>
-            <span>体验天才猫桌面 2.0</span>
+            <span data-landing="ctaText">体验天才猫桌面 2.0</span>
             <i>→</i>
           </a>
-          <a class="apple-btn apple-btn--secondary" href="#softwareMatrix">
+          <a class="apple-btn apple-btn--secondary" href="/download.html">
             <svg class="ico"><use href="#i-download"/></svg>
-            <span>浏览全系软件下载</span>
+            <span>全系软件下载中心</span>
             <i>↓</i>
           </a>
         </div>
 
-        <!-- 真实大画幅界面展示 (消灭留白，高清晰度) -->
+        <!-- 真实大画幅界面展示 -->
         <div class="hero-preview-frame">
-          <img src="/card-desktop-full.png" alt="天才猫桌面 2.0 全景界面展示" />
-        </div>
-
-        <!-- 静默极简命令检索器 -->
-        <div class="launcher-widget" id="commandCenter">
-          <div class="launcher-search">
-            <svg class="ico ico-muted"><use href="#i-search"/></svg>
-            <input id="launcherSearchInput" type="search" placeholder="输入快捷命令或搜索：桌面、下载、画廊、音乐、教程、C盘搬家..." autocomplete="off" aria-label="快捷命令搜索" />
-            <kbd>⌘K</kbd>
-          </div>
-          <div class="launcher-quick-tags">
-            <span class="tag-label">高频直达:</span>
-            <a href="/desktop.html" class="launcher-tag-btn">桌面 2.0</a>
-            <a href="/download.html" class="launcher-tag-btn">软件中心</a>
-            <a href="/photo-wall.html" class="launcher-tag-btn">3D照片墙</a>
-            <a href="/music.html" class="launcher-tag-btn">音乐台</a>
-            <a href="/novadisk.html" target="_blank" class="launcher-tag-btn">C盘管家</a>
-            <a href="/articles.html" class="launcher-tag-btn">教程公告</a>
-            <a href="/license.html" class="launcher-tag-btn">正版授权</a>
-          </div>
-          <div class="launcher-list" id="launcherList" aria-live="polite"></div>
+          <img src="/card-desktop-full.png" data-landing-src="heroImage" alt="天才猫桌面 2.0 全景界面展示" />
         </div>
       </section>
 
-      <!-- 硬核指标与信任保障条 -->
-      <section class="apple-trust-strip">
-        <div class="apple-trust-grid">
-          <div class="apple-trust-item">
-            <span class="apple-trust-value">100%</span>
-            <span class="apple-trust-label">独立自包含运行时</span>
-            <span class="apple-trust-sub">纯净 Win10/Win11 免装 .NET 与系统库，双击即开</span>
-          </div>
-          <div class="apple-trust-item">
-            <span class="apple-trust-value">&lt; 30ms</span>
-            <span class="apple-trust-label">无感吸附盲操呼出</span>
-            <span class="apple-trust-sub">抽屉式侧边把手，悬停顺滑展开，随用随出</span>
-          </div>
-          <div class="apple-trust-item">
-            <span class="apple-trust-value">NTFS</span>
-            <span class="apple-trust-label">无损软链接搬家</span>
-            <span class="apple-trust-sub">Junction 技术，微信QQ照常读写，释放数十GB</span>
-          </div>
-          <div class="apple-trust-item">
-            <span class="apple-trust-value">0 弹窗</span>
-            <span class="apple-trust-label">纯净绿色极客品质</span>
-            <span class="apple-trust-sub">拒绝广告弹窗与静默捆绑，专注极致效能提效</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- 官方旗舰单品：天才猫桌面 2.0 -->
+      <!-- 1. 官方旗舰单品 (由 home.js 动态读取 sortOrder 最小的软件并渲染) -->
       <section class="apple-section" id="flagshipDesktop">
         <div class="apple-flagship">
-          <div>
-            <span class="apple-badge-pill">✦ 2026 官方旗舰主打</span>
-            <h2>天才猫桌面 2.0</h2>
-            <p class="sec-lead">
+          <div class="flagship-info">
+            <span class="apple-badge-pill" id="flagshipBadge">✦ 2026 官方旗舰主打</span>
+            <h2 id="flagshipTitle">天才猫桌面 2.0</h2>
+            <p class="sec-lead" id="flagshipTagline">
               重构 Windows 灵动桌面体验。完全内置独立运行时，免装环境与依赖库。抽屉式侧边吸附把手、Alt+1~9 快捷启动矩阵与空间管家 C盘无损搬迁。
             </p>
 
-            <div class="flagship-bullets">
+            <div class="flagship-bullets" id="flagshipBullets">
               <div class="flagship-bullet">
                 <div class="b-icon"><svg class="ico"><use href="#i-tidy"/></svg></div>
                 <div>
@@ -154,25 +111,25 @@
             </div>
 
             <div class="flagship-actions">
-              <a class="apple-btn apple-btn--primary" href="/desktop.html">
+              <a class="apple-btn apple-btn--primary" id="flagshipPrimaryBtn" href="/desktop.html">
                 <span>了解详情与交互全景</span>
                 <i>→</i>
               </a>
-              <a class="apple-btn apple-btn--secondary" href="/download/latest/desktop">
-                <span>下载安装包 (85MB)</span>
+              <a class="apple-btn apple-btn--secondary" id="flagshipDownloadBtn" href="/download/latest/desktop">
+                <span>下载最新版安装包</span>
                 <i>↓</i>
               </a>
             </div>
           </div>
-          <div>
+          <div class="flagship-visual">
             <div class="flagship-media">
-              <img src="/preview-desktop-widgets.png" alt="天才猫桌面 2.0 界面展示" loading="eager" />
+              <img id="flagshipImage" src="/preview-desktop-widgets.png" alt="官方旗舰单品界面展示" loading="eager" />
             </div>
           </div>
         </div>
       </section>
 
-      <!-- 全系软件矩阵 -->
+      <!-- 2. 全系软件矩阵 (最多展示 6 个卡片 + 查看全部按钮) -->
       <section class="apple-section" id="softwareMatrix">
         <div class="apple-section__head">
           <span class="apple-eyebrow">Software Matrix</span>
@@ -186,36 +143,15 @@
 
         <div class="apple-bento" id="matrixGrid" aria-live="polite"></div>
 
-        <!-- 压缩收敛后的生态 Bento 4联功能卡 -->
-        <div class="apple-ecosystem-grid">
-          <a class="apple-ecosystem-card" href="/photo-wall.html">
-            <div class="eco-icon"><svg class="ico ico-lg"><use href="#i-camera"/></svg></div>
-            <h4>3D 沉浸照片墙</h4>
-            <p>WebGL 物理流体与液态折射着色器，支持横向拖曳与空间惯性阻尼。</p>
-            <span class="eco-link">探索照片墙 <i>→</i></span>
-          </a>
-          <a class="apple-ecosystem-card" href="/music.html">
-            <div class="eco-icon"><svg class="ico ico-lg"><use href="#i-music"/></svg></div>
-            <h4>直播暖场音乐台</h4>
-            <p>网易云歌曲同步与 R2 无损音频，沉浸空间氛围伴奏与数据看板。</p>
-            <span class="eco-link">进入音乐台 <i>→</i></span>
-          </a>
-          <a class="apple-ecosystem-card" href="/novadisk.html" target="_blank">
-            <div class="eco-icon"><svg class="ico ico-lg"><use href="#i-drive"/></svg></div>
-            <h4>NovaDisk 2.0 C盘管家</h4>
-            <p>Fluent 2.0 圆角树图与无损搬迁向导，可在浏览器中直接在线交互直测。</p>
-            <span class="eco-link">在线体验直测 <i>↗</i></span>
-          </a>
-          <a class="apple-ecosystem-card" href="/license.html">
-            <div class="eco-icon"><svg class="ico ico-lg"><use href="#i-shield"/></svg></div>
-            <h4>正版授权体系</h4>
-            <p>一机一码安全激活，支持多设备灵活换绑，提供长期版本升级权益。</p>
-            <span class="eco-link">购买授权 <i>→</i></span>
+        <div class="matrix-more">
+          <a class="apple-btn apple-btn--secondary" href="/download.html">
+            <span>浏览全部软件与历史版本</span>
+            <i>→</i>
           </a>
         </div>
       </section>
 
-      <!-- 最新动态与操作教程 -->
+      <!-- 3. 最新动态与操作教程 (最多 3 篇) -->
       <section class="apple-section" id="newsroom">
         <div class="apple-section__head">
           <span class="apple-eyebrow">Newsroom & Updates</span>
@@ -225,7 +161,42 @@
         <div class="apple-bento" id="homeArticlesGrid"></div>
       </section>
 
-      <!-- 常见问题解答 -->
+      <!-- 4. 生态入口 (音乐、画廊、照片墙、NovaDisk 四个小卡，一行展示) -->
+      <section class="apple-section" id="ecosystemSection">
+        <div class="apple-section__head">
+          <span class="apple-eyebrow">Ecosystem</span>
+          <h2>生态与扩展产品</h2>
+          <p>覆盖直播暖场、素材画廊、3D 视觉与系统空间管理，全方位赋能创作。</p>
+        </div>
+        <div class="apple-ecosystem-grid">
+          <a class="apple-ecosystem-card" href="/music.html">
+            <div class="eco-icon"><svg class="ico ico-lg"><use href="#i-music"/></svg></div>
+            <h4>直播暖场音乐台</h4>
+            <p>网易云歌曲同步与无损音频，沉浸空间氛围伴奏与数据看板。</p>
+            <span class="eco-link">进入音乐台 <i>→</i></span>
+          </a>
+          <a class="apple-ecosystem-card" href="/gallery.html">
+            <div class="eco-icon"><svg class="ico ico-lg"><use href="#i-drive"/></svg></div>
+            <h4>图片素材画廊</h4>
+            <p>沉浸式图片流、超清壁纸与多图素材云端分发展示。</p>
+            <span class="eco-link">浏览画廊 <i>→</i></span>
+          </a>
+          <a class="apple-ecosystem-card" href="/photo-wall.html">
+            <div class="eco-icon"><svg class="ico ico-lg"><use href="#i-camera"/></svg></div>
+            <h4>3D 沉浸照片墙</h4>
+            <p>WebGL 物理流体与液态折射着色器，横向拖曳空间阻尼交互。</p>
+            <span class="eco-link">探索照片墙 <i>→</i></span>
+          </a>
+          <a class="apple-ecosystem-card" href="/novadisk.html" target="_blank">
+            <div class="eco-icon"><svg class="ico ico-lg"><use href="#i-tidy"/></svg></div>
+            <h4>NovaDisk 2.0 C盘管家</h4>
+            <p>Fluent 2.0 圆角树图可视化与无损软链接搬迁向导，在线体验。</p>
+            <span class="eco-link">在线体验直测 <i>↗</i></span>
+          </a>
+        </div>
+      </section>
+
+      <!-- 5. 常见问题解答 -->
       <section class="apple-section" id="faq">
         <div class="apple-section__head">
           <span class="apple-eyebrow">Frequently Asked Questions</span>
@@ -286,7 +257,7 @@
         </div>
       </section>
 
-      <!-- 结尾行动召唤 -->
+      <!-- 6. 结尾行动召唤 -->
       <section class="apple-section" id="readyCta">
         <div class="apple-cta-card">
           <span class="apple-eyebrow" data-site-text="readyKicker">Ready to Elevate Your Workflow?</span>
@@ -310,7 +281,7 @@
       </section>
     </main>
 
-    <!-- 页脚 -->
+    <!-- 7. 页脚 -->
     <footer class="apple-footer">
       <div class="apple-footer__inner">
         <div class="apple-footer__grid">
@@ -346,44 +317,14 @@
       </div>
     </footer>
 
-    <!-- 底部灵动悬浮导航 (Primary Floating Navigation Dock) -->
-    <aside class="apple-floating-dock" aria-label="快捷全局导航">
-      <button type="button" id="dockSearchBtn" title="命令搜索 (⌘K 或 /)">
-        <svg class="ico"><use href="#i-search"/></svg>
-        <span>搜索</span>
-        <kbd>⌘K</kbd>
-      </button>
-      <a href="/desktop.html" class="dock-highlight" title="天才猫桌面 2.0 专属落地页">
-        <svg class="ico"><use href="#i-dock"/></svg>
-        <span>桌面 2.0</span>
-      </a>
-      <a href="/download.html" title="全系软件中心">
-        <svg class="ico"><use href="#i-download"/></svg>
-        <span>软件</span>
-      </a>
-      <a href="/articles.html" title="官方博客与教程">
-        <svg class="ico"><use href="#i-book"/></svg>
-        <span>博客</span>
-      </a>
-      <a href="/photo-wall.html" title="3D 沉浸照片墙">
-        <svg class="ico"><use href="#i-camera"/></svg>
-        <span>照片墙</span>
-      </a>
-      <a href="/music.html" title="直播暖场音乐台">
-        <svg class="ico"><use href="#i-music"/></svg>
-        <span>音乐台</span>
-      </a>
-      <a href="/license.html" title="正版授权购买">
-        <svg class="ico"><use href="#i-shield"/></svg>
-        <span>授权</span>
-      </a>
-      <button type="button" id="dockScrollTop" title="返回页面顶部">
-        <svg class="ico"><use href="#i-arrow-up"/></svg>
-        <span>顶部</span>
-      </button>
-    </aside>
+    <!-- 悬浮回到顶部胶囊 (Minimal Single Back to Top) -->
+    <button type="button" id="dockScrollTop" class="apple-back-to-top" title="返回页面顶部" aria-label="返回页面顶部">
+      <svg class="ico"><use href="#i-arrow-up"/></svg>
+      <span>顶部</span>
+    </button>
 
-    <!-- 动态数据交互引擎 -->
-    <script src="/home.js?v=20261014-gold" type="module"></script>
+    <!-- 动态数据交互引擎与落地页文案动态绑定 -->
+    <script src="/home.js?v=20261017-p4" type="module"></script>
+    <script src="/js/landing-bind.js?v=20261017"></script>
   </body>
 </html>

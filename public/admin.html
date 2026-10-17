@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>天才猫下载管理后台</title>
     <link rel="icon" type="image/png" href="/logo.png?v=20260509" />
-    <link rel="stylesheet" href="/admin.css?v=20261014-admin-v2" />
+    <link rel="stylesheet" href="/admin.css?v=20261017-software-center" />
   </head>
   <body>
     <div class="toast" id="toast"></div>
@@ -100,7 +100,11 @@
             <label>R2 封面图<select id="softwareCoverAsset"><option value="">选择 R2 图片</option></select></label>
             <label>本地封面<input id="softwareCoverFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" /></label>
             <div class="form-actions"><button class="ghost" type="button" id="useSoftwareCoverAsset">使用 R2 图片</button><button class="ghost" type="button" id="uploadSoftwareCover">上传封面</button></div>
+            <label class="span-2">一句话介绍<input id="softwareTagline" maxlength="80" placeholder="显示在软件中心大标题下，例如：让桌面三秒变整洁" /></label>
             <label class="span-2">简介<textarea id="softwareDescription" rows="3" placeholder="软件说明"></textarea></label>
+            <label>系统要求<input id="softwareRequirements" placeholder="例如：Windows 10 / 11 64 位" /></label>
+            <label>详情页链接<input id="softwareLandingUrl" placeholder="选填，例如 /desktop.html" /></label>
+            <label class="span-2">特性亮点（每行一条，格式：标题｜说明）<textarea id="softwareHighlights" rows="4" placeholder="一键整理桌面｜散乱文件自动归类到收纳盒&#10;快捷键中心｜Alt+1~9 秒开常用软件"></textarea></label>
             <label>排序<input id="softwareSort" type="number" value="10" /></label>
             <label>状态<select id="softwareStatus"><option value="active">上架</option><option value="disabled">下架</option></select></label>
             <div class="span-2" style="margin-top: 6px; padding: 14px; background: rgba(59,130,246,0.06); border: 1px dashed rgba(59,130,246,0.3); border-radius: 12px;">
@@ -173,6 +177,8 @@
             <div class="span-2 release-edit__title"><strong>编辑版本</strong> <span id="editReleaseSoftware"></span></div>
             <label>版本号<input id="editReleaseVersion" required /></label>
             <label>状态<select id="editReleaseStatus"><option value="published">已发布</option><option value="draft">草稿</option><option value="disabled">隐藏</option></select></label>
+            <label>平台<select id="editReleasePlatform"><option value="windows">Windows 安装版</option><option value="portable">绿色便携版</option><option value="macos">macOS</option><option value="linux">Linux</option><option value="android">Android</option><option value="other">其他</option></select></label>
+            <label>包名称<input id="editReleaseLabel" maxlength="40" placeholder="选填，例如：64 位安装包" /></label>
             <label class="span-2">下载文件名<input id="editReleaseFileName" placeholder="用户下载时看到的文件名" /></label>
             <label class="span-2">更新说明<textarea id="editReleaseChangelog" rows="4"></textarea></label>
             <label><input id="editReleaseLatest" type="checkbox" /> 设为最新版</label>
@@ -642,6 +648,6 @@
       </section>
     </main>
 
-    <script src="/admin.js?v=20261014-admin-v2" type="module"></script>
+    <script src="/admin.js?v=20261017-software-center" type="module"></script>
   </body>
 </html>

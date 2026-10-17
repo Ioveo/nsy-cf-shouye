@@ -9,9 +9,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-releases/
+/releases/
 __pycache__/
 *.pyc
 screenshot_*.png
 download_*.png
 tmp_chrome*/
+studio/node_modules/
+public/studio/

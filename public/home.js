@@ -20,23 +20,20 @@ async function loadHomeData() {
   // 2. 动态同步主导航
   renderNavigation(currentCatalog);
 
-  // 3. 动态渲染全系软件矩阵 (Software Matrix)
+  // 3. 动态渲染官方旗舰产品 (sortOrder 最小的软件)
+  renderFlagship(currentCatalog);
+
+  // 4. 动态渲染全系软件矩阵 (最多 6 款)
   renderSoftwareMatrix(currentCatalog);
 
-  // 4. 动态渲染最新文章教程 (Articles)
+  // 5. 动态渲染最新文章教程 (最多 3 篇)
   renderHomeArticles(currentCatalog);
-
-  // 5. 初始化交互式命令搜索面板
-  initLauncherSearch(currentCatalog);
 
   // 6. 初始化 FAQ 常见问题折叠交互
   initFaqAccordion();
 
-  // 7. 初始化桌面 2.0 核心特性交互切换器 (如有)
-  initDesktopFeatureSwitcher();
-
-  // 8. 初始化底部灵动快捷胶囊
-  initFloatingDock();
+  // 7. 初始化回到顶部按钮
+  initBackToTop();
 }
 
 function applySiteText(site) {
@@ -70,6 +67,78 @@ function renderNavigation(catalog) {
   }
 }
 
+function renderFlagship(catalog) {
+  const softwareList = catalog.software || [];
+  if (!softwareList.length) return;
+
+  // 按照 sortOrder 升序排列，取最小值对应的软件作为官方旗舰
+  const sorted = [...softwareList].sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0));
+  const flagship = sorted[0];
+  if (!flagship) return;
+
+  const titleEl = document.getElementById("flagshipTitle");
+  const taglineEl = document.getElementById("flagshipTagline");
+  const bulletsEl = document.getElementById("flagshipBullets");
+  const primaryBtn = document.getElementById("flagshipPrimaryBtn");
+  const downloadBtn = document.getElementById("flagshipDownloadBtn");
+  const imgEl = document.getElementById("flagshipImage");
+
+  if (titleEl) {
+    titleEl.textContent = flagship.name || "天才猫桌面 2.0";
+  }
+
+  // 优先展示 tagline，其次是 description
+  if (taglineEl) {
+    taglineEl.textContent = flagship.tagline || flagship.description || "专为 Windows 打造的灵动桌面与运营中枢。";
+  }
+
+  const isDesktop = flagship.slug === "desktop" || /桌面/i.test(flagship.name);
+  const detailUrl = flagship.landingUrl || (isDesktop ? "/desktop.html" : `/download.html?app=${encodeURIComponent(flagship.slug || flagship.id)}`);
+
+  if (primaryBtn) {
+    primaryBtn.href = detailUrl;
+  }
+
+  const latest = (flagship.releases || []).find(r => r.isLatest) || flagship.releases?.[0];
+  if (downloadBtn) {
+    downloadBtn.href = `/download/latest/${encodeURIComponent(flagship.slug || flagship.id)}`;
+    const sizeStr = latest?.fileSize ? ` (${(latest.fileSize / (1024 * 1024)).toFixed(0)}MB)` : "";
+    downloadBtn.innerHTML = `<span>下载最新版安装包${sizeStr}</span> <i>↓</i>`;
+  }
+
+  // 封面图：如果软件配置了 iconUrl 则使用，否则保留默认
+  if (imgEl && flagship.iconUrl) {
+    imgEl.src = flagship.iconUrl;
+  }
+
+  // 渲染 highlights
+  if (bulletsEl) {
+    const highlights = Array.isArray(flagship.highlights) && flagship.highlights.length > 0
+      ? flagship.highlights
+      : [
+          { title: "抽屉式侧边吸附把手", text: "拖动收纳盒靠边自动缩减为 30px 超薄把手，悬停顺滑弹出，避让任务栏。" },
+          { title: "Alt+1~9 快捷盲操矩阵", text: "常用应用拖入即可绑定快捷键，按一下快速调出，再按一下静默隐退。" },
+          { title: "NovaDisk 2.0 C盘无损搬家", text: "采用 NTFS Junction 软链接技术，微信QQ等大文件安全换盘，原路径无感读写。" }
+        ];
+
+    bulletsEl.replaceChildren();
+    const icons = ["#i-tidy", "#i-keyboard", "#i-drive", "#i-shield"];
+    highlights.slice(0, 3).forEach((hl, idx) => {
+      const iconId = icons[idx % icons.length];
+      const item = document.createElement("div");
+      item.className = "flagship-bullet";
+      item.innerHTML = `
+        <div class="b-icon"><svg class="ico"><use href="${iconId}"/></svg></div>
+        <div>
+          <h4>${escapeHtml(hl.title)}</h4>
+          <p>${escapeHtml(hl.text)}</p>
+        </div>
+      `;
+      bulletsEl.append(item);
+    });
+  }
+}
+
 function renderSoftwareMatrix(catalog) {
   const tabsContainer = document.getElementById("matrixTabs");
   const gridContainer = document.getElementById("matrixGrid");
@@ -100,7 +169,7 @@ function renderSoftwareMatrix(catalog) {
     tabsContainer.append(btn);
   });
 
-  // 过滤并渲染软件卡片
+  // 过滤软件
   const filtered = softwareList.filter(s => {
     if (activeMatrixCategory === "all") return true;
     return s.categoryId === activeMatrixCategory;
@@ -117,7 +186,10 @@ function renderSoftwareMatrix(catalog) {
     return;
   }
 
-  filtered.forEach(item => {
+  // 严格限制最多展示 6 个卡片
+  const displayList = filtered.slice(0, 6);
+
+  displayList.forEach(item => {
     const category = categories.find(c => c.id === item.categoryId);
     const latest = (item.releases || []).find(r => r.isLatest) || item.releases?.[0];
     const isDesktop = item.slug === "desktop" || /桌面/i.test(item.name);
@@ -125,23 +197,25 @@ function renderSoftwareMatrix(catalog) {
     const card = document.createElement("article");
     card.className = "apple-card apple-card--span-4";
 
+    const desc = item.tagline || item.description || "全功能桌面效能工具，由天才猫官方团队提供长期更新保障。";
+
     card.innerHTML = `
       <div class="apple-card__top">
         <span class="apple-badge-pill">${escapeHtml(category?.name || "精选软件")}</span>
-        <span class="apple-card__version">${escapeHtml(latest?.version ? `v${latest.version}` : "最新发行版")}</span>
+        <span class="apple-card__version">${escapeHtml(latest?.version ? `v${latest.version}` : "最新版")}</span>
       </div>
       <h3 class="apple-card__title">${escapeHtml(item.name)}</h3>
-      <p class="apple-card__desc">${escapeHtml(item.description || "全功能桌面效能工具，由天才猫官方团队提供长期更新保障。")}</p>
+      <p class="apple-card__desc">${escapeHtml(desc)}</p>
       <div class="apple-card__actions">
         ${isDesktop ? `
           <a class="apple-btn apple-btn--primary apple-btn--sm" href="/desktop.html" style="flex:1;">
-            <span>桌面 2.0 专属落地页</span> <i>→</i>
+            <span>桌面 2.0 专属</span> <i>→</i>
           </a>
         ` : `
           <a class="apple-btn apple-btn--primary apple-btn--sm" href="${latest ? `/download/latest/${encodeURIComponent(item.slug || item.id)}` : `/download.html`}" style="flex:1;">
             <span>${latest ? "下载最新版" : "前往下载"}</span> <i>↓</i>
           </a>
-          <a class="apple-btn apple-btn--secondary apple-btn--sm" href="/software.html?slug=${encodeURIComponent(item.slug || item.id)}">详情</a>
+          <a class="apple-btn apple-btn--secondary apple-btn--sm" href="/download.html?app=${encodeURIComponent(item.slug || item.id)}">详情</a>
         `}
       </div>
     `;
@@ -200,130 +274,6 @@ function renderArticleCard(container, a) {
   container.append(card);
 }
 
-function initLauncherSearch(catalog) {
-  const input = document.getElementById("launcherSearchInput");
-  const list = document.getElementById("launcherList");
-  if (!input || !list) return;
-
-  const defaultItems = [
-    {
-      title: "体验天才猫桌面 2.0 (全景落地页)",
-      desc: "包含抽屉收纳盒、时钟、NovaDisk 交互体验器",
-      href: "/desktop.html",
-      iconText: "→",
-      kbd: "↵"
-    },
-    {
-      title: "下载天才猫 DY 辅助工具",
-      desc: "直播场控、数据中心与自动化辅助安装包",
-      href: "/download.html",
-      iconText: "↓",
-      kbd: "D"
-    },
-    {
-      title: "打开图片素材画廊",
-      desc: "R2 图片素材、沉浸预览、多图批量管理",
-      href: "/gallery.html",
-      iconText: "↗",
-      kbd: "G"
-    },
-    {
-      title: "进入直播音乐频道",
-      desc: "网易云歌曲 ID、R2 音频、暖场歌单管理",
-      href: "/music.html",
-      iconText: "↗",
-      kbd: "M"
-    },
-    {
-      title: "查看文章教程与公告",
-      desc: "更新说明、使用教程、运营经验沉淀",
-      href: "/articles.html",
-      iconText: "↗",
-      kbd: "A"
-    },
-    {
-      title: "购买正版绑定授权",
-      desc: "正版授权、团队使用、长期升级服务",
-      href: "/license.html",
-      iconText: "✓",
-      kbd: "L"
-    }
-  ];
-
-  function renderList(items) {
-    list.replaceChildren();
-    if (!items.length) {
-      const empty = document.createElement("div");
-      empty.className = "launcher-item launcher-item--empty";
-      empty.innerHTML = `<div><strong>未找到匹配项</strong><small>尝试搜索“桌面”、“下载”、“画廊”或“音乐”</small></div>`;
-      list.append(empty);
-      return;
-    }
-    items.forEach((item, index) => {
-      const a = document.createElement("a");
-      a.className = `launcher-item ${index === 0 ? "is-active" : ""}`;
-      a.href = item.href;
-      a.innerHTML = `
-        <span class="launcher-item__icon">${item.iconText || "→"}</span>
-        <div class="launcher-item__body">
-          <strong>${escapeHtml(item.title)}</strong>
-          <small>${escapeHtml(item.desc)}</small>
-        </div>
-        <kbd>${item.kbd || "↵"}</kbd>
-      `;
-      list.append(a);
-    });
-  }
-
-  renderList(defaultItems);
-
-  input.addEventListener("input", e => {
-    const q = e.target.value.trim().toLowerCase();
-    if (!q) {
-      renderList(defaultItems);
-      return;
-    }
-    const matched = defaultItems.filter(item =>
-      item.title.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q)
-    );
-
-    // 如果搜索与后台各软件匹配，也加进搜索结果
-    (catalog.software || []).forEach(s => {
-      if (s.name.toLowerCase().includes(q) || (s.description && s.description.toLowerCase().includes(q))) {
-        matched.push({
-          title: `下载 ${s.name}`,
-          desc: s.description || "前往软件下载中心获取最新安装包",
-          href: `/download.html`,
-          iconText: "↓",
-          kbd: "↵"
-        });
-      }
-    });
-
-    renderList(matched);
-  });
-
-  input.addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-      const first = list.querySelector(".launcher-item");
-      if (first && first.href) window.location.href = first.href;
-    }
-  });
-
-  // 全局 ⌘K / Ctrl+K 或 / 键快速聚焦搜索中枢
-  window.addEventListener("keydown", e => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-      e.preventDefault();
-      input.focus();
-      input.scrollIntoView({ behavior: "smooth", block: "center" });
-    } else if (e.key === "/" && document.activeElement !== input && !["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName)) {
-      e.preventDefault();
-      input.focus();
-      input.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  });
-}
-
 function initFaqAccordion() {
   const faqButtons = document.querySelectorAll(".apple-faq-question");
   faqButtons.forEach(btn => {
@@ -339,65 +289,21 @@ function initFaqAccordion() {
   });
 }
 
-function initDesktopFeatureSwitcher() {
-  const featureBtns = document.querySelectorAll("[data-feature-tab]");
-  const detailTitle = document.getElementById("featureDetailTitle");
-  const detailDesc = document.getElementById("featureDetailDesc");
-  const detailBadge = document.getElementById("featureDetailBadge");
+function initBackToTop() {
+  const btn = document.getElementById("dockScrollTop");
+  if (!btn) return;
 
-  if (!featureBtns.length || !detailTitle || !detailDesc) return;
-
-  const featureData = {
-    drawer: {
-      badge: "核心专利交互",
-      title: "抽屉式侧边吸附把手",
-      desc: "拖动收纳盒到屏幕左、右或上边缘松手，即可弹性收起为 30px 超薄磨砂把手。鼠标靠近顺滑弹出展开，移开静默缩回，多把手垂直智能避让不遮挡壁纸与任务栏。"
-    },
-    novadisk: {
-      badge: "系统深度瘦身",
-      title: "NovaDisk 2.0 C盘无损搬家",
-      desc: "独创 Fluent 2.0 圆角 Treemap 树图，内置文件夹语义身份证。通过 Windows 原生 NTFS Junction 软链接技术将微信、QQ 等大文件安全搬至 D 盘，原路径无感兼容，空间瞬间释放数十 GB！"
-    },
-    hotkeys: {
-      badge: "极速盲操",
-      title: "Alt+1~9 快捷键矩阵与快速启动盒",
-      desc: "桌面图标直接拖入绑定，按一下打开常用软件，再按一下隐退收起。前4个自动同步至桌面主控盒，支持软件、文件夹、网址与终端命令。"
-    }
-  };
-
-  featureBtns.forEach(btn => {
-    btn.addEventListener("click", () => {
-      featureBtns.forEach(b => b.classList.remove("is-active"));
-      btn.classList.add("is-active");
-
-      const key = btn.dataset.featureTab;
-      const data = featureData[key];
-      if (data) {
-        if (detailBadge) detailBadge.textContent = data.badge;
-        detailTitle.textContent = data.title;
-        detailDesc.textContent = data.desc;
-      }
-    });
+  btn.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
-}
 
-function initFloatingDock() {
-  const scrollTopBtn = document.getElementById("dockScrollTop");
-  const searchBtn = document.getElementById("dockSearchBtn");
-  const searchInput = document.getElementById("launcherSearchInput");
-
-  if (scrollTopBtn) {
-    scrollTopBtn.addEventListener("click", () => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-  }
-
-  if (searchBtn && searchInput) {
-    searchBtn.addEventListener("click", () => {
-      searchInput.focus();
-      searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-  }
+  window.addEventListener("scroll", () => {
+    if (window.scrollY > 300) {
+      btn.classList.add("is-visible");
+    } else {
+      btn.classList.remove("is-visible");
+    }
+  }, { passive: true });
 }
 
 function formatDate(timestamp) {
@@ -416,7 +322,7 @@ function getFallbackCatalog() {
   return {
     product: "天才猫软件中心",
     site: {
-      homeHeroKicker: "TIANCAIMAO DESKTOP 2.0",
+      homeHeroKicker: "TIANCAIMAO COMMAND CENTER",
       homeHeroTitle: "把直播运营与常用工具，收进更轻快的灵动桌面",
       homeHeroDescription: "专为 Windows 打造的灵动桌面与运营中枢。抽屉收纳、Alt快捷盲操、C盘无损搬家与治愈桌宠，开箱即用零依赖。",
       readyKicker: "Ready to Elevate Your Workflow?",
@@ -434,13 +340,17 @@ function getFallbackCatalog() {
         slug: "desktop",
         name: "天才猫桌面 2.0",
         categoryId: "desktop",
-        description: "灵动抽屉式侧边收纳、C盘无损搬家管家、顶部偷看Dock、Alt快捷键矩阵与6款高定皮肤。"
+        sortOrder: 0,
+        tagline: "专为 Windows 打造的灵动桌面与运营中枢。抽屉收纳、Alt快捷盲操、C盘无损搬家与治愈桌宠，开箱即用零依赖。",
+        description: "灵动抽屉式侧边收纳、C盘无损搬家管家、Alt快捷键矩阵与6款高定皮肤。"
       },
       {
         id: "dy-assistant",
         slug: "dy-assistant",
         name: "天才猫DY辅助工具",
         categoryId: "assistant",
+        sortOrder: 1,
+        tagline: "面向直播团队的自动化场控与互动辅助，全功能稳定交付。",
         description: "面向直播团队的自动化场控与互动辅助，全功能稳定交付。"
       },
       {
@@ -448,6 +358,8 @@ function getFallbackCatalog() {
         slug: "datacenter",
         name: "数据中心版",
         categoryId: "data",
+        sortOrder: 2,
+        tagline: "多店铺订单与场控数据集中化监控，支持实时统计。",
         description: "多店铺订单与场控数据集中化监控，支持实时统计。"
       }
     ]

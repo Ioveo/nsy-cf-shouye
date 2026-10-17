@@ -5,50 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>NSY 官方下载中心 — 新一代创作者桌面效率引擎</title>
     <meta name="description" content="NSY 官方下载中心。专为 Windows & macOS 打造的灵动桌面与创作者效能中枢。抽屉收纳、Alt快捷盲操、C盘无损搬家与极简毛玻璃美学，开箱即用零依赖。" />
-    <link rel="icon" type="image/png" href="/logo.png?v=20260509" />
-    <link rel="apple-touch-icon" href="/logo.png?v=20260509" />
+    <link rel="icon" type="image/png" href="/logo.png?v=20261017" />
+    <link rel="apple-touch-icon" href="/logo.png?v=20261017" />
 
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              background: '#07090E',
-              surface: '#0F1420',
-              accent: {
-                cyan: '#00F2FE',
-                blue: '#06B6D4',
-                indigo: '#4F46E5',
-                violet: '#7C3AED'
-              }
-            },
-            fontFamily: {
-              sans: [
-                '-apple-system',
-                'BlinkMacSystemFont',
-                'SF Pro Display',
-                'SF Pro Text',
-                'PingFang SC',
-                'Hiragino Sans GB',
-                'Microsoft YaHei',
-                'ui-sans-serif',
-                'system-ui',
-                'sans-serif'
-              ],
-              mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace']
-            },
-            lineHeight: {
-              golden: '1.618'
-            }
-          }
-        }
-      }
-    </script>
-
-    <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Local Vendor CSS & Icons -->
+    <link rel="stylesheet" href="/vendor/software-center.css?v=20261017" />
+    <script src="/vendor/lucide.min.js?v=20261017"></script>
 
     <style>
       /* Base Resets & Glassmorphic Standards */
@@ -236,7 +198,7 @@
       }
     </style>
   </head>
-  <body class="relative min-h-screen">
+  <body class="relative min-h-screen" data-landing-page="software">
     <!-- Aurora Background Gradients -->
     <div class="aurora-mesh" aria-hidden="true">
       <div class="aurora-orb aurora-orb-1"></div>
@@ -259,7 +221,7 @@
           </div>
           <div class="flex items-baseline gap-1.5">
             <span class="font-bold text-lg tracking-tight text-white group-hover:text-accent-cyan transition-colors">NSY</span>
-            <span class="text-xs text-slate-400 font-medium hidden sm:inline">桌面 2.0</span>
+            <span class="text-xs text-slate-400 font-medium hidden sm:inline" id="brandSub">软件中心</span>
           </div>
         </a>
 
@@ -272,9 +234,8 @@
           <a href="#platforms" class="px-3.5 py-1.5 rounded-full hover:text-white transition-colors">平台版本</a>
           <a href="#features" class="px-3.5 py-1.5 rounded-full hover:text-white transition-colors">核心特性</a>
           <a href="#changelog" class="px-3.5 py-1.5 rounded-full hover:text-white transition-colors">更新日志</a>
-          <a href="/desktop.html" class="px-3.5 py-1.5 rounded-full hover:text-white transition-colors flex items-center gap-1 text-slate-300">
-            <span>全景落地页</span>
-            <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+          <a href="#software" class="px-3.5 py-1.5 rounded-full hover:text-white transition-colors flex items-center gap-1 text-slate-300">
+            <span>全部软件</span>
           </a>
         </nav>
 
@@ -282,7 +243,7 @@
         <div class="flex items-center gap-3">
           <span class="hidden sm:inline-flex items-center gap-1.5 text-xs text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/20 px-2.5 py-1 rounded-full font-mono">
             <span class="w-1 h-1 rounded-full bg-accent-cyan animate-pulse"></span>
-            v2.4.0 正式版
+            <span id="navVersion">正式版</span>
           </span>
           <a href="#downloadNow" class="btn-shimmer h-[38px] px-5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] border border-white/[0.18] text-white text-[13px] font-semibold flex items-center gap-1.5 transition-all shadow-[0_4px_16px_rgba(0,0,0,0.3)]">
             <i data-lucide="download" class="w-3.5 h-3.5 text-accent-cyan"></i>
@@ -302,19 +263,19 @@
             <!-- Badge -->
             <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.1] text-xs font-medium text-slate-300 mb-6 backdrop-blur-xl">
               <span class="w-2 h-2 rounded-full bg-accent-cyan shadow-[0_0_8px_#00F2FE]"></span>
-              <span>Next-Gen Performance for Creators</span>
+              <span id="heroTagline">Official Downloads</span>
               <span class="text-slate-500">|</span>
-              <span class="text-accent-cyan font-mono">v2.4.0 现已就绪</span>
+              <span class="text-accent-cyan font-mono" id="heroVersion">加载中</span>
             </div>
 
             <!-- Title -->
-            <h1 class="text-4xl sm:text-5xl lg:text-[62px] font-bold tracking-tight leading-[1.08] text-white mb-6">
+            <h1 id="heroTitle" data-landing="heroTitle" class="text-4xl sm:text-5xl lg:text-[62px] font-bold tracking-tight leading-[1.08] text-white mb-6">
               新一代创作者<br>
               <span class="bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">桌面效率引擎</span>
             </h1>
 
             <!-- Subtitle -->
-            <p class="text-slate-400 text-base sm:text-lg leading-golden max-w-xl mb-9">
+            <p id="heroDesc" data-landing="heroSubtitle" class="text-slate-400 text-base sm:text-lg leading-golden max-w-xl mb-9">
               融合 visionOS 半透明磨砂玻璃设计与极致系统底层性能。内置自包含运行时免除依赖环境，搭载 Windows 原生 NTFS 软链接无损搬迁技术与丝滑抽屉吸附交互。
             </p>
 
@@ -337,7 +298,7 @@
             </div>
 
             <!-- Meta & SHA256 Checksum Fast Copy -->
-            <div class="flex flex-wrap items-center gap-4 text-xs text-slate-400 font-mono">
+            <div id="heroMeta" class="flex flex-wrap items-center gap-4 text-xs text-slate-400 font-mono">
               <span class="flex items-center gap-1.5 text-slate-300">
                 <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-400"></i>
                 85.4 MB 纯净包
@@ -353,7 +314,7 @@
           </div>
 
           <!-- Right: 38.2% 3D Floating Window Visual (Exact Image 2 Recreation) -->
-          <div class="lg:col-span-5 mockup-3d-stage stagger-in stagger-3">
+          <div id="heroVisual" class="lg:col-span-5 mockup-3d-stage stagger-in stagger-3">
             <div class="mockup-3d-window glass-card rounded-2xl p-5 border border-white/[0.18] shadow-[0_30px_90px_rgba(0,0,0,0.85)] relative overflow-hidden group">
               <!-- Window Refraction Accent -->
               <div class="absolute -top-24 -right-24 w-64 h-64 bg-accent-cyan/15 rounded-full blur-3xl pointer-events-none"></div>
@@ -443,20 +404,31 @@
         </div>
       </section>
 
+      <!-- 软件中心：后台所有已上架软件（由 /software-center.js 渲染） -->
+      <section id="software" class="max-w-[1280px] mx-auto px-6 sm:px-8 mb-28">
+        <div class="text-center max-w-2xl mx-auto mb-10">
+          <span class="text-xs font-semibold tracking-wider text-accent-cyan uppercase mb-2 block">All Software</span>
+          <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4">全部软件</h2>
+          <p class="text-slate-400 text-sm sm:text-base leading-relaxed">选择一款软件查看详情、下载安装包和更新日志。</p>
+        </div>
+        <div id="softwareTabs" class="flex flex-wrap justify-center gap-2 mb-8"></div>
+        <div id="softwareList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+      </section>
+
       <!-- 3. Bento Grid Core Features (Image 2 Structure Recreation) -->
       <section id="features" class="max-w-[1280px] mx-auto px-6 sm:px-8 mb-28">
         <div class="text-center max-w-2xl mx-auto mb-14">
-          <span class="text-xs font-semibold tracking-wider text-accent-cyan uppercase mb-2 block">System Architecture</span>
-          <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4">
+          <span id="featuresEyebrow" class="text-xs font-semibold tracking-wider text-accent-cyan uppercase mb-2 block">System Architecture</span>
+          <h2 id="featuresTitle" class="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4">
             重新定义 Windows 效能中枢
           </h2>
-          <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+          <p id="featuresDesc" class="text-slate-400 text-sm sm:text-base leading-relaxed">
             告别传统桌面臃肿老旧的交互。以极客级的精简代码与原生的系统技术，保障每一帧丝滑与安全。
           </p>
         </div>
 
         <!-- 4-Card Bento Grid Matching Image 2 -->
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+        <div id="featuresGrid" class="grid grid-cols-1 md:grid-cols-12 gap-5">
           <!-- Card 1 (Span 7): Real-time analytics -->
           <div class="md:col-span-7 glass-card glass-card-hover rounded-2xl p-6 sm:p-7 flex flex-col justify-between spotlight-card">
             <div class="flex items-center justify-between mb-4">
@@ -596,15 +568,15 @@
       <section id="platforms" class="max-w-[1280px] mx-auto px-6 sm:px-8 mb-28">
         <div class="text-center max-w-2xl mx-auto mb-14">
           <span class="text-xs font-semibold tracking-wider text-accent-cyan uppercase mb-2 block">Multi-Platform Releases</span>
-          <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4">
+          <h2 id="platformsTitle" class="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4">
             适配主流桌面生态
           </h2>
-          <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+          <p id="platformsDesc" class="text-slate-400 text-sm sm:text-base leading-relaxed">
             所有平台安装包均经过官方数字签名校验，支持在线平滑增量热更新。
           </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div id="platformGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <!-- Card 1: Windows -->
           <div class="glass-card glass-card-hover rounded-2xl p-7 flex flex-col justify-between spotlight-card">
             <div>
@@ -699,7 +671,7 @@
           <p class="text-xs sm:text-sm text-slate-400">持续迭代，每一次更新都凝聚对极致效能的追求</p>
         </div>
 
-        <div class="space-y-3.5">
+        <div id="changelogList" class="space-y-3.5">
           <!-- Accordion 1: v2.4.0 (Open by default) -->
           <div class="glass-card rounded-xl overflow-hidden changelog-item is-open">
             <button type="button" class="w-full px-5 py-4 flex items-center justify-between text-left text-sm font-semibold text-white changelog-toggle hover:bg-white/[0.02]">
@@ -849,25 +821,8 @@
         });
       });
 
-      // 5. Dynamic Backend Catalog Integration (Optional enhancement)
-      (async function syncLatestRelease() {
-        try {
-          const res = await fetch('/api/catalog', { cache: 'no-store' });
-          if (!res.ok) return;
-          const catalog = await res.json();
-          const desktopApp = (catalog.software || []).find(s => s.slug === 'desktop' || /桌面/i.test(s.name));
-          if (desktopApp && desktopApp.releases && desktopApp.releases.length) {
-            const latest = desktopApp.releases.find(r => r.isLatest) || desktopApp.releases[0];
-            if (latest?.version) {
-              document.querySelectorAll('.version-text').forEach(el => {
-                el.textContent = `v${latest.version}`;
-              });
-            }
-          }
-        } catch {
-          // Keep resilient fallback defaults
-        }
-      })();
     </script>
+    <script src="/software-center.js?v=20261017"></script>
+    <script src="/js/landing-bind.js?v=20261017"></script>
   </body>
 </html>

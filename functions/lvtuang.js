@@ -1,5 +1,3 @@
-export async function onRequestGet({ env, request }) {
-  const url = new URL(request.url);
-  url.pathname = "/admin.html";
-  return env.ASSETS.fetch(new Request(url, request));
+export async function onRequestGet({ request }) {
+  return Response.redirect(new URL("/studio/", request.url), 302);
 }
