@@ -1,21 +1,16 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
-  Layers,
   Boxes,
-  Download,
-  LayoutTemplate,
   Plus,
   Zap,
   ArrowUpRight,
-  ExternalLink,
-  ShieldCheck,
   Clock,
-  FileEdit,
   TrendingUp,
   FileText,
   Music,
   Image,
-  Sparkles,
+  Layers,
+  ExternalLink,
 } from 'lucide-react'
 import { useCatalog, useLanding } from '@/lib/queries'
 import { Button } from '@/components/ui/button'
@@ -27,6 +22,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { OverviewCards } from './overview-cards'
+import { SoftwareCenterPreviewCard } from './software-center-preview-card'
 
 function formatRelativeTime(timestamp?: number | string) {
   if (!timestamp) return '刚刚'
@@ -51,7 +48,6 @@ export function Dashboard() {
   const articlesList = catalog?.articles || []
   const musicList = catalog?.music || []
   const galleryList = catalog?.gallery || []
-  const photoWallList = catalog?.photoWall || []
 
   // 1. 下载数据与各软件下载占比
   const totalDownloads = releasesList.reduce((acc, r) => acc + (r.downloadCount || 0), 0)
@@ -71,7 +67,7 @@ export function Dashboard() {
     }
   }).sort((a, b) => b.downloads - a.downloads)
 
-  // 2. 草稿待发布数量汇总 (软件 + 版本 + 文章 + 音乐 + 画廊 + 照片墙)
+  // 2. 草稿待发布数量汇总
   const draftSoftwareCount = softwareList.filter((s) => s.status === 'draft').length
   const draftReleasesCount = releasesList.filter((r) => r.status === 'draft').length
   const draftArticlesCount = articlesList.filter((a) => a.status === 'draft').length
@@ -84,7 +80,7 @@ export function Dashboard() {
     draftMusicCount +
     draftGalleryCount
 
-  // 3. 最近 5 次操作记录 (跨模块根据 updatedAt 提取)
+  // 3. 最近 5 次操作记录
   interface ActivityItem {
     id: string
     type: string
@@ -92,7 +88,6 @@ export function Dashboard() {
     subtitle: string
     timestamp: number
     icon: any
-    link: string
   }
 
   const allActivities: ActivityItem[] = []
@@ -108,7 +103,6 @@ export function Dashboard() {
         subtitle: rel.label || rel.fileName || '安装包发布',
         timestamp: time,
         icon: Boxes,
-        link: '/releases',
       })
     }
   })
@@ -123,7 +117,6 @@ export function Dashboard() {
         subtitle: sw.tagline || sw.slug,
         timestamp: time,
         icon: Layers,
-        link: `/software/${sw.id || sw.slug}`,
       })
     }
   })
@@ -138,7 +131,6 @@ export function Dashboard() {
         subtitle: art.category || '文章发布',
         timestamp: time,
         icon: FileText,
-        link: '/content',
       })
     }
   })
@@ -153,7 +145,6 @@ export function Dashboard() {
         subtitle: gal.description || '画廊图片',
         timestamp: time,
         icon: Image,
-        link: '/content',
       })
     }
   })
@@ -168,7 +159,6 @@ export function Dashboard() {
         subtitle: mus.artist || '音频文件',
         timestamp: time,
         icon: Music,
-        link: '/content',
       })
     }
   })
@@ -228,89 +218,24 @@ export function Dashboard() {
       </div>
 
       {/* Overview Cards (5 Grid) */}
-      <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-5'>
-        <Card className='border-border/60 bg-card/60 backdrop-blur-sm'>
-          <CardHeader className='flex flex-row items-center justify-between pb-2'>
-            <CardTitle className='text-sm font-medium'>软件产品总数</CardTitle>
-            <Layers className='size-4 text-primary' />
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>
-              {isCatalogLoading ? '--' : softwareList.length}
-            </div>
-            <p className='text-xs text-muted-foreground'>
-              涵盖 {categoriesList.length} 个分类
-            </p>
-          </CardContent>
-        </Card>
+      <OverviewCards
+        isCatalogLoading={isCatalogLoading}
+        isLandingLoading={isLandingLoading}
+        softwareCount={softwareList.length}
+        categoryCount={categoriesList.length}
+        publishedReleasesCount={publishedReleases.length}
+        totalReleasesCount={releasesList.length}
+        totalDownloads={totalDownloads}
+        totalDraftCount={totalDraftCount}
+        draftSoftwareCount={draftSoftwareCount}
+        draftArticlesCount={draftArticlesCount}
+        draftMediaCount={draftGalleryCount + draftMusicCount}
+        activeLandingTitle={activeLandingTitle}
+        activeLandingId={activeLandingId}
+      />
 
-        <Card className='border-border/60 bg-card/60 backdrop-blur-sm'>
-          <CardHeader className='flex flex-row items-center justify-between pb-2'>
-            <CardTitle className='text-sm font-medium'>已发布安装包</CardTitle>
-            <Boxes className='size-4 text-primary' />
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>
-              {isCatalogLoading ? '--' : publishedReleases.length}
-            </div>
-            <p className='text-xs text-muted-foreground'>
-              共 {releasesList.length} 个版本记录
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className='border-border/60 bg-card/60 backdrop-blur-sm'>
-          <CardHeader className='flex flex-row items-center justify-between pb-2'>
-            <CardTitle className='text-sm font-medium'>累计下载次数</CardTitle>
-            <Download className='size-4 text-primary' />
-          </CardHeader>
-          <CardContent>
-            <div className='text-2xl font-bold'>
-              {isCatalogLoading ? '--' : totalDownloads.toLocaleString()}
-            </div>
-            <p className='text-xs text-muted-foreground'>全渠道安装包下载汇总</p>
-          </CardContent>
-        </Card>
-
-        {/* 草稿待发布数量卡片 */}
-        <Card className='border-border/60 bg-card/60 backdrop-blur-sm'>
-          <CardHeader className='flex flex-row items-center justify-between pb-2'>
-            <CardTitle className='text-sm font-medium'>草稿待发布</CardTitle>
-            <FileEdit className='size-4 text-amber-500' />
-          </CardHeader>
-          <CardContent>
-            <div className='flex items-baseline gap-2'>
-              <span className='text-2xl font-bold text-amber-500'>
-                {isCatalogLoading ? '--' : totalDraftCount}
-              </span>
-              <span className='text-xs text-muted-foreground'>项草稿</span>
-            </div>
-            <p className='text-xs text-muted-foreground'>
-              含软件 {draftSoftwareCount}、文章 {draftArticlesCount}、素材 {draftGalleryCount + draftMusicCount}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className='border-border/60 bg-card/60 backdrop-blur-sm'>
-          <CardHeader className='flex flex-row items-center justify-between pb-2'>
-            <CardTitle className='text-sm font-medium'>当前首页落地页</CardTitle>
-            <LayoutTemplate className='size-4 text-primary' />
-          </CardHeader>
-          <CardContent>
-            <div className='flex items-center gap-2'>
-              <span className='truncate text-xl font-bold'>
-                {isLandingLoading ? '--' : activeLandingTitle}
-              </span>
-              <Badge variant='outline' className='text-xs'>
-                /{activeLandingId}
-              </Badge>
-            </div>
-            <p className='mt-1 text-xs text-muted-foreground'>
-              可在「落地页配置」随时切换首页
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* 软件中心前台预览卡片 (UPGRADE_PLAN_V3 Requirement) */}
+      <SoftwareCenterPreviewCard />
 
       <div className='grid gap-4 md:grid-cols-7'>
         {/* Left Column (Col-4): 下载占比与最近版本 */}
@@ -506,7 +431,7 @@ export function Dashboard() {
                 <Button variant='outline' size='sm' className='justify-start text-xs' asChild>
                   <a href='/download.html' target='_blank' rel='noreferrer'>
                     <ExternalLink className='mr-1.5 size-3.5 text-muted-foreground' />
-                    软件下载站
+                    软件中心
                   </a>
                 </Button>
                 <Button variant='outline' size='sm' className='justify-start text-xs' asChild>

@@ -30,17 +30,9 @@ import {
 } from '@/components/ui/card'
 
 interface UpdateInfo {
-  app: string
-  version: string
-  appName?: string
-  minSupportedVersion?: string
-  patchUrl?: string
-  patchMd5?: string
-  patchSize?: number
-  fullSetupUrl?: string
-  forceUpdate?: boolean
-  changelog?: string
-  updatedAt?: string
+  app: string; version: string; appName?: string; minSupportedVersion?: string
+  patchUrl?: string; patchMd5?: string; patchSize?: number; fullSetupUrl?: string
+  forceUpdate?: boolean; changelog?: string; updatedAt?: string
 }
 
 export function HotUpdateFeature() {

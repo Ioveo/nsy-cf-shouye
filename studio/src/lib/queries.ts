@@ -17,6 +17,7 @@ export interface Software {
   screenshots?: string[]
   featured?: boolean
   featuredOrder?: number
+  firstReleasedAt?: number | string
   priceLabel?: string
   developer?: string
   website?: string
