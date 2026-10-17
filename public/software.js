@@ -486,8 +486,8 @@
       if (others.length) {
         recSection.style.display = "block";
         recGrid.innerHTML = others.map(s => {
-          const coverUrl = s.coverImage || (s.screenshots && s.screenshots[0]) || "";
-          const iconUrl = s.icon || "/logo.png";
+          const coverUrl = s.coverUrl || s.coverImage || (s.screenshots && s.screenshots[0]) || "";
+          const iconUrl = s.iconUrl || s.icon || "/logo.png";
           const detailUrl = `/software.html?id=${encodeURIComponent(s.id)}`;
           const dlUrl = `/download/${encodeURIComponent(s.id)}`;
 
@@ -679,36 +679,54 @@
       } catch (e) {}
     }
 
-    // 2. 异步网络刷新
+    const fallbackSoftware = {
+      id: "desktop",
+      slug: "desktop",
+      name: "天才猫桌面 2.0",
+      category: "桌面效能",
+      priceLabel: "免费版",
+      developer: "天才猫工作室",
+      tagline: "专为 Windows 打造的灵动桌面与运营中枢",
+      description: "灵动抽屉式侧边收纳、C盘无损搬家管家、顶部偷看Dock与离线多语 OCR 翻译。专为追求极致效能的桌面用户打造。",
+      iconUrl: "/logo.png",
+      coverUrl: "/preview-desktop-widgets.png",
+      releases: [
+        {
+          id: "rel-desktop-v200",
+          version: "2.0.0",
+          platform: "windows",
+          status: "published",
+          isLatest: true,
+          size: "85.2 MB",
+          fileSize: 89338675,
+          downloadCount: 128,
+          publicUrl: "/download/latest/desktop",
+          createdAt: Date.now() - 86400000
+        }
+      ]
+    };
+
+    // 2. 首次访问兜底秒开：未命中本地缓存时立即使用内置数据，消除加载停顿
+    if (!hasRendered && !isPreviewMode) {
+      renderSoftware(fallbackSoftware);
+      hasRendered = true;
+    }
+
+    // 3. 异步网络刷新
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      const res = await fetch("/api/catalog", { signal: controller.signal });
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const res = await fetch("/api/catalog?_t=" + Date.now(), { signal: controller.signal });
       clearTimeout(timeoutId);
       if (res.ok) {
         catalog = await res.json();
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify(catalog));
         } catch (e) {}
-        if (tryRenderFromCatalog(catalog)) {
-          return;
-        }
+        tryRenderFromCatalog(catalog);
       }
     } catch (err) {
       console.warn("加载 catalog 异常/超时:", err);
-    }
-
-    if (!hasRendered && !isPreviewMode) {
-      const skeleton = $("detailSkeleton");
-      if (skeleton) {
-        skeleton.innerHTML = `
-          <div class="sc-empty sc-glass">
-            <h3 class="sc-empty__title">无法加载软件详情</h3>
-            <p class="sc-empty__desc">请返回软件中心重新选择应用</p>
-            <a href="/download.html" class="sc-btn sc-btn--primary sc-btn--sm">返回软件中心</a>
-          </div>
-        `;
-      }
     }
   }
 

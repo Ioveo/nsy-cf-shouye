@@ -230,12 +230,15 @@ input, select {
     transparent
   );
   transform: rotate(30deg);
-  animation: scShimmerSweep 4.5s ease-in-out infinite;
+  animation: scShimmerSweep 1.2s ease-out 1 forwards;
+}
+
+.sc-btn-shimmer:hover::after {
+  animation: scShimmerSweep 0.9s ease-out 1 forwards;
 }
 
 @keyframes scShimmerSweep {
   0% { left: -150%; }
-  25% { left: 180%; }
   100% { left: 180%; }
 }
 

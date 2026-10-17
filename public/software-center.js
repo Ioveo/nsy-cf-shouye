@@ -171,8 +171,8 @@
       const activeCls = idx === carouselIndex ? "sc-hero__slide--active" : "";
       const latestVer = s.latest ? `v${esc(s.latest.version)}` : "v1.0.0";
       const catLabel = esc(s.category || "应用工具");
-      const coverUrl = s.coverImage || (s.screenshots && s.screenshots[0]) || "";
-      const iconUrl = s.icon || "/logo.png";
+      const coverUrl = s.coverUrl || s.coverImage || (s.screenshots && s.screenshots[0]) || "";
+      const iconUrl = s.iconUrl || s.icon || "/logo.png";
       const sizeText = s.latest && s.latest.size ? formatBytes(s.latest.size) : "纯净版";
       const dateText = formatDate(s.updatedAt);
       const primaryDlUrl = `/download/${encodeURIComponent(s.id)}`;
@@ -384,7 +384,7 @@
     }
 
     track.innerHTML = newArrivals.map(s => {
-      const iconUrl = s.icon || "/logo.png";
+      const iconUrl = s.iconUrl || s.icon || "/logo.png";
       const verText = s.latest ? `v${esc(s.latest.version)}` : "v1.0.0";
       const dateText = formatDate(s.firstReleasedAt || s.updatedAt);
       const dlUrl = `/download/${encodeURIComponent(s.id)}`;
@@ -520,8 +520,8 @@
     const visibleItems = filtered.slice(0, currentPageSize);
 
     grid.innerHTML = visibleItems.map(s => {
-      const coverUrl = s.coverImage || (s.screenshots && s.screenshots[0]) || "";
-      const iconUrl = s.icon || "/logo.png";
+      const coverUrl = s.coverUrl || s.coverImage || (s.screenshots && s.screenshots[0]) || "";
+      const iconUrl = s.iconUrl || s.icon || "/logo.png";
       const verText = s.latest ? `v${esc(s.latest.version)}` : "v1.0.0";
       const sizeText = s.latest && s.latest.size ? formatBytes(s.latest.size) : "";
       const priceText = s.priceType === "paid" ? "付费正版" : (s.priceType === "freemium" ? "免费增值" : "官方免费");
@@ -609,7 +609,7 @@
     listContainer.innerHTML = top10.map((s, idx) => {
       const rankNum = idx + 1;
       const numCls = rankNum <= 3 ? `sc-rank__num--top${rankNum}` : "";
-      const iconUrl = s.icon || "/logo.png";
+      const iconUrl = s.iconUrl || s.icon || "/logo.png";
       const subInfo = activeRankTab === "downloads"
         ? `${s.downloads.toLocaleString()} 次下载`
         : `更新于 ${formatDate(s.updatedAt)}`;
@@ -967,7 +967,7 @@
     safeIcons();
   }
 
-  // 初始化入口 (SWR 毫秒级秒开：本地缓存立即渲染 -> 后台异步静默同步)
+  // 初始化入口 (优先同步秒开，消除任何等待与闪光停顿)
   async function init() {
     let hasRendered = false;
 
@@ -985,11 +985,17 @@
       console.warn("读取 catalog 缓存失败:", e);
     }
 
-    // 2. 异步网络刷新：拉取最新数据（超时 5 秒兜底）
+    // 2. 首次访问兜底秒开：若本地暂无缓存，立即渲染内置数据，保证 0 毫秒呈现真实内容，绝不卡在骨架屏
+    if (!hasRendered) {
+      applyCatalog(getFallbackCatalog());
+      hasRendered = true;
+    }
+
+    // 3. 异步网络刷新：拉取最新数据（附加时间戳避免边缘缓存死锁，超时 6 秒兜底）
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      const res = await fetch("/api/catalog", { signal: controller.signal });
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const res = await fetch("/api/catalog?_t=" + Date.now(), { signal: controller.signal });
       clearTimeout(timeoutId);
       if (res.ok) {
         const remoteData = await res.json();
@@ -997,15 +1003,9 @@
           localStorage.setItem(CACHE_KEY, JSON.stringify(remoteData));
         } catch (e) {}
         applyCatalog(remoteData);
-        return;
       }
     } catch (err) {
       console.warn("网络拉取 catalog 失败/超时:", err);
-    }
-
-    // 3. 兜底保护：若本地无缓存且网络失败，使用内置兜底，绝对不让骨架屏无限循环
-    if (!hasRendered) {
-      applyCatalog(getFallbackCatalog());
     }
   }
 
