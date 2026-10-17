@@ -337,6 +337,30 @@ export function ContentFeature() {
     }
   }
 
+  // 文章编辑未保存离开警告
+  useEffect(() => {
+    if (!articleModalOpen) return
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (artTitle.trim() || artContent.trim()) {
+        e.preventDefault()
+        e.returnValue = '文章编辑尚未保存，确定要离开吗？'
+        return e.returnValue
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [articleModalOpen, artTitle, artContent])
+
+  // 监听全局 ⌘S / Ctrl+S 快捷键保存文章
+  useEffect(() => {
+    if (!articleModalOpen) return
+    const onStudioSave = () => {
+      handleSaveArticle()
+    }
+    window.addEventListener('studio:save', onStudioSave)
+    return () => window.removeEventListener('studio:save', onStudioSave)
+  }, [articleModalOpen, artTitle, artSlug, artSummary, artContent, artCategory, artTags, artSoftwareIds, artFeatured, artStatus, artCoverUrl, artSeoTitle, artSeoDescription])
+
   // Toggle Article featured
   async function handleToggleArtFeatured(art: any, featured: boolean) {
     try {

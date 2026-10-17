@@ -1,13 +1,15 @@
 export async function onRequest(context) {
-  const { request, env, next } = context;
+  const { request, env } = context;
   const url = new URL(request.url);
 
-  // If requesting root /studio/ or a static file with extension, pass through to static assets
-  if (url.pathname === "/studio" || url.pathname === "/studio/" || /\.[a-zA-Z0-9]+$/.test(url.pathname)) {
-    return next();
+  // If requesting a static asset with file extension (.js, .css, .png, .svg, etc.), fetch directly from ASSETS
+  if (/\.[a-zA-Z0-9]+$/.test(url.pathname)) {
+    return env.ASSETS.fetch(request);
   }
 
-  // Otherwise SPA subroutes (e.g. /studio/sign-in, /studio/software):
-  // Fetch /studio/ to avoid Cloudflare Pages 308 pretty URL redirect loop
-  return env.ASSETS.fetch(new URL("/studio/", request.url));
+  // For /studio, /studio/, or any SPA subroute (/studio/sign-in, /studio/software, etc.),
+  // serve /studio/index.html directly from ASSETS
+  return env.ASSETS.fetch(new URL("/studio/index.html", request.url));
 }
+
+

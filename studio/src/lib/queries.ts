@@ -62,6 +62,13 @@ export interface Catalog {
   software: Software[]
   categories: Category[]
   releases: Release[]
+  articles?: any[]
+  music?: any[]
+  gallery?: any[]
+  photoWall?: any[]
+  siteCarousel?: any[]
+  navigation?: any[]
+  site?: any
 }
 
 export interface LandingPageItem {

@@ -180,6 +180,28 @@ export function SoftwareWizard() {
     }
   }, [existingSoftware, categories])
 
+  // 未保存离开警告
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (name.trim() || tagline.trim() || description.trim() || pendingPackages.length > 0) {
+        e.preventDefault()
+        e.returnValue = '软件向导表单有未保存的改动，确定要离开吗？'
+        return e.returnValue
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [name, tagline, description, pendingPackages.length])
+
+  // 监听全局 ⌘S / Ctrl+S 快捷保存草稿
+  useEffect(() => {
+    const onStudioSave = () => {
+      performSave('draft')
+    }
+    window.addEventListener('studio:save', onStudioSave)
+    return () => window.removeEventListener('studio:save', onStudioSave)
+  }, [name, slug, categoryId, tagline, description, priceLabel, developer, website, iconUrl, coverUrl, screenshots, highlights, featured, featuredOrder, landingUrl, pendingPackages, existingReleases])
+
   // Slug auto-generation from name
   function handleNameChange(newName: string) {
     setName(newName)

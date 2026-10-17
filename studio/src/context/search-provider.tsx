@@ -17,13 +17,17 @@ export function SearchProvider({ children }: SearchProviderProps) {
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      if (e.key?.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
         setOpen((open) => !open)
       }
     }
+    window.addEventListener('keydown', down)
     document.addEventListener('keydown', down)
-    return () => document.removeEventListener('keydown', down)
+    return () => {
+      window.removeEventListener('keydown', down)
+      document.removeEventListener('keydown', down)
+    }
   }, [])
 
   return (
