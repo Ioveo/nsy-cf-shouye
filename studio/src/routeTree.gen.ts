@@ -19,10 +19,16 @@ import { Route as errors503RouteImport } from './routes/(errors)/503'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAssetsIndexRouteImport } from './routes/_authenticated/assets/index'
 import { Route as AuthenticatedContentIndexRouteImport } from './routes/_authenticated/content/index'
+import { Route as AuthenticatedContentArticlesRouteImport } from './routes/_authenticated/content/articles'
+import { Route as AuthenticatedContentGalleryRouteImport } from './routes/_authenticated/content/gallery'
+import { Route as AuthenticatedContentMusicRouteImport } from './routes/_authenticated/content/music'
+import { Route as AuthenticatedContentPhotoWallRouteImport } from './routes/_authenticated/content/photo-wall'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
 import { Route as AuthenticatedHotupdateIndexRouteImport } from './routes/_authenticated/hotupdate/index'
 import { Route as AuthenticatedLandingIndexRouteImport } from './routes/_authenticated/landing/index'
 import { Route as AuthenticatedReleasesIndexRouteImport } from './routes/_authenticated/releases/index'
+import { Route as AuthenticatedSiteCarouselRouteImport } from './routes/_authenticated/site/carousel'
+import { Route as AuthenticatedSiteNavigationRouteImport } from './routes/_authenticated/site/navigation'
 import { Route as AuthenticatedSoftwareIndexRouteImport } from './routes/_authenticated/software/index'
 import { Route as AuthenticatedSoftwareIdRouteImport } from './routes/_authenticated/software/$id'
 import { Route as AuthenticatedSoftwareNewRouteImport } from './routes/_authenticated/software/new'
@@ -79,6 +85,30 @@ const AuthenticatedContentIndexRoute =
     path: '/content/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedContentArticlesRoute =
+  AuthenticatedContentArticlesRouteImport.update({
+    id: '/content/articles',
+    path: '/content/articles',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedContentGalleryRoute =
+  AuthenticatedContentGalleryRouteImport.update({
+    id: '/content/gallery',
+    path: '/content/gallery',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedContentMusicRoute =
+  AuthenticatedContentMusicRouteImport.update({
+    id: '/content/music',
+    path: '/content/music',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedContentPhotoWallRoute =
+  AuthenticatedContentPhotoWallRouteImport.update({
+    id: '/content/photo-wall',
+    path: '/content/photo-wall',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedErrorsErrorRoute =
   AuthenticatedErrorsErrorRouteImport.update({
     id: '/errors/$error',
@@ -101,6 +131,18 @@ const AuthenticatedReleasesIndexRoute =
   AuthenticatedReleasesIndexRouteImport.update({
     id: '/releases/',
     path: '/releases/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSiteCarouselRoute =
+  AuthenticatedSiteCarouselRouteImport.update({
+    id: '/site/carousel',
+    path: '/site/carousel',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSiteNavigationRoute =
+  AuthenticatedSiteNavigationRouteImport.update({
+    id: '/site/navigation',
+    path: '/site/navigation',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedSoftwareIndexRoute =
@@ -135,7 +177,13 @@ export interface FileRoutesByFullPath {
   '/404': typeof errors404Route
   '/500': typeof errors500Route
   '/503': typeof errors503Route
+  '/content/articles': typeof AuthenticatedContentArticlesRoute
+  '/content/gallery': typeof AuthenticatedContentGalleryRoute
+  '/content/music': typeof AuthenticatedContentMusicRoute
+  '/content/photo-wall': typeof AuthenticatedContentPhotoWallRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
+  '/site/carousel': typeof AuthenticatedSiteCarouselRoute
+  '/site/navigation': typeof AuthenticatedSiteNavigationRoute
   '/software/$id': typeof AuthenticatedSoftwareIdRoute
   '/software/new': typeof AuthenticatedSoftwareNewRoute
   '/assets/': typeof AuthenticatedAssetsIndexRoute
@@ -154,7 +202,13 @@ export interface FileRoutesByTo {
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/': typeof AuthenticatedIndexRoute
+  '/content/articles': typeof AuthenticatedContentArticlesRoute
+  '/content/gallery': typeof AuthenticatedContentGalleryRoute
+  '/content/music': typeof AuthenticatedContentMusicRoute
+  '/content/photo-wall': typeof AuthenticatedContentPhotoWallRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
+  '/site/carousel': typeof AuthenticatedSiteCarouselRoute
+  '/site/navigation': typeof AuthenticatedSiteNavigationRoute
   '/software/$id': typeof AuthenticatedSoftwareIdRoute
   '/software/new': typeof AuthenticatedSoftwareNewRoute
   '/assets': typeof AuthenticatedAssetsIndexRoute
@@ -175,7 +229,13 @@ export interface FileRoutesById {
   '/(errors)/500': typeof errors500Route
   '/(errors)/503': typeof errors503Route
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/content/articles': typeof AuthenticatedContentArticlesRoute
+  '/_authenticated/content/gallery': typeof AuthenticatedContentGalleryRoute
+  '/_authenticated/content/music': typeof AuthenticatedContentMusicRoute
+  '/_authenticated/content/photo-wall': typeof AuthenticatedContentPhotoWallRoute
   '/_authenticated/errors/$error': typeof AuthenticatedErrorsErrorRoute
+  '/_authenticated/site/carousel': typeof AuthenticatedSiteCarouselRoute
+  '/_authenticated/site/navigation': typeof AuthenticatedSiteNavigationRoute
   '/_authenticated/software/$id': typeof AuthenticatedSoftwareIdRoute
   '/_authenticated/software/new': typeof AuthenticatedSoftwareNewRoute
   '/_authenticated/assets/': typeof AuthenticatedAssetsIndexRoute
@@ -196,7 +256,13 @@ export interface FileRouteTypes {
     | '/404'
     | '/500'
     | '/503'
+    | '/content/articles'
+    | '/content/gallery'
+    | '/content/music'
+    | '/content/photo-wall'
     | '/errors/$error'
+    | '/site/carousel'
+    | '/site/navigation'
     | '/software/$id'
     | '/software/new'
     | '/assets/'
@@ -215,7 +281,13 @@ export interface FileRouteTypes {
     | '/500'
     | '/503'
     | '/'
+    | '/content/articles'
+    | '/content/gallery'
+    | '/content/music'
+    | '/content/photo-wall'
     | '/errors/$error'
+    | '/site/carousel'
+    | '/site/navigation'
     | '/software/$id'
     | '/software/new'
     | '/assets'
@@ -235,7 +307,13 @@ export interface FileRouteTypes {
     | '/(errors)/500'
     | '/(errors)/503'
     | '/_authenticated/'
+    | '/_authenticated/content/articles'
+    | '/_authenticated/content/gallery'
+    | '/_authenticated/content/music'
+    | '/_authenticated/content/photo-wall'
     | '/_authenticated/errors/$error'
+    | '/_authenticated/site/carousel'
+    | '/_authenticated/site/navigation'
     | '/_authenticated/software/$id'
     | '/_authenticated/software/new'
     | '/_authenticated/assets/'
@@ -329,6 +407,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContentIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/content/articles': {
+      id: '/_authenticated/content/articles'
+      path: '/content/articles'
+      fullPath: '/content/articles'
+      preLoaderRoute: typeof AuthenticatedContentArticlesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/content/gallery': {
+      id: '/_authenticated/content/gallery'
+      path: '/content/gallery'
+      fullPath: '/content/gallery'
+      preLoaderRoute: typeof AuthenticatedContentGalleryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/content/music': {
+      id: '/_authenticated/content/music'
+      path: '/content/music'
+      fullPath: '/content/music'
+      preLoaderRoute: typeof AuthenticatedContentMusicRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/content/photo-wall': {
+      id: '/_authenticated/content/photo-wall'
+      path: '/content/photo-wall'
+      fullPath: '/content/photo-wall'
+      preLoaderRoute: typeof AuthenticatedContentPhotoWallRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/errors/$error': {
       id: '/_authenticated/errors/$error'
       path: '/errors/$error'
@@ -355,6 +461,20 @@ declare module '@tanstack/react-router' {
       path: '/releases'
       fullPath: '/releases/'
       preLoaderRoute: typeof AuthenticatedReleasesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/site/carousel': {
+      id: '/_authenticated/site/carousel'
+      path: '/site/carousel'
+      fullPath: '/site/carousel'
+      preLoaderRoute: typeof AuthenticatedSiteCarouselRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/site/navigation': {
+      id: '/_authenticated/site/navigation'
+      path: '/site/navigation'
+      fullPath: '/site/navigation'
+      preLoaderRoute: typeof AuthenticatedSiteNavigationRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/software/': {
@@ -390,7 +510,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedContentArticlesRoute: typeof AuthenticatedContentArticlesRoute
+  AuthenticatedContentGalleryRoute: typeof AuthenticatedContentGalleryRoute
+  AuthenticatedContentMusicRoute: typeof AuthenticatedContentMusicRoute
+  AuthenticatedContentPhotoWallRoute: typeof AuthenticatedContentPhotoWallRoute
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
+  AuthenticatedSiteCarouselRoute: typeof AuthenticatedSiteCarouselRoute
+  AuthenticatedSiteNavigationRoute: typeof AuthenticatedSiteNavigationRoute
   AuthenticatedSoftwareIdRoute: typeof AuthenticatedSoftwareIdRoute
   AuthenticatedSoftwareNewRoute: typeof AuthenticatedSoftwareNewRoute
   AuthenticatedAssetsIndexRoute: typeof AuthenticatedAssetsIndexRoute
@@ -404,7 +530,13 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedContentArticlesRoute: AuthenticatedContentArticlesRoute,
+  AuthenticatedContentGalleryRoute: AuthenticatedContentGalleryRoute,
+  AuthenticatedContentMusicRoute: AuthenticatedContentMusicRoute,
+  AuthenticatedContentPhotoWallRoute: AuthenticatedContentPhotoWallRoute,
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
+  AuthenticatedSiteCarouselRoute: AuthenticatedSiteCarouselRoute,
+  AuthenticatedSiteNavigationRoute: AuthenticatedSiteNavigationRoute,
   AuthenticatedSoftwareIdRoute: AuthenticatedSoftwareIdRoute,
   AuthenticatedSoftwareNewRoute: AuthenticatedSoftwareNewRoute,
   AuthenticatedAssetsIndexRoute: AuthenticatedAssetsIndexRoute,

@@ -84,27 +84,7 @@ export interface LandingData {
   updatedAt?: number
 }
 
-export function useCatalog() {
-  return useQuery<Catalog>({
-    queryKey: ['catalog'],
-    queryFn: async () => {
-      const res = await api.post('/api/admin/catalog')
-      const cat = res.catalog || { software: [], categories: [] }
-      const allReleases: Release[] = (cat.software || []).flatMap((s: any) =>
-        (s.releases || []).map((r: any) => ({
-          ...r,
-          softwareId: s.slug || s.id,
-        }))
-      )
-      return {
-        ...cat,
-        software: cat.software || [],
-        categories: cat.categories || [],
-        releases: allReleases,
-      }
-    },
-  })
-}
+export { useCatalog } from '@/hooks/use-catalog'
 
 export function useLanding() {
   return useQuery<LandingData>({

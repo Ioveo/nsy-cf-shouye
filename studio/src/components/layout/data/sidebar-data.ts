@@ -59,22 +59,22 @@ export const sidebarData: SidebarData = {
       items: [
         {
           title: '文章管理',
-          url: '/content?tab=articles',
+          url: '/content/articles',
           icon: FileText,
         },
         {
           title: '音乐频道',
-          url: '/content?tab=music',
+          url: '/content/music',
           icon: Music,
         },
         {
           title: '画廊相册',
-          url: '/content?tab=gallery',
+          url: '/content/gallery',
           icon: Image,
         },
         {
           title: '照片墙',
-          url: '/content?tab=photowall',
+          url: '/content/photo-wall',
           icon: FolderArchive,
         },
       ],
@@ -89,12 +89,12 @@ export const sidebarData: SidebarData = {
         },
         {
           title: '首页轮播',
-          url: '/content?tab=carousel',
+          url: '/site/carousel',
           icon: Sliders,
         },
         {
           title: '顶部导航',
-          url: '/content?tab=nav',
+          url: '/site/navigation',
           icon: Compass,
         },
         {

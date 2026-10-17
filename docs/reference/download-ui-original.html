@@ -1,0 +1,873 @@
+<!doctype html>
+<html lang="zh-CN" class="scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NSY 官方下载中心 — 新一代创作者桌面效率引擎</title>
+    <meta name="description" content="NSY 官方下载中心。专为 Windows & macOS 打造的灵动桌面与创作者效能中枢。抽屉收纳、Alt快捷盲操、C盘无损搬家与极简毛玻璃美学，开箱即用零依赖。" />
+    <link rel="icon" type="image/png" href="/logo.png?v=20260509" />
+    <link rel="apple-touch-icon" href="/logo.png?v=20260509" />
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              background: '#07090E',
+              surface: '#0F1420',
+              accent: {
+                cyan: '#00F2FE',
+                blue: '#06B6D4',
+                indigo: '#4F46E5',
+                violet: '#7C3AED'
+              }
+            },
+            fontFamily: {
+              sans: [
+                '-apple-system',
+                'BlinkMacSystemFont',
+                'SF Pro Display',
+                'SF Pro Text',
+                'PingFang SC',
+                'Hiragino Sans GB',
+                'Microsoft YaHei',
+                'ui-sans-serif',
+                'system-ui',
+                'sans-serif'
+              ],
+              mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace']
+            },
+            lineHeight: {
+              golden: '1.618'
+            }
+          }
+        }
+      }
+    </script>
+
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+      /* Base Resets & Glassmorphic Standards */
+      :root {
+        --color-bg: #07090e;
+        --color-cyan: #00f2fe;
+        --color-violet: #7c3aed;
+      }
+
+      body {
+        background-color: #07090e;
+        color: #f8fafc;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      ::selection {
+        background: rgba(0, 242, 254, 0.28);
+        color: #ffffff;
+      }
+
+      /* Apple-grade Glassmorphic Panels */
+      .glass-card {
+        background: rgba(255, 255, 255, 0.035);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: 1px solid rgba(255, 255, 255, 0.22);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      }
+
+      .glass-card-hover {
+        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                    border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .glass-card-hover:hover {
+        border-color: rgba(255, 255, 255, 0.25);
+        border-top-color: rgba(0, 242, 254, 0.5);
+        box-shadow: 0 30px 70px rgba(0, 0, 0, 0.65), 0 0 40px rgba(0, 242, 254, 0.08);
+        transform: translateY(-2px);
+      }
+
+      /* Glowing Aurora Mesh Gradients */
+      .aurora-mesh {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+      }
+      .aurora-orb {
+        position: absolute;
+        border-radius: 9999px;
+        filter: blur(100px);
+        opacity: 0.18;
+        mix-blend-mode: screen;
+        animation: auroraFloat 18s ease-in-out infinite alternate;
+      }
+      .aurora-orb-1 {
+        top: -15%;
+        left: 20%;
+        width: 700px;
+        height: 600px;
+        background: radial-gradient(circle, #4f46e5 0%, #06b6d4 100%);
+      }
+      .aurora-orb-2 {
+        top: 25%;
+        right: -10%;
+        width: 650px;
+        height: 650px;
+        background: radial-gradient(circle, #7c3aed 0%, #00f2fe 100%);
+        animation-duration: 22s;
+        animation-delay: -5s;
+      }
+      .aurora-orb-3 {
+        bottom: 5%;
+        left: -5%;
+        width: 600px;
+        height: 500px;
+        background: radial-gradient(circle, #06b6d4 0%, #4338ca 100%);
+        animation-duration: 26s;
+        animation-delay: -10s;
+      }
+
+      @keyframes auroraFloat {
+        0% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(40px, 30px) scale(1.08); }
+        100% { transform: translate(-30px, 50px) scale(0.96); }
+      }
+
+      /* 3D Tilted Perspective Window */
+      .mockup-3d-stage {
+        perspective: 1200px;
+      }
+      .mockup-3d-window {
+        transform: rotateY(-8deg) rotateX(6deg) rotateZ(1deg);
+        transform-style: preserve-3d;
+        transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s ease;
+      }
+      .mockup-3d-window:hover {
+        transform: rotateY(-3deg) rotateX(2deg) rotateZ(0deg) translateY(-6px);
+      }
+
+      /* Button Shimmer Effect */
+      .btn-shimmer {
+        position: relative;
+        overflow: hidden;
+      }
+      .btn-shimmer::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -150%;
+        width: 80%;
+        height: 200%;
+        background: linear-gradient(
+          60deg,
+          transparent,
+          rgba(255, 255, 255, 0.35),
+          transparent
+        );
+        transform: rotate(30deg);
+        animation: shimmerSweep 4.5s ease-in-out infinite;
+      }
+      @keyframes shimmerSweep {
+        0% { left: -150%; }
+        25% { left: 180%; }
+        100% { left: 180%; }
+      }
+
+      /* Spotlight Card Hover Interaction */
+      .spotlight-card {
+        position: relative;
+      }
+      .spotlight-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: radial-gradient(
+          450px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+          rgba(0, 242, 254, 0.12),
+          transparent 40%
+        );
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+        z-index: 1;
+      }
+      .spotlight-card:hover::before {
+        opacity: 1;
+      }
+
+      /* Staggered Entrance Animations */
+      .stagger-in {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: staggerFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      @keyframes staggerFadeIn {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .stagger-1 { animation-delay: 0.1s; }
+      .stagger-2 { animation-delay: 0.2s; }
+      .stagger-3 { animation-delay: 0.3s; }
+      .stagger-4 { animation-delay: 0.4s; }
+      .stagger-5 { animation-delay: 0.5s; }
+
+      /* Toast Notification */
+      #toastNotify {
+        transform: translate(-50%, 40px);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      #toastNotify.show {
+        transform: translate(-50%, 0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+    </style>
+  </head>
+  <body class="relative min-h-screen">
+    <!-- Aurora Background Gradients -->
+    <div class="aurora-mesh" aria-hidden="true">
+      <div class="aurora-orb aurora-orb-1"></div>
+      <div class="aurora-orb aurora-orb-2"></div>
+      <div class="aurora-orb aurora-orb-3"></div>
+      <div class="absolute inset-0 bg-[radial-gradient(#ffffff08_1px,transparent_1px)] [background-size:24px_24px] opacity-40"></div>
+    </div>
+
+    <!-- 1. Floating Capsule Glass Navigation (Exact Image 2 Style) -->
+    <header class="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-full max-w-4xl px-4 stagger-in stagger-1">
+      <div class="glass-card rounded-full px-5 sm:px-6 py-2.5 flex items-center justify-between shadow-[0_16px_40px_rgba(0,0,0,0.65)]">
+        <!-- Logo -->
+        <a href="/" class="flex items-center gap-3 group">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-accent-indigo via-accent-cyan to-accent-violet flex items-center justify-center p-[1px] shadow-[0_0_16px_rgba(0,242,254,0.35)]">
+            <div class="w-full h-full bg-[#07090E] rounded-full flex items-center justify-center">
+              <svg class="w-4 h-4 text-accent-cyan transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span class="font-bold text-lg tracking-tight text-white group-hover:text-accent-cyan transition-colors">NSY</span>
+            <span class="text-xs text-slate-400 font-medium hidden sm:inline">桌面 2.0</span>
+          </div>
+        </a>
+
+        <!-- Center Nav Links -->
+        <nav class="hidden md:flex items-center gap-1 text-[13.5px] font-medium text-slate-400">
+          <a href="#overview" class="px-3.5 py-1.5 rounded-full text-white bg-white/[0.08] border border-white/[0.1] shadow-inner flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-accent-cyan shadow-[0_0_6px_#00F2FE]"></span>
+            <span>概览</span>
+          </a>
+          <a href="#platforms" class="px-3.5 py-1.5 rounded-full hover:text-white transition-colors">平台版本</a>
+          <a href="#features" class="px-3.5 py-1.5 rounded-full hover:text-white transition-colors">核心特性</a>
+          <a href="#changelog" class="px-3.5 py-1.5 rounded-full hover:text-white transition-colors">更新日志</a>
+          <a href="/desktop.html" class="px-3.5 py-1.5 rounded-full hover:text-white transition-colors flex items-center gap-1 text-slate-300">
+            <span>全景落地页</span>
+            <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+          </a>
+        </nav>
+
+        <!-- Right Action Button -->
+        <div class="flex items-center gap-3">
+          <span class="hidden sm:inline-flex items-center gap-1.5 text-xs text-accent-cyan bg-accent-cyan/10 border border-accent-cyan/20 px-2.5 py-1 rounded-full font-mono">
+            <span class="w-1 h-1 rounded-full bg-accent-cyan animate-pulse"></span>
+            v2.4.0 正式版
+          </span>
+          <a href="#downloadNow" class="btn-shimmer h-[38px] px-5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] border border-white/[0.18] text-white text-[13px] font-semibold flex items-center gap-1.5 transition-all shadow-[0_4px_16px_rgba(0,0,0,0.3)]">
+            <i data-lucide="download" class="w-3.5 h-3.5 text-accent-cyan"></i>
+            <span>立即下载</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="relative z-10 pt-32 pb-24">
+      <!-- 2. Hero Section: Golden Ratio 61.8% vs 38.2% (Exact Image 2 Style) -->
+      <section id="overview" class="max-w-[1280px] mx-auto px-6 sm:px-8 mb-24 lg:mb-36">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          
+          <!-- Left: 61.8% Core Proposition (7.4 cols / 12) -->
+          <div class="lg:col-span-7 flex flex-col items-start stagger-in stagger-2">
+            <!-- Badge -->
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.1] text-xs font-medium text-slate-300 mb-6 backdrop-blur-xl">
+              <span class="w-2 h-2 rounded-full bg-accent-cyan shadow-[0_0_8px_#00F2FE]"></span>
+              <span>Next-Gen Performance for Creators</span>
+              <span class="text-slate-500">|</span>
+              <span class="text-accent-cyan font-mono">v2.4.0 现已就绪</span>
+            </div>
+
+            <!-- Title -->
+            <h1 class="text-4xl sm:text-5xl lg:text-[62px] font-bold tracking-tight leading-[1.08] text-white mb-6">
+              新一代创作者<br>
+              <span class="bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">桌面效率引擎</span>
+            </h1>
+
+            <!-- Subtitle -->
+            <p class="text-slate-400 text-base sm:text-lg leading-golden max-w-xl mb-9">
+              融合 visionOS 半透明磨砂玻璃设计与极致系统底层性能。内置自包含运行时免除依赖环境，搭载 Windows 原生 NTFS 软链接无损搬迁技术与丝滑抽屉吸附交互。
+            </p>
+
+            <!-- Dual Primary Download Action Buttons (Strict 52px height consistency) -->
+            <div class="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-7" id="downloadNow">
+              <!-- Primary: macOS Download Button (Glowing Cyan Pill) -->
+              <a href="/download/latest/desktop" class="btn-shimmer h-[52px] min-w-[210px] px-7 rounded-[14px] bg-gradient-to-r from-accent-cyan to-[#06B6D4] text-[#04101A] font-bold text-[15px] flex items-center justify-center gap-3 transition-all duration-300 hover:shadow-[0_0_35px_rgba(0,242,254,0.45)] hover:-translate-y-0.5 active:scale-[0.98]">
+                <i data-lucide="apple" class="w-5 h-5 fill-current"></i>
+                <span>Download for macOS</span>
+              </a>
+
+              <!-- Secondary: Windows Download Button (Frosted Outline Pill) -->
+              <a href="/download/latest/desktop" class="h-[52px] min-w-[210px] px-7 rounded-[14px] bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.16] hover:border-white/30 text-white font-semibold text-[15px] flex items-center justify-center gap-3 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98] backdrop-blur-xl">
+                <!-- Optical Windows Icon -->
+                <svg class="w-4 h-4 fill-current text-slate-300" viewBox="0 0 88 88">
+                  <path d="M0 12.4L35.6 7.5V42.3H0V12.4ZM0 46.2H35.6V81L0 76.1V46.2ZM39.6 6.9L88 0V42.3H39.6V6.9ZM39.6 46.2H88V88.5L39.6 81.6V46.2Z"/>
+                </svg>
+                <span>Download for Windows</span>
+              </a>
+            </div>
+
+            <!-- Meta & SHA256 Checksum Fast Copy -->
+            <div class="flex flex-wrap items-center gap-4 text-xs text-slate-400 font-mono">
+              <span class="flex items-center gap-1.5 text-slate-300">
+                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-400"></i>
+                85.4 MB 纯净包
+              </span>
+              <span>·</span>
+              <span>免装 .NET 环境</span>
+              <span>·</span>
+              <button type="button" onclick="copyChecksum('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')" class="inline-flex items-center gap-1.5 text-slate-400 hover:text-accent-cyan transition-colors group cursor-pointer">
+                <span>SHA-256: e3b0c4...996f</span>
+                <i data-lucide="copy" class="w-3.5 h-3.5 group-hover:scale-110 transition-transform"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right: 38.2% 3D Floating Window Visual (Exact Image 2 Recreation) -->
+          <div class="lg:col-span-5 mockup-3d-stage stagger-in stagger-3">
+            <div class="mockup-3d-window glass-card rounded-2xl p-5 border border-white/[0.18] shadow-[0_30px_90px_rgba(0,0,0,0.85)] relative overflow-hidden group">
+              <!-- Window Refraction Accent -->
+              <div class="absolute -top-24 -right-24 w-64 h-64 bg-accent-cyan/15 rounded-full blur-3xl pointer-events-none"></div>
+              <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-accent-violet/20 rounded-full blur-3xl pointer-events-none"></div>
+
+              <!-- Top Bar -->
+              <div class="flex items-center justify-between pb-3.5 mb-4 border-b border-white/[0.08]">
+                <div class="flex items-center gap-2">
+                  <div class="w-2.5 h-2.5 rounded-full bg-[#FF5F56]/90 shadow-[0_0_6px_#FF5F56]"></div>
+                  <div class="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]/90 shadow-[0_0_6px_#FFBD2E]"></div>
+                  <div class="w-2.5 h-2.5 rounded-full bg-[#27C93F]/90 shadow-[0_0_6px_#27C93F]"></div>
+                </div>
+                <div class="text-[11px] font-mono text-slate-400 bg-white/[0.04] px-3 py-1 rounded-full border border-white/[0.08]">
+                  Neon/App · Telemetry Engine
+                </div>
+                <div class="flex items-center gap-1.5 text-slate-500 text-xs">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                  <i data-lucide="maximize-2" class="w-3 h-3"></i>
+                </div>
+              </div>
+
+              <!-- Inside Content Matching Image 2 -->
+              <div class="grid grid-cols-12 gap-3 mb-4">
+                <!-- Telemetry Curves Widget (8 cols) -->
+                <div class="col-span-8 bg-black/30 rounded-xl p-3.5 border border-white/[0.06] flex flex-col justify-between">
+                  <div class="flex items-center justify-between text-xs mb-2">
+                    <span class="font-medium text-slate-300">Telemetry curves</span>
+                    <span class="text-[10px] text-accent-cyan font-mono">60 FPS</span>
+                  </div>
+                  <!-- Dual Curved Bezier Wave -->
+                  <div class="h-20 w-full relative">
+                    <svg class="w-full h-full overflow-visible" viewBox="0 0 200 60" fill="none">
+                      <!-- Curve 1 (Cyan) -->
+                      <path d="M0 45 C30 10, 60 50, 90 20 C120 -5, 150 45, 200 15" stroke="url(#cyanGrad)" stroke-width="2.5" stroke-linecap="round"/>
+                      <!-- Curve 2 (Purple) -->
+                      <path d="M0 30 C30 55, 70 15, 100 40 C130 60, 160 20, 200 45" stroke="url(#purpleGrad)" stroke-width="2.5" stroke-linecap="round"/>
+                      <defs>
+                        <linearGradient id="cyanGrad" x1="0" y1="0" x2="200" y2="0" gradientUnits="userSpaceOnUse">
+                          <stop stop-color="#00F2FE"/>
+                          <stop offset="1" stop-color="#3B82F6"/>
+                        </linearGradient>
+                        <linearGradient id="purpleGrad" x1="0" y1="0" x2="200" y2="0" gradientUnits="userSpaceOnUse">
+                          <stop stop-color="#C084FC"/>
+                          <stop offset="1" stop-color="#E879F9"/>
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  </div>
+                  <div class="flex justify-between text-[10px] text-slate-500 font-mono mt-1 pt-1 border-t border-white/[0.05]">
+                    <span>Sun</span><span>Mo</span><span>Wed</span><span>Fri</span><span>Sat</span>
+                  </div>
+                </div>
+
+                <!-- Circular Gauge Dial (4 cols) -->
+                <div class="col-span-4 bg-black/30 rounded-xl p-3 border border-white/[0.06] flex flex-col items-center justify-center text-center">
+                  <span class="text-[11px] font-medium text-slate-400 mb-1.5">Live metrics</span>
+                  <div class="relative w-16 h-16 flex items-center justify-center">
+                    <svg class="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
+                      <path class="text-white/[0.06]" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                      <path class="text-accent-cyan" stroke-dasharray="100, 100" stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    </svg>
+                    <span class="absolute font-mono font-bold text-xs text-white">100%</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Metrics Stats Bottom Strip -->
+              <div class="grid grid-cols-12 gap-3 items-center">
+                <div class="col-span-4 bg-black/20 rounded-xl p-2.5 border border-white/[0.05]">
+                  <span class="block text-[10px] text-slate-400 mb-0.5">Live throughput</span>
+                  <b class="text-xs font-mono text-accent-cyan">13.75 Gbps</b>
+                </div>
+                <div class="col-span-4 bg-black/20 rounded-xl p-2.5 border border-white/[0.05]">
+                  <span class="block text-[10px] text-slate-400 mb-0.5">Sync frequency</span>
+                  <b class="text-xs font-mono text-[#E879F9]">10.8 Mbps</b>
+                </div>
+                <!-- Mini Lucide Action Strip -->
+                <div class="col-span-4 bg-black/20 rounded-xl p-2 border border-white/[0.05] flex items-center justify-around text-slate-400">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5 text-accent-cyan hover:scale-110 transition-transform"></i>
+                  <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 hover:scale-110 transition-transform"></i>
+                  <i data-lucide="cpu" class="w-3.5 h-3.5 hover:scale-110 transition-transform"></i>
+                  <i data-lucide="sliders" class="w-3.5 h-3.5 hover:scale-110 transition-transform"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Bento Grid Core Features (Image 2 Structure Recreation) -->
+      <section id="features" class="max-w-[1280px] mx-auto px-6 sm:px-8 mb-28">
+        <div class="text-center max-w-2xl mx-auto mb-14">
+          <span class="text-xs font-semibold tracking-wider text-accent-cyan uppercase mb-2 block">System Architecture</span>
+          <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4">
+            重新定义 Windows 效能中枢
+          </h2>
+          <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+            告别传统桌面臃肿老旧的交互。以极客级的精简代码与原生的系统技术，保障每一帧丝滑与安全。
+          </p>
+        </div>
+
+        <!-- 4-Card Bento Grid Matching Image 2 -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+          <!-- Card 1 (Span 7): Real-time analytics -->
+          <div class="md:col-span-7 glass-card glass-card-hover rounded-2xl p-6 sm:p-7 flex flex-col justify-between spotlight-card">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-lg font-bold text-white mb-1">抽屉式边缘感应吸附 (Edge Drawer)</h3>
+                <p class="text-xs text-slate-400">毫秒级手势触碰感应 · 60 FPS 灵动弹性展开</p>
+              </div>
+              <div class="text-xs text-slate-400 bg-white/[0.06] border border-white/[0.1] px-2.5 py-1 rounded-full flex items-center gap-1">
+                <span>响应延迟 &lt; 16ms</span>
+              </div>
+            </div>
+
+            <!-- Waveform Canvas Graphic -->
+            <div class="h-44 w-full bg-black/40 rounded-xl p-4 border border-white/[0.06] relative overflow-hidden flex flex-col justify-between">
+              <div class="flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                <span>Telemetry monitor</span>
+                <span class="text-emerald-400 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  系统极低负载
+                </span>
+              </div>
+              <div class="h-24 w-full relative">
+                <svg class="w-full h-full" viewBox="0 0 360 80" fill="none">
+                  <path d="M0 60 C40 20, 80 70, 130 30 C180 -10, 240 65, 300 25 C330 5, 350 40, 360 30" stroke="#00F2FE" stroke-width="2.5" stroke-linecap="round"/>
+                  <path d="M0 45 C50 65, 100 15, 150 50 C200 80, 260 20, 310 55 C335 70, 350 35, 360 45" stroke="#C084FC" stroke-width="2.5" stroke-linecap="round"/>
+                  <circle cx="130" cy="30" r="4" fill="#00F2FE" stroke="#fff" stroke-width="1.5" class="animate-ping"/>
+                  <circle cx="130" cy="30" r="4" fill="#00F2FE" stroke="#fff" stroke-width="1.5"/>
+                </svg>
+              </div>
+              <div class="flex justify-between text-[10px] text-slate-500 font-mono border-t border-white/[0.06] pt-1.5">
+                <span>00:00</span><span>04:00</span><span>08:00</span><span>12:00</span><span>16:00</span><span>20:00</span><span>24:00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2 & 3 (Span 5 Column): Cloud Sync & Security Benchmark -->
+          <div class="md:col-span-5 flex flex-col gap-5">
+            <!-- Card 2: Cloud Sync -->
+            <div class="glass-card glass-card-hover rounded-2xl p-6 spotlight-card flex items-center justify-between">
+              <div>
+                <div class="flex items-center gap-2 mb-1.5">
+                  <i data-lucide="cloud-lightning" class="w-4 h-4 text-accent-cyan"></i>
+                  <h4 class="text-base font-bold text-white">自包含独立运行时</h4>
+                </div>
+                <p class="text-xs text-slate-400">纯净 Win 10/11 免装 .NET 与系统库，即开即用</p>
+                <div class="mt-3 inline-flex items-center gap-1.5 text-xs text-accent-cyan font-mono">
+                  <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                  <span>0 系统依赖弹窗</span>
+                </div>
+              </div>
+              <div class="w-12 h-12 rounded-xl bg-accent-cyan/10 border border-accent-cyan/20 flex items-center justify-center">
+                <i data-lucide="box" class="w-6 h-6 text-accent-cyan"></i>
+              </div>
+            </div>
+
+            <!-- Card 3: Security Benchmark -->
+            <div class="glass-card glass-card-hover rounded-2xl p-6 spotlight-card flex items-center justify-between">
+              <div>
+                <div class="flex items-center gap-2 mb-1.5">
+                  <i data-lucide="hard-drive" class="w-4 h-4 text-[#E879F9]"></i>
+                  <h4 class="text-base font-bold text-white">NTFS 无损软链接搬迁</h4>
+                </div>
+                <p class="text-xs text-slate-400">微信、QQ数据安全迁移至其他盘，透明兼容</p>
+                <div class="mt-3 text-2xl font-bold font-mono text-white flex items-baseline gap-1">
+                  <span>32.4</span>
+                  <span class="text-xs font-normal text-slate-400">GB 平均释放空间</span>
+                </div>
+              </div>
+              <div class="w-12 h-12 rounded-xl bg-[#E879F9]/10 border border-[#E879F9]/20 flex items-center justify-center">
+                <i data-lucide="cpu" class="w-6 h-6 text-[#E879F9]"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4 (Span 12): Security benchmarks progress bars -->
+          <div class="md:col-span-12 glass-card glass-card-hover rounded-2xl p-6 sm:p-7 spotlight-card">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+              <div>
+                <h3 class="text-lg font-bold text-white">系统核心指标与安全基准 (Security & Performance Benchmarks)</h3>
+                <p class="text-xs text-slate-400">经过 100+ 种软硬件环境适配与抗压验证</p>
+              </div>
+              <span class="text-xs text-emerald-400 font-mono bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full w-fit">
+                全项质检通过 · 纯净无捆绑
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <!-- Bar 1 -->
+              <div>
+                <div class="flex justify-between text-xs mb-2">
+                  <span class="text-slate-300 font-medium">抽屉吸附响应</span>
+                  <span class="font-mono text-accent-cyan">&lt; 16ms (60 FPS)</span>
+                </div>
+                <div class="h-2 w-full bg-white/[0.06] rounded-full overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-accent-indigo to-accent-cyan rounded-full w-[96%]"></div>
+                </div>
+              </div>
+
+              <!-- Bar 2 -->
+              <div>
+                <div class="flex justify-between text-xs mb-2">
+                  <span class="text-slate-300 font-medium">冷启动加载耗时</span>
+                  <span class="font-mono text-accent-cyan">0.2s 极速冷启</span>
+                </div>
+                <div class="h-2 w-full bg-white/[0.06] rounded-full overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-accent-cyan to-emerald-400 rounded-full w-[92%]"></div>
+                </div>
+              </div>
+
+              <!-- Bar 3 -->
+              <div>
+                <div class="flex justify-between text-xs mb-2">
+                  <span class="text-slate-300 font-medium">内存静默占用</span>
+                  <span class="font-mono text-accent-cyan">18.4 MB (超轻量)</span>
+                </div>
+                <div class="h-2 w-full bg-white/[0.06] rounded-full overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-purple-500 to-[#E879F9] rounded-full w-[88%]"></div>
+                </div>
+              </div>
+
+              <!-- Bar 4 -->
+              <div>
+                <div class="flex justify-between text-xs mb-2">
+                  <span class="text-slate-300 font-medium">软件兼容性</span>
+                  <span class="font-mono text-accent-cyan">Win 10/11 100%</span>
+                </div>
+                <div class="h-2 w-full bg-white/[0.06] rounded-full overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-accent-cyan to-blue-500 rounded-full w-[99%]"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Multi-Platform Matrix Cards Section (Windows / macOS / Portable) -->
+      <section id="platforms" class="max-w-[1280px] mx-auto px-6 sm:px-8 mb-28">
+        <div class="text-center max-w-2xl mx-auto mb-14">
+          <span class="text-xs font-semibold tracking-wider text-accent-cyan uppercase mb-2 block">Multi-Platform Releases</span>
+          <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4">
+            适配主流桌面生态
+          </h2>
+          <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+            所有平台安装包均经过官方数字签名校验，支持在线平滑增量热更新。
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Card 1: Windows -->
+          <div class="glass-card glass-card-hover rounded-2xl p-7 flex flex-col justify-between spotlight-card">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-white/[0.05] border border-white/[0.1] flex items-center justify-center mb-5 text-accent-cyan">
+                <!-- Optical Windows Icon -->
+                <svg class="w-6 h-6 fill-current" viewBox="0 0 88 88">
+                  <path d="M0 12.4L35.6 7.5V42.3H0V12.4ZM0 46.2H35.6V81L0 76.1V46.2ZM39.6 6.9L88 0V42.3H39.6V6.9ZM39.6 46.2H88V88.5L39.6 81.6V46.2Z"/>
+                </svg>
+              </div>
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xl font-bold text-white">Windows</h3>
+                <span class="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">推荐主版本</span>
+              </div>
+              <p class="text-sm text-slate-400 leading-relaxed mb-6">
+                适用于 Windows 10 / 11 64位系统。包含抽屉收纳、Alt快捷盲操与 NovaDisk C盘管家全量功能。
+              </p>
+              <div class="space-y-2 text-xs text-slate-400 font-mono mb-8 border-t border-white/[0.06] pt-4">
+                <div class="flex justify-between"><span>版本号</span><span class="text-white">v2.4.0 正式版</span></div>
+                <div class="flex justify-between"><span>体系架构</span><span class="text-white">x64 / ARM64</span></div>
+                <div class="flex justify-between"><span>文件格式</span><span class="text-white">.exe 一键自解压安装包</span></div>
+              </div>
+            </div>
+
+            <!-- Fixed 52px Button -->
+            <a href="/download/latest/desktop" class="btn-shimmer h-[52px] w-full rounded-[14px] bg-gradient-to-r from-accent-cyan to-[#06B6D4] text-[#04101A] font-bold text-[15px] flex items-center justify-center gap-2.5 transition-all duration-300 hover:shadow-[0_0_25px_rgba(0,242,254,0.35)] active:scale-[0.98]">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>下载 Windows 安装包 (85MB)</span>
+            </a>
+          </div>
+
+          <!-- Card 2: macOS -->
+          <div class="glass-card glass-card-hover rounded-2xl p-7 flex flex-col justify-between spotlight-card">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-white/[0.05] border border-white/[0.1] flex items-center justify-center mb-5 text-white">
+                <i data-lucide="apple" class="w-6 h-6 fill-current"></i>
+              </div>
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xl font-bold text-white">macOS</h3>
+                <span class="text-xs font-mono text-accent-cyan bg-accent-cyan/10 px-2 py-0.5 rounded border border-accent-cyan/20">Universal 通用</span>
+              </div>
+              <p class="text-sm text-slate-400 leading-relaxed mb-6">
+                原生支持 Apple Silicon (M1/M2/M3/M4) 及 Intel 架构机型，配备原生灵动通知栏与多桌面挂载。
+              </p>
+              <div class="space-y-2 text-xs text-slate-400 font-mono mb-8 border-t border-white/[0.06] pt-4">
+                <div class="flex justify-between"><span>版本号</span><span class="text-white">v2.4.0 尝鲜预览</span></div>
+                <div class="flex justify-between"><span>系统要求</span><span class="text-white">macOS 12.0 Monterey+</span></div>
+                <div class="flex justify-between"><span>文件格式</span><span class="text-white">.dmg 磁盘映像</span></div>
+              </div>
+            </div>
+
+            <!-- Fixed 52px Button -->
+            <a href="/download/latest/desktop" class="h-[52px] w-full rounded-[14px] bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.16] hover:border-white/30 text-white font-semibold text-[15px] flex items-center justify-center gap-2.5 transition-all duration-300 active:scale-[0.98]">
+              <i data-lucide="download" class="w-4 h-4 text-slate-300"></i>
+              <span>下载 macOS 通用包 (92MB)</span>
+            </a>
+          </div>
+
+          <!-- Card 3: Portable / Green -->
+          <div class="glass-card glass-card-hover rounded-2xl p-7 flex flex-col justify-between spotlight-card">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-white/[0.05] border border-white/[0.1] flex items-center justify-center mb-5 text-emerald-400">
+                <i data-lucide="folder-archive" class="w-6 h-6"></i>
+              </div>
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xl font-bold text-white">便携免安装版</h3>
+                <span class="text-xs font-mono text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">绿色即用</span>
+              </div>
+              <p class="text-sm text-slate-400 leading-relaxed mb-6">
+                无需执行写入注册表安装流程。解压后即可直接随身携带在 U盘或移动硬盘中，配置就地保存。
+              </p>
+              <div class="space-y-2 text-xs text-slate-400 font-mono mb-8 border-t border-white/[0.06] pt-4">
+                <div class="flex justify-between"><span>版本号</span><span class="text-white">v2.4.0 Portable</span></div>
+                <div class="flex justify-between"><span>运行方式</span><span class="text-white">零安装 · 解压即启</span></div>
+                <div class="flex justify-between"><span>文件格式</span><span class="text-white">.zip 压缩归档</span></div>
+              </div>
+            </div>
+
+            <!-- Fixed 52px Button -->
+            <a href="/download/latest/desktop" class="h-[52px] w-full rounded-[14px] bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.16] hover:border-white/30 text-white font-semibold text-[15px] flex items-center justify-center gap-2.5 transition-all duration-300 active:scale-[0.98]">
+              <i data-lucide="download" class="w-4 h-4 text-slate-300"></i>
+              <span>下载免安装绿色包 (78MB)</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Changelog Accordion Section -->
+      <section id="changelog" class="max-w-3xl mx-auto px-6 mb-24">
+        <div class="text-center mb-10">
+          <span class="text-xs font-semibold tracking-wider text-accent-cyan uppercase mb-2 block">Version History</span>
+          <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">更新日志与发版记录</h2>
+          <p class="text-xs sm:text-sm text-slate-400">持续迭代，每一次更新都凝聚对极致效能的追求</p>
+        </div>
+
+        <div class="space-y-3.5">
+          <!-- Accordion 1: v2.4.0 (Open by default) -->
+          <div class="glass-card rounded-xl overflow-hidden changelog-item is-open">
+            <button type="button" class="w-full px-5 py-4 flex items-center justify-between text-left text-sm font-semibold text-white changelog-toggle hover:bg-white/[0.02]">
+              <div class="flex items-center gap-3">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span>v2.4.0 正式版发布</span>
+                <span class="text-[11px] font-normal text-slate-400 font-mono">2026-10-14</span>
+              </div>
+              <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform duration-200 changelog-icon rotate-180"></i>
+            </button>
+            <div class="px-5 pb-5 pt-1 text-xs sm:text-sm text-slate-300 space-y-2 border-t border-white/[0.06] changelog-content">
+              <div class="flex items-start gap-2.5">
+                <span class="text-[10px] font-mono uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-bold">New</span>
+                <span>深度重构全套半透明毛玻璃视觉引擎，对齐 visionOS 动态环境光渐变质感。</span>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="text-[10px] font-mono uppercase bg-blue-500/10 text-accent-cyan border border-blue-500/20 px-1.5 py-0.5 rounded font-bold">Improved</span>
+                <span>优化抽屉式侧边吸附微交互碰撞侦测，多屏及副屏挂载无缝智能避让。</span>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="text-[10px] font-mono uppercase bg-purple-500/10 text-purple-300 border border-purple-500/20 px-1.5 py-0.5 rounded font-bold">Fixed</span>
+                <span>修复特定 Win11 预览版中 Alt 快捷键被系统热键偶尔拦截的问题。</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Accordion 2: v2.3.5 -->
+          <div class="glass-card rounded-xl overflow-hidden changelog-item">
+            <button type="button" class="w-full px-5 py-4 flex items-center justify-between text-left text-sm font-semibold text-white changelog-toggle hover:bg-white/[0.02]">
+              <div class="flex items-center gap-3">
+                <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+                <span>v2.3.5 空间管家功能增强</span>
+                <span class="text-[11px] font-normal text-slate-400 font-mono">2026-10-02</span>
+              </div>
+              <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform duration-200 changelog-icon"></i>
+            </button>
+            <div class="px-5 pb-5 pt-1 text-xs sm:text-sm text-slate-300 space-y-2 border-t border-white/[0.06] changelog-content hidden">
+              <div class="flex items-start gap-2.5">
+                <span class="text-[10px] font-mono uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-bold">New</span>
+                <span>NovaDisk C盘管家引入文件夹智能身份证与树图动态缩放。</span>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="text-[10px] font-mono uppercase bg-blue-500/10 text-accent-cyan border border-blue-500/20 px-1.5 py-0.5 rounded font-bold">Improved</span>
+                <span>提升微信、QQ 数据大目录无损软链接搬迁校验速度超 300%。</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Accordion 3: v2.3.0 -->
+          <div class="glass-card rounded-xl overflow-hidden changelog-item">
+            <button type="button" class="w-full px-5 py-4 flex items-center justify-between text-left text-sm font-semibold text-white changelog-toggle hover:bg-white/[0.02]">
+              <div class="flex items-center gap-3">
+                <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+                <span>v2.3.0 快捷盲操矩阵上线</span>
+                <span class="text-[11px] font-normal text-slate-400 font-mono">2026-09-18</span>
+              </div>
+              <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform duration-200 changelog-icon"></i>
+            </button>
+            <div class="px-5 pb-5 pt-1 text-xs sm:text-sm text-slate-300 space-y-2 border-t border-white/[0.06] changelog-content hidden">
+              <div class="flex items-start gap-2.5">
+                <span class="text-[10px] font-mono uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-bold">New</span>
+                <span>上线 Alt+1~9 盲操极速启动矩阵，拖入任意软件、网址或脚本即刻绑定。</span>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="text-[10px] font-mono uppercase bg-blue-500/10 text-accent-cyan border border-blue-500/20 px-1.5 py-0.5 rounded font-bold">Improved</span>
+                <span>优化内存占用基准线至 18MB 静默运行。</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 border-t border-white/[0.08] bg-[#07090E]/90 py-12 px-6">
+      <div class="max-w-[1280px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-500">
+        <div class="flex items-center gap-3">
+          <span class="font-bold text-white text-sm">NSY</span>
+          <span>·</span>
+          <span>Copyright © 2026 天才猫工作室. 保留所有权利.</span>
+        </div>
+        <div class="flex items-center gap-6">
+          <a href="/" class="hover:text-white transition-colors">官网首页</a>
+          <a href="/desktop.html" class="hover:text-white transition-colors">桌面 2.0 落地页</a>
+          <a href="/articles.html" class="hover:text-white transition-colors">使用教程</a>
+          <a href="/license.html" class="hover:text-white transition-colors">正版授权购买</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Toast Notification Widget -->
+    <div id="toastNotify" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 glass-card rounded-full px-5 py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-white/[0.18] flex items-center gap-2.5 text-xs text-white">
+      <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+      <span id="toastMessage">已成功复制校验码到剪贴板</span>
+    </div>
+
+    <!-- Scripts: Spotlight Mouse Tracking, Accordion & Dynamic Catalog Integration -->
+    <script>
+      // 1. Initialize Lucide Icons
+      document.addEventListener('DOMContentLoaded', () => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      });
+
+      // 2. Mouse Spotlight Hover Effect
+      document.querySelectorAll('.spotlight-card').forEach(card => {
+        card.addEventListener('mousemove', e => {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          card.style.setProperty('--mouse-x', `${x}px`);
+          card.style.setProperty('--mouse-y', `${y}px`);
+        });
+      });
+
+      // 3. One-Click Copy Checksum with Toast
+      function copyChecksum(text) {
+        navigator.clipboard.writeText(text).then(() => {
+          const toast = document.getElementById('toastNotify');
+          if (!toast) return;
+          toast.classList.add('show');
+          setTimeout(() => {
+            toast.classList.remove('show');
+          }, 2400);
+        }).catch(err => {
+          console.warn('Clipboard write failed:', err);
+        });
+      }
+
+      // 4. Changelog Accordion Toggle
+      document.querySelectorAll('.changelog-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const item = btn.closest('.changelog-item');
+          const content = item.querySelector('.changelog-content');
+          const icon = item.querySelector('.changelog-icon');
+          const isOpen = !content.classList.contains('hidden');
+
+          // Close all
+          document.querySelectorAll('.changelog-content').forEach(c => c.classList.add('hidden'));
+          document.querySelectorAll('.changelog-icon').forEach(i => i.classList.remove('rotate-180'));
+
+          if (!isOpen) {
+            content.classList.remove('hidden');
+            icon.classList.add('rotate-180');
+          }
+        });
+      });
+
+      // 5. Dynamic Backend Catalog Integration (Optional enhancement)
+      (async function syncLatestRelease() {
+        try {
+          const res = await fetch('/api/catalog', { cache: 'no-store' });
+          if (!res.ok) return;
+          const catalog = await res.json();
+          const desktopApp = (catalog.software || []).find(s => s.slug === 'desktop' || /桌面/i.test(s.name));
+          if (desktopApp && desktopApp.releases && desktopApp.releases.length) {
+            const latest = desktopApp.releases.find(r => r.isLatest) || desktopApp.releases[0];
+            if (latest?.version) {
+              document.querySelectorAll('.version-text').forEach(el => {
+                el.textContent = `v${latest.version}`;
+              });
+            }
+          }
+        } catch {
+          // Keep resilient fallback defaults
+        }
+      })();
+    </script>
+  </body>
+</html>

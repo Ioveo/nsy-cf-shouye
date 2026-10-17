@@ -14,6 +14,7 @@ import {
   Moon,
   Sun,
   Zap,
+  Sliders,
 } from 'lucide-react'
 import { useSearch } from '@/context/search-provider'
 import { useTheme } from '@/context/theme-provider'
@@ -85,7 +86,7 @@ export function CommandMenu() {
             </CommandItem>
             <CommandItem
               value='撰写新文章 write new article'
-              onSelect={() => runCommand(() => navigate({ to: '/content', search: { tab: 'articles' } as any }))}
+              onSelect={() => runCommand(() => navigate({ to: '/content/articles' as any }))}
             >
               <FileText className='size-4 text-primary' />
               <span>撰写新文章 (Markdown 编辑器)</span>
@@ -104,24 +105,31 @@ export function CommandMenu() {
           <CommandGroup heading='内容与多媒体管理'>
             <CommandItem
               value='音乐频道试听与发布 music audio'
-              onSelect={() => runCommand(() => navigate({ to: '/content', search: { tab: 'music' } as any }))}
+              onSelect={() => runCommand(() => navigate({ to: '/content/music' as any }))}
             >
               <Music className='size-4 text-primary' />
               <span>音乐频道 (试听播放与音频上传)</span>
             </CommandItem>
             <CommandItem
               value='图片画廊瀑布流 gallery'
-              onSelect={() => runCommand(() => navigate({ to: '/content', search: { tab: 'gallery' } as any }))}
+              onSelect={() => runCommand(() => navigate({ to: '/content/gallery' as any }))}
             >
               <Image className='size-4 text-primary' />
               <span>图片画廊 (批量拖拽上传与排序)</span>
             </CommandItem>
             <CommandItem
-              value='照片墙与轮播图 photo wall carousel'
-              onSelect={() => runCommand(() => navigate({ to: '/content', search: { tab: 'photo-wall' } as any }))}
+              value='照片墙与互动展示 photo wall'
+              onSelect={() => runCommand(() => navigate({ to: '/content/photo-wall' as any }))}
             >
               <Sparkles className='size-4 text-primary' />
-              <span>照片墙与首页轮播</span>
+              <span>照片墙互动展示</span>
+            </CommandItem>
+            <CommandItem
+              value='首页轮播与顶部导航 carousel nav'
+              onSelect={() => runCommand(() => navigate({ to: '/site/carousel' as any }))}
+            >
+              <Sliders className='size-4 text-primary' />
+              <span>首页巨幕轮播与展示</span>
             </CommandItem>
           </CommandGroup>
 
