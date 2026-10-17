@@ -24,6 +24,8 @@ import { Route as AuthenticatedHotupdateIndexRouteImport } from './routes/_authe
 import { Route as AuthenticatedLandingIndexRouteImport } from './routes/_authenticated/landing/index'
 import { Route as AuthenticatedReleasesIndexRouteImport } from './routes/_authenticated/releases/index'
 import { Route as AuthenticatedSoftwareIndexRouteImport } from './routes/_authenticated/software/index'
+import { Route as AuthenticatedSoftwareIdRouteImport } from './routes/_authenticated/software/$id'
+import { Route as AuthenticatedSoftwareNewRouteImport } from './routes/_authenticated/software/new'
 import { Route as AuthenticatedSystemIndexRouteImport } from './routes/_authenticated/system/index'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -107,6 +109,17 @@ const AuthenticatedSoftwareIndexRoute =
     path: '/software/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSoftwareIdRoute = AuthenticatedSoftwareIdRouteImport.update({
+  id: '/software/$id',
+  path: '/software/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSoftwareNewRoute =
+  AuthenticatedSoftwareNewRouteImport.update({
+    id: '/software/new',
+    path: '/software/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSystemIndexRoute =
   AuthenticatedSystemIndexRouteImport.update({
     id: '/system/',
@@ -123,6 +136,8 @@ export interface FileRoutesByFullPath {
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
+  '/software/$id': typeof AuthenticatedSoftwareIdRoute
+  '/software/new': typeof AuthenticatedSoftwareNewRoute
   '/assets/': typeof AuthenticatedAssetsIndexRoute
   '/content/': typeof AuthenticatedContentIndexRoute
   '/hotupdate/': typeof AuthenticatedHotupdateIndexRoute
@@ -140,6 +155,8 @@ export interface FileRoutesByTo {
   '/503': typeof errors503Route
   '/': typeof AuthenticatedIndexRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
+  '/software/$id': typeof AuthenticatedSoftwareIdRoute
+  '/software/new': typeof AuthenticatedSoftwareNewRoute
   '/assets': typeof AuthenticatedAssetsIndexRoute
   '/content': typeof AuthenticatedContentIndexRoute
   '/hotupdate': typeof AuthenticatedHotupdateIndexRoute
@@ -159,6 +176,8 @@ export interface FileRoutesById {
   '/(errors)/503': typeof errors503Route
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/errors/$error': typeof AuthenticatedErrorsErrorRoute
+  '/_authenticated/software/$id': typeof AuthenticatedSoftwareIdRoute
+  '/_authenticated/software/new': typeof AuthenticatedSoftwareNewRoute
   '/_authenticated/assets/': typeof AuthenticatedAssetsIndexRoute
   '/_authenticated/content/': typeof AuthenticatedContentIndexRoute
   '/_authenticated/hotupdate/': typeof AuthenticatedHotupdateIndexRoute
@@ -178,6 +197,8 @@ export interface FileRouteTypes {
     | '/500'
     | '/503'
     | '/errors/$error'
+    | '/software/$id'
+    | '/software/new'
     | '/assets/'
     | '/content/'
     | '/hotupdate/'
@@ -195,6 +216,8 @@ export interface FileRouteTypes {
     | '/503'
     | '/'
     | '/errors/$error'
+    | '/software/$id'
+    | '/software/new'
     | '/assets'
     | '/content'
     | '/hotupdate'
@@ -213,6 +236,8 @@ export interface FileRouteTypes {
     | '/(errors)/503'
     | '/_authenticated/'
     | '/_authenticated/errors/$error'
+    | '/_authenticated/software/$id'
+    | '/_authenticated/software/new'
     | '/_authenticated/assets/'
     | '/_authenticated/content/'
     | '/_authenticated/hotupdate/'
@@ -339,6 +364,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSoftwareIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/software/$id': {
+      id: '/_authenticated/software/$id'
+      path: '/software/$id'
+      fullPath: '/software/$id'
+      preLoaderRoute: typeof AuthenticatedSoftwareIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/software/new': {
+      id: '/_authenticated/software/new'
+      path: '/software/new'
+      fullPath: '/software/new'
+      preLoaderRoute: typeof AuthenticatedSoftwareNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/system/': {
       id: '/_authenticated/system/'
       path: '/system'
@@ -352,6 +391,8 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
+  AuthenticatedSoftwareIdRoute: typeof AuthenticatedSoftwareIdRoute
+  AuthenticatedSoftwareNewRoute: typeof AuthenticatedSoftwareNewRoute
   AuthenticatedAssetsIndexRoute: typeof AuthenticatedAssetsIndexRoute
   AuthenticatedContentIndexRoute: typeof AuthenticatedContentIndexRoute
   AuthenticatedHotupdateIndexRoute: typeof AuthenticatedHotupdateIndexRoute
@@ -364,6 +405,8 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
+  AuthenticatedSoftwareIdRoute: AuthenticatedSoftwareIdRoute,
+  AuthenticatedSoftwareNewRoute: AuthenticatedSoftwareNewRoute,
   AuthenticatedAssetsIndexRoute: AuthenticatedAssetsIndexRoute,
   AuthenticatedContentIndexRoute: AuthenticatedContentIndexRoute,
   AuthenticatedHotupdateIndexRoute: AuthenticatedHotupdateIndexRoute,

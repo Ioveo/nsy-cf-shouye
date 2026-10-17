@@ -181,8 +181,8 @@
                 <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20">${esc(software.priceLabel || "免费")}</span>
                 ${software.featured ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30">✦ 官方主推</span>` : ""}
               </div>
-              <h1 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">${esc(software.name)}</h1>
-              <p class="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">${esc(software.tagline || "极具高级感与生产力体验的官方应用。")}</p>
+              <h1 id="hero-title" class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">${esc(software.name)}</h1>
+              <p id="hero-tagline" class="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">${esc(software.tagline || "极具高级感与生产力体验的官方应用。")}</p>
 
               <div class="flex flex-wrap items-center gap-2 mt-4">
                 ${platformPills}

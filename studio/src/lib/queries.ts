@@ -12,34 +12,53 @@ export interface Software {
   landingUrl?: string
   highlights?: { title: string; text: string }[]
   icon?: string
+  iconUrl?: string
+  coverUrl?: string
+  screenshots?: string[]
+  featured?: boolean
+  featuredOrder?: number
+  priceLabel?: string
+  developer?: string
+  website?: string
   sortOrder?: number
+  status?: 'active' | 'draft' | 'disabled' | string
+  createdAt?: number
+  updatedAt?: number
+  releases?: Release[]
 }
 
 export interface Release {
   id: string
   softwareId: string
   version: string
+  title?: string
+  description?: string
   changelog?: string
   fileName?: string
   fileSize?: number
+  size?: string
   fileKey?: string
+  sha256?: string
   downloadCount?: number
   status?: string
   isLatest?: boolean
   platform?: string
   label?: string
   arch?: string
-  createdAt?: string
-  updatedAt?: string
+  createdAt?: string | number
+  updatedAt?: string | number
 }
 
 export interface Category {
   id: string
   name: string
+  slug?: string
   sortOrder?: number
+  status?: string
 }
 
 export interface Catalog {
+  product?: string
   software: Software[]
   categories: Category[]
   releases: Release[]

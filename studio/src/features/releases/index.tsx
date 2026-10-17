@@ -15,6 +15,16 @@ import {
   Loader2,
   HardDriveDownload,
   AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  Monitor,
+  Apple,
+  Terminal,
+  FolderArchive,
+  Smartphone,
+  Layers,
+  Copy,
+  Sparkles,
 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -50,7 +60,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ConfirmDialog } from '@/components/confirm-dialog'
+import { cn } from '@/lib/utils'
 
 const PLATFORMS = [
   { value: 'windows', label: 'Windows (exe/msi)' },
@@ -61,6 +71,16 @@ const PLATFORMS = [
   { value: 'other', label: 'Other (其它格式)' },
 ]
 
+interface PendingUploadItem {
+  id: string
+  file: File
+  platform: string
+  label: string
+  arch: string
+  status: 'pending' | 'uploading' | 'done' | 'error'
+  error?: string
+}
+
 export function ReleasesFeature() {
   const queryClient = useQueryClient()
   const { data: catalog, isLoading } = useCatalog()
@@ -69,20 +89,20 @@ export function ReleasesFeature() {
   const [filterSoftware, setFilterSoftware] = useState<string>('all')
   const [filterPlatform, setFilterPlatform] = useState<string>('all')
 
-  // Upload drawer state
+  // Collapsed / Expanded state for software groups and version rows
+  const [collapsedSoftwares, setCollapsedSoftwares] = useState<Record<string, boolean>>({})
+  const [expandedVersions, setExpandedVersions] = useState<Record<string, boolean>>({})
+
+  // Multi-package Upload Drawer state (Entry 2)
   const [uploadDrawerOpen, setUploadDrawerOpen] = useState(false)
   const [uploadSoftware, setUploadSoftware] = useState('')
   const [uploadVersion, setUploadVersion] = useState('')
-  const [uploadPlatform, setUploadPlatform] = useState('windows')
-  const [uploadLabel, setUploadLabel] = useState('')
-  const [uploadArch, setUploadArch] = useState('x64')
-  const [uploadIsLatest, setUploadIsLatest] = useState(true)
   const [uploadChangelog, setUploadChangelog] = useState('')
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploadQueue, setUploadQueue] = useState<PendingUploadItem[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Edit drawer state
+  // Edit release state
   const [editDrawerOpen, setEditDrawerOpen] = useState(false)
   const [editingRelease, setEditingRelease] = useState<Release | null>(null)
   const [editVersion, setEditVersion] = useState('')
@@ -134,38 +154,44 @@ export function ReleasesFeature() {
     return 'other'
   }
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setSelectedFile(file)
-    const detected = detectPlatform(file.name)
-    setUploadPlatform(detected)
-    if (!uploadLabel) {
-      if (detected === 'portable') setUploadLabel('绿色便携版')
-      else if (detected === 'windows') setUploadLabel('Windows 安装包')
-      else if (detected === 'macos') setUploadLabel('macOS 安装包')
-      else if (detected === 'linux') setUploadLabel('Linux 软件包')
-      else setUploadLabel(file.name)
-    }
+  function inferLabel(fileName: string, plat: string): string {
+    if (plat === 'portable') return '绿色便携版'
+    if (plat === 'windows') return 'Windows 安装包'
+    if (plat === 'macos') return 'macOS 安装包'
+    if (plat === 'linux') return 'Linux 软件包'
+    if (plat === 'android') return 'Android 安装包'
+    return fileName
+  }
+
+  function handleFilesQueued(files: FileList | File[]) {
+    const list = Array.from(files)
+    const items: PendingUploadItem[] = list.map((f) => {
+      const plat = detectPlatform(f.name)
+      return {
+        id: Math.random().toString(36).substring(2, 9),
+        file: f,
+        platform: plat,
+        label: inferLabel(f.name, plat),
+        arch: 'x64',
+        status: 'pending',
+      }
+    })
+    setUploadQueue((prev) => [...prev, ...items])
   }
 
   function openUploadDrawer(defaultSoftwareId?: string) {
     setUploadSoftware(defaultSoftwareId || softwareList[0]?.slug || '')
     setUploadVersion('')
-    setUploadPlatform('windows')
-    setUploadLabel('')
-    setUploadArch('x64')
-    setUploadIsLatest(true)
     setUploadChangelog('')
-    setSelectedFile(null)
+    setUploadQueue([])
     if (fileInputRef.current) fileInputRef.current.value = ''
     setUploadDrawerOpen(true)
   }
 
   async function handleUploadRelease(e: React.FormEvent) {
     e.preventDefault()
-    if (!selectedFile) {
-      toast.error('请选择安装包文件')
+    if (uploadQueue.length === 0) {
+      toast.error('请选择或拖入至少一个安装包文件')
       return
     }
     if (!uploadSoftware) {
@@ -182,42 +208,59 @@ export function ReleasesFeature() {
       const targetSw = softwareList.find((s) => s.slug === uploadSoftware || s.id === uploadSoftware)
       const swId = targetSw?.id || targetSw?.slug || uploadSoftware
 
-      // Calls protected r2-upload.js module (handles chunked or single upload with progress)
-      const res = await uploadReleaseFile(selectedFile, {
-        softwareId: swId,
-        version: uploadVersion.trim(),
-        changelog: uploadChangelog.trim(),
-        isLatest: uploadIsLatest,
-      })
-
-      if (res.success) {
-        toast.success('版本安装包上传成功！')
-        // Find created release ID to update platform/label if needed
-        const newCatalogRes = await api.post('/api/admin/catalog')
-        const newReleases = newCatalogRes.catalog?.releases || []
-        const created = newReleases.find(
-          (r: Release) => r.softwareId === uploadSoftware && r.version === uploadVersion.trim()
+      // Serial upload (Rule 4: for ... await)
+      for (let i = 0; i < uploadQueue.length; i++) {
+        const item = uploadQueue[i]
+        setUploadQueue((prev) =>
+          prev.map((q, idx) => (idx === i ? { ...q, status: 'uploading' } : q))
         )
-        if (created) {
-          await api.post('/api/admin/releases/update', {
-            releaseId: created.id,
-            action: 'edit',
-            version: uploadVersion.trim(),
-            changelog: uploadChangelog.trim(),
-            status: 'published',
-            fileName: selectedFile.name,
-            isLatest: uploadIsLatest,
-            platform: uploadPlatform,
-            label: uploadLabel.trim() || selectedFile.name,
-            arch: uploadArch,
-          })
-        }
 
-        setUploadDrawerOpen(false)
-        queryClient.invalidateQueries({ queryKey: ['catalog'] })
-      } else {
-        toast.error(res.msg || '上传发布失败')
+        const isLatest = i === 0
+        const res = await uploadReleaseFile(item.file, {
+          softwareId: swId,
+          version: uploadVersion.trim(),
+          changelog: uploadChangelog.trim(),
+          isLatest,
+        })
+
+        if (res.success) {
+          // Update platform & label metadata
+          const newCatalogRes = await api.post('/api/admin/catalog')
+          const allRels = (newCatalogRes.catalog?.software || []).flatMap((s: any) => s.releases || [])
+          const created = allRels.find(
+            (r: any) =>
+              (r.softwareId === swId || r.softwareSlug === uploadSoftware) &&
+              r.version === uploadVersion.trim() &&
+              r.fileName === item.file.name
+          )
+          if (created) {
+            await api.post('/api/admin/releases/update', {
+              releaseId: created.id,
+              action: 'edit',
+              version: uploadVersion.trim(),
+              changelog: uploadChangelog.trim(),
+              status: 'published',
+              fileName: item.file.name,
+              isLatest,
+              platform: item.platform,
+              label: item.label.trim() || item.file.name,
+              arch: item.arch,
+            })
+          }
+          setUploadQueue((prev) =>
+            prev.map((q, idx) => (idx === i ? { ...q, status: 'done' } : q))
+          )
+        } else {
+          setUploadQueue((prev) =>
+            prev.map((q, idx) => (idx === i ? { ...q, status: 'error', error: res.msg } : q))
+          )
+          toast.error(`安装包 ${item.file.name} 上传失败：${res.msg}`)
+        }
       }
+
+      toast.success('版本安装包队列上传完成！')
+      setUploadDrawerOpen(false)
+      queryClient.invalidateQueries({ queryKey: ['catalog'] })
     } catch (err: any) {
       toast.error(`上传异常：${err.message}`)
     } finally {
@@ -281,7 +324,7 @@ export function ReleasesFeature() {
         action: 'latest',
       })
       if (res.success) {
-        toast.success(`已将 v${rel.version} 设为最新版本`)
+        toast.success(`已将 v${rel.version} (${rel.label || rel.platform}) 设为最新版本`)
         queryClient.invalidateQueries({ queryKey: ['catalog'] })
       } else {
         toast.error(res.msg || '设置失败')
@@ -358,42 +401,9 @@ export function ReleasesFeature() {
     }
   }
 
-  async function handleRegisterFile(e: React.FormEvent) {
-    e.preventDefault()
-    if (!regSoftware || !regVersion.trim() || !regFileKey.trim()) {
-      toast.error('软件、版本号和 R2 File Key 均为必填')
-      return
-    }
-
-    setIsRegistering(true)
-    try {
-      const res = await api.post('/api/admin/releases/register', {
-        softwareId: regSoftware,
-        version: regVersion.trim(),
-        fileKey: regFileKey.trim(),
-        fileName: regFileName.trim() || regFileKey.split('/').pop(),
-        fileSize: Number(regFileSize) || 0,
-        platform: regPlatform,
-        label: regLabel.trim(),
-        isLatest: false,
-      })
-      if (res.success) {
-        toast.success('R2 已有文件登记成功')
-        setRegisterModalOpen(false)
-        queryClient.invalidateQueries({ queryKey: ['catalog'] })
-      } else {
-        toast.error(res.msg || '登记失败')
-      }
-    } catch (err: any) {
-      toast.error(`登记异常：${err.message}`)
-    } finally {
-      setIsRegistering(false)
-    }
-  }
-
   // Filtered releases
   const filteredReleases = releasesList.filter((r) => {
-    const sw = softwareList.find((s) => s.slug === r.softwareId)
+    const sw = softwareList.find((s) => s.slug === r.softwareId || s.id === r.softwareId)
     const matchSearch =
       r.version.toLowerCase().includes(search.toLowerCase()) ||
       (r.fileName || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -404,6 +414,54 @@ export function ReleasesFeature() {
     return matchSearch && matchSoftware && matchPlatform
   })
 
+  // Group by software and by version (C.4 Requirement)
+  const softwareGroups = softwareList
+    .map((sw) => {
+      const swReleases = filteredReleases.filter(
+        (r) => r.softwareId === sw.slug || r.softwareId === sw.id
+      )
+      // Group by version
+      const versionMap = new Map<string, Release[]>()
+      for (const r of swReleases) {
+        const v = r.version || 'unknown'
+        if (!versionMap.has(v)) versionMap.set(v, [])
+        versionMap.get(v)!.push(r)
+      }
+      const versions = Array.from(versionMap.entries()).map(([vNum, pkgs]) => ({
+        version: vNum,
+        packages: pkgs,
+        totalDownloads: pkgs.reduce((sum, p) => sum + (Number(p.downloadCount) || 0), 0),
+        isLatest: pkgs.some((p) => p.isLatest),
+        status: pkgs.every((p) => p.status === 'published') ? 'published' : 'draft',
+        platforms: Array.from(new Set(pkgs.map((p) => p.platform || 'windows'))),
+        totalSize: pkgs.reduce((sum, p) => sum + (Number(p.fileSize) || 0), 0),
+      }))
+
+      return {
+        software: sw,
+        versions,
+        totalPackages: swReleases.length,
+      }
+    })
+    .filter((g) => g.totalPackages > 0 || (search === '' && filterSoftware === 'all' && filterPlatform === 'all'))
+
+  function renderPlatformIcon(plat: string) {
+    switch (plat) {
+      case 'windows':
+        return <Monitor className='size-3.5 text-sky-400' />
+      case 'macos':
+        return <Apple className='size-3.5 text-slate-300' />
+      case 'linux':
+        return <Terminal className='size-3.5 text-amber-400' />
+      case 'portable':
+        return <FolderArchive className='size-3.5 text-emerald-400' />
+      case 'android':
+        return <Smartphone className='size-3.5 text-emerald-300' />
+      default:
+        return <Layers className='size-3.5 text-muted-foreground' />
+    }
+  }
+
   return (
     <div className='flex flex-1 flex-col gap-4 p-4 pt-0 md:gap-6 md:p-8'>
       {/* Header */}
@@ -411,10 +469,10 @@ export function ReleasesFeature() {
         <div>
           <h1 className='text-2xl font-bold tracking-tight md:text-3xl'>版本管理</h1>
           <p className='text-sm text-muted-foreground'>
-            支持 8 路分片断点续传（最高 10GB）、多平台包发布、安装包同 ID 替换与下载审计
+            按软件与版本折叠归集，多平台下载包统一管理、同 ID 替换与 8 路断点续传
           </p>
         </div>
-        <div className='flex items-center gap-2'>
+        <div className='flex flex-wrap items-center gap-2'>
           <Button
             variant='outline'
             size='sm'
@@ -480,179 +538,300 @@ export function ReleasesFeature() {
         </div>
       </div>
 
-      {/* Releases Table */}
-      <div className='rounded-xl border border-border/60 bg-card/60 overflow-hidden backdrop-blur-sm'>
-        <div className='overflow-x-auto'>
-          <table className='w-full text-left text-sm'>
-            <thead className='border-b border-border/60 bg-muted/40 text-xs font-semibold uppercase text-muted-foreground'>
-              <tr>
-                <th className='px-4 py-3'>归属软件</th>
-                <th className='px-4 py-3'>版本号</th>
-                <th className='px-4 py-3'>平台 & 包标签</th>
-                <th className='px-4 py-3'>文件名 & 大小</th>
-                <th className='px-4 py-3 text-center'>下载量</th>
-                <th className='px-4 py-3 text-center'>状态</th>
-                <th className='px-4 py-3 text-right'>操作</th>
-              </tr>
-            </thead>
-            <tbody className='divide-y divide-border/40'>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={7} className='px-4 py-8 text-center text-muted-foreground'>
-                    <Loader2 className='mx-auto size-5 animate-spin text-primary' />
-                    <p className='mt-2 text-xs'>加载版本列表中...</p>
-                  </td>
-                </tr>
-              ) : filteredReleases.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className='px-4 py-8 text-center text-muted-foreground'>
-                    未找到版本记录，点击上方按钮上传新版本
-                  </td>
-                </tr>
-              ) : (
-                filteredReleases.map((rel) => {
-                  const sw = softwareList.find((s) => s.slug === rel.softwareId)
-                  return (
-                    <tr key={rel.id} className='hover:bg-muted/30 transition-colors'>
-                      <td className='px-4 py-3 font-medium'>
-                        <div className='font-semibold'>{sw?.name || rel.softwareId}</div>
-                        <div className='font-mono text-xs text-muted-foreground'>
-                          {rel.softwareId}
-                        </div>
-                      </td>
-                      <td className='px-4 py-3'>
-                        <div className='flex items-center gap-1.5'>
-                          <span className='font-mono font-bold'>v{rel.version}</span>
-                          {rel.isLatest && (
-                            <Badge className='bg-primary/20 text-primary border-primary/30 text-xs'>
-                              最新
-                            </Badge>
-                          )}
-                        </div>
-                      </td>
-                      <td className='px-4 py-3'>
-                        <div className='flex items-center gap-1.5'>
-                          <Badge variant='outline' className='text-xs'>
-                            {rel.platform || 'windows'}
-                          </Badge>
-                          <span className='text-xs font-medium'>
-                            {rel.label || '默认安装包'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className='px-4 py-3'>
-                        <div className='font-mono text-xs truncate max-w-xs'>
-                          {rel.fileName || '未知文件名'}
-                        </div>
-                        <div className='text-xs text-muted-foreground'>
-                          {formatBytes(rel.fileSize)}
-                        </div>
-                      </td>
-                      <td className='px-4 py-3 text-center font-mono text-xs'>
-                        {rel.downloadCount || 0}
-                      </td>
-                      <td className='px-4 py-3 text-center'>
-                        <Badge
-                          variant={rel.status === 'published' ? 'secondary' : 'outline'}
-                          className='text-xs cursor-pointer'
-                          onClick={() => handleToggleStatus(rel)}
-                          title='点击切换发布/隐藏'
-                        >
-                          {rel.status === 'published' ? '已发布' : '草稿/隐藏'}
-                        </Badge>
-                      </td>
-                      <td className='px-4 py-3 text-right'>
-                        <div className='flex items-center justify-end gap-1'>
-                          <Button
-                            variant='ghost'
-                            size='sm'
-                            className='size-8 p-0'
-                            onClick={() => openEditDrawer(rel)}
-                            title='编辑版本信息'
-                          >
-                            <Edit2 className='size-4' />
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant='ghost' size='sm' className='size-8 p-0'>
-                                <MoreHorizontal className='size-4' />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align='end'>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  window.open(`/download/${rel.id}`, '_blank')
-                                }}
-                              >
-                                <HardDriveDownload className='mr-2 size-4 text-primary' />
-                                测试直接下载
-                              </DropdownMenuItem>
-                              {!rel.isLatest && (
-                                <DropdownMenuItem onClick={() => handleSetLatest(rel)}>
-                                  <CheckCircle2 className='mr-2 size-4 text-primary' />
-                                  设为最新版本
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem onClick={() => handleToggleStatus(rel)}>
-                                {rel.status === 'published' ? (
-                                  <>
-                                    <EyeOff className='mr-2 size-4' />
-                                    设为隐藏
-                                  </>
-                                ) : (
-                                  <>
-                                    <Eye className='mr-2 size-4' />
-                                    立即发布
-                                  </>
+      {/* Grouped Releases View (C.4) */}
+      <div className='space-y-4'>
+        {isLoading ? (
+          <div className='rounded-xl border border-border/60 bg-card/40 p-12 text-center text-muted-foreground'>
+            <Loader2 className='mx-auto size-6 animate-spin text-primary' />
+            <p className='mt-2 text-xs'>加载版本列表中...</p>
+          </div>
+        ) : softwareGroups.length === 0 ? (
+          <div className='rounded-xl border border-border/60 bg-card/40 p-12 text-center text-muted-foreground'>
+            <Boxes className='mx-auto size-8 text-muted-foreground/40' />
+            <p className='mt-2 text-sm'>未找到匹配的版本记录</p>
+            <Button size='sm' variant='outline' onClick={() => openUploadDrawer()} className='mt-3 gap-1.5'>
+              <Upload className='size-3.5' /> 上传新版本
+            </Button>
+          </div>
+        ) : (
+          softwareGroups.map((group) => {
+            const isSwCollapsed = Boolean(collapsedSoftwares[group.software.slug])
+
+            return (
+              <div
+                key={group.software.slug}
+                className='rounded-xl border border-border/60 bg-card/50 overflow-hidden backdrop-blur-sm shadow-xs'
+              >
+                {/* Software Group Header */}
+                <div
+                  className='flex items-center justify-between border-b border-border/60 bg-muted/30 px-4 py-3 cursor-pointer select-none hover:bg-muted/50 transition-colors'
+                  onClick={() =>
+                    setCollapsedSoftwares((prev) => ({
+                      ...prev,
+                      [group.software.slug]: !prev[group.software.slug],
+                    }))
+                  }
+                >
+                  <div className='flex items-center gap-3'>
+                    <button type='button' className='text-muted-foreground'>
+                      {isSwCollapsed ? (
+                        <ChevronRight className='size-4' />
+                      ) : (
+                        <ChevronDown className='size-4' />
+                      )}
+                    </button>
+                    <div className='size-7 rounded-lg bg-primary/10 flex items-center justify-center font-bold text-xs text-primary'>
+                      {group.software.name[0] || '软'}
+                    </div>
+                    <div>
+                      <span className='font-semibold text-foreground text-sm'>
+                        {group.software.name}
+                      </span>
+                      <span className='ml-2 font-mono text-xs text-muted-foreground'>
+                        ({group.software.slug})
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className='flex items-center gap-2' onClick={(e) => e.stopPropagation()}>
+                    <Badge variant='outline' className='text-xs'>
+                      {group.versions.length} 个版本 · {group.totalPackages} 个包
+                    </Badge>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      className='h-7 text-xs gap-1'
+                      onClick={() => openUploadDrawer(group.software.slug)}
+                    >
+                      <Plus className='size-3.5' /> 发布新版
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Software Releases Content */}
+                {!isSwCollapsed && (
+                  <div className='divide-y divide-border/30'>
+                    {group.versions.length === 0 ? (
+                      <div className='p-6 text-center text-xs text-muted-foreground'>
+                        暂无发布版本
+                      </div>
+                    ) : (
+                      group.versions.map((verGroup) => {
+                        const verKey = `${group.software.slug}-${verGroup.version}`
+                        const isExpanded = Boolean(expandedVersions[verKey])
+
+                        return (
+                          <div key={verKey} className='transition-colors'>
+                            {/* Consolidated Version Row */}
+                            <div
+                              className='flex flex-wrap items-center justify-between gap-3 p-3.5 hover:bg-muted/20 cursor-pointer select-none'
+                              onClick={() =>
+                                setExpandedVersions((prev) => ({
+                                  ...prev,
+                                  [verKey]: !prev[verKey],
+                                }))
+                              }
+                            >
+                              <div className='flex items-center gap-3'>
+                                <button type='button' className='text-muted-foreground'>
+                                  {isExpanded ? (
+                                    <ChevronDown className='size-3.5' />
+                                  ) : (
+                                    <ChevronRight className='size-3.5' />
+                                  )}
+                                </button>
+                                <span className='font-mono font-bold text-foreground text-sm'>
+                                  v{verGroup.version}
+                                </span>
+                                {verGroup.isLatest && (
+                                  <Badge className='bg-primary/20 text-primary border-primary/30 text-[10px] gap-1 font-normal'>
+                                    <Sparkles className='size-3' /> 最新版
+                                  </Badge>
                                 )}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => triggerReplaceFile(rel)}>
-                                <RefreshCw className='mr-2 size-4 text-amber-500' />
-                                替换安装包文件...
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className='text-destructive focus:text-destructive'
-                                onClick={() => {
-                                  setDeletingRelease(rel)
-                                  setDeleteR2File(true)
-                                  setDeleteConfirmOpen(true)
-                                }}
-                              >
-                                <Trash2 className='mr-2 size-4' />
-                                删除版本
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                                <div className='flex flex-wrap items-center gap-1.5 ml-2'>
+                                  {verGroup.packages.map((pkg) => (
+                                    <span
+                                      key={pkg.id}
+                                      className='inline-flex items-center gap-1 rounded bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground font-mono'
+                                      title={`${pkg.label || pkg.platform}: ${pkg.fileName} (${formatBytes(pkg.fileSize)})`}
+                                    >
+                                      {renderPlatformIcon(pkg.platform || 'windows')}
+                                      <span>{pkg.label || pkg.platform}</span>
+                                      <span className='text-[10px] text-muted-foreground/70'>
+                                        {formatBytes(pkg.fileSize)}
+                                      </span>
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className='flex items-center gap-4 text-xs' onClick={(e) => e.stopPropagation()}>
+                                <div className='text-muted-foreground flex items-center gap-1'>
+                                  <span>总下载:</span>
+                                  <span className='font-mono font-semibold text-foreground'>
+                                    {verGroup.totalDownloads.toLocaleString()}
+                                  </span>
+                                </div>
+                                <Badge
+                                  variant={verGroup.status === 'published' ? 'secondary' : 'outline'}
+                                  className='text-xs'
+                                >
+                                  {verGroup.status === 'published' ? '已发布' : '草稿'}
+                                </Badge>
+                              </div>
+                            </div>
+
+                            {/* Expanded Individual Packages Table */}
+                            {isExpanded && (
+                              <div className='bg-muted/15 border-t border-border/30 px-6 py-3'>
+                                <table className='w-full text-left text-xs'>
+                                  <thead className='border-b border-border/30 text-muted-foreground text-[11px] uppercase'>
+                                    <tr>
+                                      <th className='pb-2'>平台 & 标签</th>
+                                      <th className='pb-2'>安装包文件</th>
+                                      <th className='pb-2'>架构</th>
+                                      <th className='pb-2 text-center'>下载量</th>
+                                      <th className='pb-2 text-center'>状态</th>
+                                      <th className='pb-2 text-right'>操作</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className='divide-y divide-border/20'>
+                                    {verGroup.packages.map((pkg) => (
+                                      <tr key={pkg.id} className='hover:bg-background/40'>
+                                        <td className='py-2.5'>
+                                          <div className='flex items-center gap-1.5'>
+                                            {renderPlatformIcon(pkg.platform || 'windows')}
+                                            <span className='font-medium text-foreground'>
+                                              {pkg.label || pkg.platform}
+                                            </span>
+                                            <Badge variant='outline' className='text-[10px] font-mono'>
+                                              {pkg.platform}
+                                            </Badge>
+                                          </div>
+                                        </td>
+                                        <td className='py-2.5 font-mono text-muted-foreground'>
+                                          <span className='text-foreground'>{pkg.fileName}</span>
+                                          <span className='ml-2 text-muted-foreground/70'>
+                                            ({formatBytes(pkg.fileSize)})
+                                          </span>
+                                        </td>
+                                        <td className='py-2.5 font-mono text-muted-foreground'>
+                                          {pkg.arch || 'x64'}
+                                        </td>
+                                        <td className='py-2.5 text-center font-mono font-medium'>
+                                          {pkg.downloadCount || 0}
+                                        </td>
+                                        <td className='py-2.5 text-center'>
+                                          <Badge
+                                            variant={pkg.status === 'published' ? 'secondary' : 'outline'}
+                                            className='text-[10px] cursor-pointer'
+                                            onClick={() => handleToggleStatus(pkg)}
+                                            title='点击切换状态'
+                                          >
+                                            {pkg.status === 'published' ? '已发布' : '隐藏'}
+                                          </Badge>
+                                        </td>
+                                        <td className='py-2.5 text-right'>
+                                          <div className='flex items-center justify-end gap-1'>
+                                            <Button
+                                              variant='ghost'
+                                              size='sm'
+                                              className='size-7 p-0'
+                                              onClick={() => openEditDrawer(pkg)}
+                                              title='编辑'
+                                            >
+                                              <Edit2 className='size-3.5' />
+                                            </Button>
+
+                                            <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                <Button variant='ghost' size='sm' className='size-7 p-0'>
+                                                  <MoreHorizontal className='size-3.5' />
+                                                </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent align='end'>
+                                                <DropdownMenuItem
+                                                  onClick={() => {
+                                                    const url = `${window.location.origin}/download/${pkg.id}`
+                                                    navigator.clipboard.writeText(url)
+                                                    toast.success('下载链接已复制')
+                                                  }}
+                                                >
+                                                  <Copy className='mr-2 size-3.5' />
+                                                  复制下载直链
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem
+                                                  onClick={() => window.open(`/download/${pkg.id}`, '_blank')}
+                                                >
+                                                  <HardDriveDownload className='mr-2 size-3.5 text-primary' />
+                                                  测试直接下载
+                                                </DropdownMenuItem>
+
+                                                {!pkg.isLatest && (
+                                                  <DropdownMenuItem onClick={() => handleSetLatest(pkg)}>
+                                                    <CheckCircle2 className='mr-2 size-3.5 text-primary' />
+                                                    设为最新版本
+                                                  </DropdownMenuItem>
+                                                )}
+
+                                                <DropdownMenuItem onClick={() => triggerReplaceFile(pkg)}>
+                                                  <RefreshCw className='mr-2 size-3.5 text-amber-500' />
+                                                  替换安装包文件...
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuSeparator />
+
+                                                <DropdownMenuItem
+                                                  className='text-destructive focus:text-destructive'
+                                                  onClick={() => {
+                                                    setDeletingRelease(pkg)
+                                                    setDeleteR2File(true)
+                                                    setDeleteConfirmOpen(true)
+                                                  }}
+                                                >
+                                                  <Trash2 className='mr-2 size-3.5' />
+                                                  删除此包
+                                                </DropdownMenuItem>
+                                              </DropdownMenuContent>
+                                            </DropdownMenu>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })
+        )}
       </div>
 
-      {/* Upload Release Drawer (Offcanvas Sheet) */}
+      {/* Multi-package Upload Drawer (Sheet) */}
       <Sheet open={uploadDrawerOpen} onOpenChange={setUploadDrawerOpen}>
-        <SheetContent side='right' className='sm:max-w-lg overflow-y-auto w-full'>
+        <SheetContent side='right' className='sm:max-w-xl overflow-y-auto w-full'>
           <SheetHeader>
             <SheetTitle>发布新版本安装包</SheetTitle>
             <SheetDescription>
-              支持任意大小文件（≤10MB 直传，＞10MB 自动启用 8 路并行分片上传至 Cloudflare R2）。
+              支持拖入多个平台安装包统一发布，8 路分片断点续传（最高 10GB）。
             </SheetDescription>
           </SheetHeader>
 
-          <form onSubmit={handleUploadRelease} className='space-y-4 py-4 text-sm'>
-            <div className='grid gap-2'>
-              <Label htmlFor='upload-sw'>归属软件产品 *</Label>
+          <form onSubmit={handleUploadRelease} className='space-y-4 py-4 text-xs'>
+            <div className='grid gap-1.5'>
+              <Label className='text-xs'>归属软件产品 *</Label>
               <select
-                id='upload-sw'
                 value={uploadSoftware}
                 onChange={(e) => setUploadSoftware(e.target.value)}
-                className='flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm'
+                className='flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm'
               >
                 {softwareList.map((sw) => (
                   <option key={sw.slug} value={sw.slug}>
@@ -662,139 +841,139 @@ export function ReleasesFeature() {
               </select>
             </div>
 
-            <div className='grid gap-2'>
-              <Label>选择安装包文件 *</Label>
+            <div className='grid gap-1.5'>
+              <Label htmlFor='upload-ver' className='text-xs'>
+                发布版本号 (如 2.0.1) *
+              </Label>
+              <Input
+                id='upload-ver'
+                placeholder='例如：2.0.1'
+                value={uploadVersion}
+                onChange={(e) => setUploadVersion(e.target.value)}
+                className='h-8 text-xs'
+              />
+            </div>
+
+            <div className='grid gap-1.5'>
+              <Label htmlFor='upload-notes' className='text-xs'>
+                更新日志说明
+              </Label>
+              <Textarea
+                id='upload-notes'
+                placeholder='例如：&#10;1. 修复已知漏洞&#10;2. 性能提升 30%'
+                rows={3}
+                value={uploadChangelog}
+                onChange={(e) => setUploadChangelog(e.target.value)}
+                className='text-xs font-mono'
+              />
+            </div>
+
+            {/* Dropzone for packages */}
+            <div className='grid gap-1.5'>
+              <Label className='text-xs'>选择或拖入安装包文件 *</Label>
               <div
-                className='rounded-lg border-2 border-dashed border-border/80 p-4 text-center cursor-pointer hover:border-primary/50 transition-colors bg-secondary/10'
+                className='rounded-lg border-2 border-dashed border-border/80 p-5 text-center cursor-pointer hover:border-primary/50 transition-colors bg-secondary/10'
                 onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  if (e.dataTransfer.files?.length) {
+                    handleFilesQueued(e.dataTransfer.files)
+                  }
+                }}
               >
                 <input
                   type='file'
                   ref={fileInputRef}
-                  onChange={handleFileSelect}
+                  multiple
+                  onChange={(e) => {
+                    if (e.target.files?.length) handleFilesQueued(e.target.files)
+                  }}
                   className='hidden'
                 />
-                {selectedFile ? (
-                  <div className='space-y-1'>
-                    <p className='font-semibold text-foreground truncate'>
-                      {selectedFile.name}
-                    </p>
-                    <p className='text-xs text-muted-foreground'>
-                      大小: {formatBytes(selectedFile.size)}
-                    </p>
-                    <p className='text-xs text-primary'>点击可更换文件</p>
-                  </div>
-                ) : (
-                  <div className='space-y-1 py-2'>
-                    <Upload className='mx-auto size-6 text-muted-foreground' />
-                    <p className='text-xs text-muted-foreground'>
-                      点击选择或拖拽安装包到此处
-                    </p>
-                    <p className='text-[10px] text-muted-foreground/80'>
-                      支持 zip, 7z, exe, msi, dmg, pkg, deb, rpm 等
-                    </p>
-                  </div>
-                )}
+                <div className='space-y-1 py-1'>
+                  <Upload className='mx-auto size-6 text-muted-foreground' />
+                  <p className='text-xs text-muted-foreground'>
+                    点击选择或拖拽多个安装包到此处
+                  </p>
+                  <p className='text-[10px] text-muted-foreground/70'>
+                    支持 zip, 7z, exe, msi, dmg, pkg, AppImage, deb 等格式
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className='grid grid-cols-2 gap-3'>
-              <div className='grid gap-2'>
-                <Label htmlFor='upload-ver'>版本号 (Version) *</Label>
-                <Input
-                  id='upload-ver'
-                  placeholder='例如: 2.0.1'
-                  value={uploadVersion}
-                  onChange={(e) => setUploadVersion(e.target.value)}
-                />
-              </div>
+            {/* Queued packages */}
+            {uploadQueue.length > 0 && (
+              <div className='space-y-2'>
+                <Label className='text-xs font-semibold'>
+                  待上传文件列表 ({uploadQueue.length})
+                </Label>
+                <div className='space-y-2 max-h-56 overflow-y-auto'>
+                  {uploadQueue.map((item, idx) => (
+                    <div
+                      key={item.id}
+                      className='flex items-center gap-2 rounded-lg border border-border/60 bg-background/80 p-2.5 text-xs'
+                    >
+                      <div className='min-w-0 flex-1'>
+                        <p className='font-semibold truncate text-foreground'>{item.file.name}</p>
+                        <p className='text-muted-foreground'>{formatBytes(item.file.size)}</p>
+                      </div>
 
-              <div className='grid gap-2'>
-                <Label htmlFor='upload-platform'>平台类型</Label>
-                <select
-                  id='upload-platform'
-                  value={uploadPlatform}
-                  onChange={(e) => setUploadPlatform(e.target.value)}
-                  className='flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm'
-                >
-                  {PLATFORMS.map((p) => (
-                    <option key={p.value} value={p.value}>
-                      {p.label}
-                    </option>
+                      <select
+                        value={item.platform}
+                        onChange={(e) => {
+                          const next = [...uploadQueue]
+                          next[idx].platform = e.target.value
+                          setUploadQueue(next)
+                        }}
+                        className='h-7 rounded border border-input bg-card px-1.5 text-xs'
+                      >
+                        {PLATFORMS.map((p) => (
+                          <option key={p.value} value={p.value}>
+                            {p.label}
+                          </option>
+                        ))}
+                      </select>
+
+                      <Input
+                        placeholder='包标签'
+                        value={item.label}
+                        onChange={(e) => {
+                          const next = [...uploadQueue]
+                          next[idx].label = e.target.value
+                          setUploadQueue(next)
+                        }}
+                        className='h-7 w-28 text-xs'
+                      />
+
+                      <Button
+                        type='button'
+                        variant='ghost'
+                        size='sm'
+                        className='size-7 p-0 text-red-400 hover:text-red-300'
+                        onClick={() => setUploadQueue(uploadQueue.filter((_, i) => i !== idx))}
+                      >
+                        <Trash2 className='size-3.5' />
+                      </Button>
+                    </div>
                   ))}
-                </select>
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className='grid grid-cols-2 gap-3'>
-              <div className='grid gap-2'>
-                <Label htmlFor='upload-label'>安装包标签 (Label)</Label>
-                <Input
-                  id='upload-label'
-                  placeholder='例如: 绿色便携版, 标准安装版'
-                  value={uploadLabel}
-                  onChange={(e) => setUploadLabel(e.target.value)}
-                />
-              </div>
-
-              <div className='grid gap-2'>
-                <Label htmlFor='upload-arch'>架构 (Arch)</Label>
-                <select
-                  id='upload-arch'
-                  value={uploadArch}
-                  onChange={(e) => setUploadArch(e.target.value)}
-                  className='flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm'
-                >
-                  <option value='x64'>x64 (64位)</option>
-                  <option value='arm64'>arm64 (Apple Silicon)</option>
-                  <option value='universal'>Universal (通用架构)</option>
-                  <option value='x86'>x86 (32位)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className='flex items-center gap-2 pt-1'>
-              <input
-                type='checkbox'
-                id='upload-latest'
-                checked={uploadIsLatest}
-                onChange={(e) => setUploadIsLatest(e.target.checked)}
-                className='size-4 rounded border-input text-primary focus:ring-primary'
-              />
-              <Label htmlFor='upload-latest' className='cursor-pointer text-xs'>
-                设为该软件的最新版本 (推荐，前台主下载按钮将指向此版本)
-              </Label>
-            </div>
-
-            <div className='grid gap-2'>
-              <Label htmlFor='upload-changelog'>更新日志 (Changelog)</Label>
-              <Textarea
-                id='upload-changelog'
-                rows={4}
-                placeholder='写明本次版本的更新内容...'
-                value={uploadChangelog}
-                onChange={(e) => setUploadChangelog(e.target.value)}
-              />
-            </div>
-
-            <SheetFooter className='border-t border-border/40 pt-4'>
+            <SheetFooter className='pt-4'>
               <Button
-                type='button'
-                variant='outline'
-                onClick={() => setUploadDrawerOpen(false)}
-                disabled={isUploading}
+                type='submit'
+                disabled={isUploading || uploadQueue.length === 0 || !uploadVersion.trim()}
+                className='w-full bg-primary text-primary-foreground font-semibold shadow-sm'
               >
-                取消
-              </Button>
-              <Button type='submit' disabled={isUploading || !selectedFile}>
-                {isUploading ? (
-                  <>
-                    <Loader2 className='mr-2 size-4 animate-spin' />
-                    正在上传...
-                  </>
-                ) : (
-                  '开始上传并发布'
-                )}
+                {isUploading ? <Loader2 className='size-3.5 animate-spin mr-1' /> : <Upload className='size-3.5 mr-1' />}
+                开始上传并发布
               </Button>
             </SheetFooter>
           </form>
@@ -803,311 +982,317 @@ export function ReleasesFeature() {
 
       {/* Edit Release Drawer */}
       <Sheet open={editDrawerOpen} onOpenChange={setEditDrawerOpen}>
-        <SheetContent side='right' className='sm:max-w-lg overflow-y-auto w-full'>
+        <SheetContent side='right' className='sm:max-w-md overflow-y-auto w-full'>
           <SheetHeader>
-            <SheetTitle>编辑版本属性</SheetTitle>
+            <SheetTitle>编辑版本元数据</SheetTitle>
             <SheetDescription>
-              编辑版本号、平台类型、包标签、展示名称与更新日志。
+              修改版本号、包标签、平台分类及更新日志。
             </SheetDescription>
           </SheetHeader>
 
-          <form onSubmit={handleSaveEdit} className='space-y-4 py-4 text-sm'>
-            <div className='grid grid-cols-2 gap-3'>
-              <div className='grid gap-2'>
-                <Label htmlFor='edit-ver'>版本号 *</Label>
-                <Input
-                  id='edit-ver'
-                  value={editVersion}
-                  onChange={(e) => setEditVersion(e.target.value)}
-                />
-              </div>
-
-              <div className='grid gap-2'>
-                <Label htmlFor='edit-platform'>平台类型</Label>
-                <select
-                  id='edit-platform'
-                  value={editPlatform}
-                  onChange={(e) => setEditPlatform(e.target.value)}
-                  className='flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm'
-                >
-                  {PLATFORMS.map((p) => (
-                    <option key={p.value} value={p.value}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className='grid grid-cols-2 gap-3'>
-              <div className='grid gap-2'>
-                <Label htmlFor='edit-label'>安装包标签 (Label)</Label>
-                <Input
-                  id='edit-label'
-                  placeholder='如: 绿色便携版, 标准安装包'
-                  value={editLabel}
-                  onChange={(e) => setEditLabel(e.target.value)}
-                />
-              </div>
-
-              <div className='grid gap-2'>
-                <Label htmlFor='edit-arch'>架构 (Arch)</Label>
-                <select
-                  id='edit-arch'
-                  value={editArch}
-                  onChange={(e) => setEditArch(e.target.value)}
-                  className='flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm'
-                >
-                  <option value='x64'>x64</option>
-                  <option value='arm64'>arm64</option>
-                  <option value='universal'>Universal</option>
-                  <option value='x86'>x86</option>
-                </select>
-              </div>
-            </div>
-
-            <div className='grid gap-2'>
-              <Label htmlFor='edit-fn'>下载文件名 (FileName)</Label>
+          <form onSubmit={handleSaveEdit} className='space-y-4 py-4 text-xs'>
+            <div className='grid gap-1.5'>
+              <Label className='text-xs'>版本号 *</Label>
               <Input
-                id='edit-fn'
-                value={editFileName}
-                onChange={(e) => setEditFileName(e.target.value)}
+                value={editVersion}
+                onChange={(e) => setEditVersion(e.target.value)}
+                className='h-8 text-xs'
               />
             </div>
 
-            <div className='grid grid-cols-2 gap-3'>
-              <div className='grid gap-2'>
-                <Label htmlFor='edit-status'>发布状态</Label>
-                <select
-                  id='edit-status'
-                  value={editStatus}
-                  onChange={(e) => setEditStatus(e.target.value)}
-                  className='flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm'
-                >
-                  <option value='published'>已发布 (前台可见)</option>
-                  <option value='draft'>草稿 / 隐藏</option>
-                </select>
-              </div>
-
-              <div className='flex items-center gap-2 pt-6'>
-                <input
-                  type='checkbox'
-                  id='edit-latest'
-                  checked={editIsLatest}
-                  onChange={(e) => setEditIsLatest(e.target.checked)}
-                  className='size-4 rounded border-input text-primary focus:ring-primary'
-                />
-                <Label htmlFor='edit-latest' className='cursor-pointer text-xs'>
-                  设为最新版本
-                </Label>
-              </div>
+            <div className='grid gap-1.5'>
+              <Label className='text-xs'>支持平台 *</Label>
+              <select
+                value={editPlatform}
+                onChange={(e) => setEditPlatform(e.target.value)}
+                className='h-8 rounded border border-input bg-card px-2 text-xs'
+              >
+                {PLATFORMS.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className='grid gap-2'>
-              <Label htmlFor='edit-changelog'>更新日志 (Changelog)</Label>
+            <div className='grid gap-1.5'>
+              <Label className='text-xs'>包展示名称 (Label)</Label>
+              <Input
+                value={editLabel}
+                placeholder='例如：绿色便携版、Windows 安装版'
+                onChange={(e) => setEditLabel(e.target.value)}
+                className='h-8 text-xs'
+              />
+            </div>
+
+            <div className='grid gap-1.5'>
+              <Label className='text-xs'>系统架构 (Arch)</Label>
+              <Input
+                value={editArch}
+                placeholder='例如：x64, arm64, universal'
+                onChange={(e) => setEditArch(e.target.value)}
+                className='h-8 text-xs'
+              />
+            </div>
+
+            <div className='grid gap-1.5'>
+              <Label className='text-xs'>文件名</Label>
+              <Input
+                value={editFileName}
+                onChange={(e) => setEditFileName(e.target.value)}
+                className='h-8 text-xs'
+              />
+            </div>
+
+            <div className='grid gap-1.5'>
+              <Label className='text-xs'>发布状态</Label>
+              <select
+                value={editStatus}
+                onChange={(e) => setEditStatus(e.target.value)}
+                className='h-8 rounded border border-input bg-card px-2 text-xs'
+              >
+                <option value='published'>已发布 (公开可见)</option>
+                <option value='draft'>草稿 / 隐藏</option>
+                <option value='disabled'>已停用</option>
+              </select>
+            </div>
+
+            <div className='grid gap-1.5'>
+              <Label className='text-xs'>更新日志</Label>
               <Textarea
-                id='edit-changelog'
                 rows={4}
                 value={editChangelog}
                 onChange={(e) => setEditChangelog(e.target.value)}
+                className='text-xs font-mono'
               />
             </div>
 
-            <SheetFooter className='border-t border-border/40 pt-4'>
-              <Button
-                type='button'
-                variant='outline'
-                onClick={() => setEditDrawerOpen(false)}
-                disabled={isSavingEdit}
-              >
-                取消
-              </Button>
-              <Button type='submit' disabled={isSavingEdit}>
-                {isSavingEdit ? (
-                  <>
-                    <Loader2 className='mr-2 size-4 animate-spin' />
-                    正在保存...
-                  </>
-                ) : (
-                  '保存版本信息'
-                )}
+            <SheetFooter className='pt-2'>
+              <Button type='submit' disabled={isSavingEdit} className='w-full'>
+                {isSavingEdit ? <Loader2 className='size-3.5 animate-spin mr-1' /> : null}
+                保存更改
               </Button>
             </SheetFooter>
           </form>
         </SheetContent>
       </Sheet>
 
-      {/* Replace File Confirm Dialog */}
+      {/* Replace Package File Dialog */}
       <Dialog open={replaceConfirmOpen} onOpenChange={setReplaceConfirmOpen}>
-        <DialogContent className='sm:max-w-md'>
+        <DialogContent className='max-w-md'>
           <DialogHeader>
-            <DialogTitle>替换已有版本的安装包</DialogTitle>
-            <DialogDescription>
-              替换将保留当前版本号（v{replacingRelease?.version}）和下载链接（/download/
-              {replacingRelease?.id}），仅更新底层存储文件。
+            <DialogTitle className='flex items-center gap-2'>
+              <RefreshCw className='size-5 text-amber-500' />
+              替换安装包文件
+            </DialogTitle>
+            <DialogDescription className='space-y-2 text-xs'>
+              <p>
+                当前版本：<span className='font-semibold text-foreground'>v{replacingRelease?.version}</span> (
+                {replacingRelease?.fileName})
+              </p>
+              <p className='text-muted-foreground'>
+                替换文件后，版本的 ID 和下载链接保持完全一致，无需更改前台链接或重新登记。
+              </p>
             </DialogDescription>
           </DialogHeader>
-          <div className='space-y-4 py-2'>
-            <div
-              className='rounded-lg border-2 border-dashed border-border/80 p-4 text-center cursor-pointer hover:border-primary/50 transition-colors bg-secondary/10'
+
+          <div className='space-y-3 py-2 text-xs'>
+            <input
+              type='file'
+              ref={replaceInputRef}
+              className='hidden'
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) setReplaceFile(f)
+              }}
+            />
+            <Button
+              type='button'
+              variant='outline'
               onClick={() => replaceInputRef.current?.click()}
+              className='w-full'
             >
-              <input
-                type='file'
-                ref={replaceInputRef}
-                onChange={(e) => setReplaceFile(e.target.files?.[0] || null)}
-                className='hidden'
-              />
-              {replaceFile ? (
-                <div className='space-y-1'>
-                  <p className='font-semibold text-foreground truncate'>{replaceFile.name}</p>
-                  <p className='text-xs text-muted-foreground'>
-                    大小: {formatBytes(replaceFile.size)}
-                  </p>
-                </div>
-              ) : (
-                <div className='space-y-1 py-2'>
-                  <RefreshCw className='mx-auto size-6 text-muted-foreground' />
-                  <p className='text-xs text-muted-foreground'>点击选择新的替换安装包文件</p>
-                </div>
-              )}
-            </div>
+              <Upload className='size-3.5 mr-1.5' />
+              {replaceFile ? `已选: ${replaceFile.name}` : '选择新安装包文件'}
+            </Button>
+            {replaceFile && (
+              <p className='text-[11px] text-muted-foreground'>
+                大小: {formatBytes(replaceFile.size)}
+              </p>
+            )}
           </div>
+
           <DialogFooter>
             <Button
               variant='outline'
-              onClick={() => setReplaceConfirmOpen(false)}
               disabled={isReplacing}
+              onClick={() => setReplaceConfirmOpen(false)}
             >
               取消
             </Button>
             <Button
-              onClick={executeReplaceFile}
               disabled={isReplacing || !replaceFile}
-              className='bg-amber-600 hover:bg-amber-700 text-white'
+              onClick={executeReplaceFile}
+              className='bg-amber-600 hover:bg-amber-500 text-white'
             >
-              {isReplacing ? <Loader2 className='size-4 animate-spin' /> : '确认替换安装包'}
+              {isReplacing ? <Loader2 className='size-3.5 animate-spin mr-1' /> : null}
+              确认替换
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Release Confirm Dialog */}
-      <ConfirmDialog
-        open={deleteConfirmOpen}
-        onOpenChange={setDeleteConfirmOpen}
-        title='删除版本安装包确认'
-        desc={
-          <div className='space-y-3 text-sm'>
-            <p>
-              确定要删除软件「{deletingRelease?.softwareId}」的版本 v
-              {deletingRelease?.version} 吗？
-            </p>
-            <div className='flex items-center gap-2 rounded-md border border-destructive/30 p-2.5 bg-destructive/10'>
-              <input
-                type='checkbox'
-                id='del-r2'
-                checked={deleteR2File}
-                onChange={(e) => setDeleteR2File(e.target.checked)}
-                className='size-4 rounded border-destructive text-destructive'
-              />
-              <Label htmlFor='del-r2' className='cursor-pointer text-xs text-foreground'>
-                同时物理删除 Cloudflare R2 中的对应文件 ({deletingRelease?.fileKey})
-              </Label>
-            </div>
-          </div>
-        }
-        confirmText='确认删除'
-        cancelBtnText='取消'
-        destructive
-        isLoading={isDeleting}
-        handleConfirm={executeDeleteRelease}
-      />
-
-      {/* Register R2 File Dialog */}
-      <Dialog open={registerModalOpen} onOpenChange={setRegisterModalOpen}>
-        <DialogContent className='sm:max-w-md'>
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className='max-w-md'>
           <DialogHeader>
-            <DialogTitle>登记已在 R2 存储的文件</DialogTitle>
+            <DialogTitle className='flex items-center gap-2 text-destructive'>
+              <AlertTriangle className='size-5' />
+              确认删除版本
+            </DialogTitle>
             <DialogDescription>
-              直接关联已上传到 R2 的安装包文件到 catalog 中，无需重复上传。
+              确定要删除版本「v{deletingRelease?.version}」吗？
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleRegisterFile} className='space-y-3 py-2 text-sm'>
-            <div className='grid gap-1.5'>
-              <Label>归属软件 *</Label>
+
+          <div className='py-2 text-xs space-y-2'>
+            <label className='flex items-center gap-2 cursor-pointer'>
+              <input
+                type='checkbox'
+                checked={deleteR2File}
+                onChange={(e) => setDeleteR2File(e.target.checked)}
+                className='size-4 rounded border-input'
+              />
+              <span>同时删除 Cloudflare R2 存储桶中的对应文件</span>
+            </label>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant='outline'
+              disabled={isDeleting}
+              onClick={() => setDeleteConfirmOpen(false)}
+            >
+              取消
+            </Button>
+            <Button
+              variant='destructive'
+              disabled={isDeleting}
+              onClick={executeDeleteRelease}
+            >
+              {isDeleting ? <Loader2 className='size-3.5 animate-spin mr-1' /> : null}
+              确认删除
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Register existing R2 file Modal */}
+      <Dialog open={registerModalOpen} onOpenChange={setRegisterModalOpen}>
+        <DialogContent className='max-w-md'>
+          <DialogHeader>
+            <DialogTitle>登记已有 R2 文件</DialogTitle>
+            <DialogDescription>
+              如果安装包已在 Cloudflare R2 存储桶中，可直接录入文件路径进行发布。
+            </DialogDescription>
+          </DialogHeader>
+
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault()
+              if (!regSoftware || !regVersion.trim() || !regFileKey.trim()) {
+                toast.error('软件、版本号和 R2 路径均为必填')
+                return
+              }
+              setIsRegistering(true)
+              try {
+                const res = await api.post('/api/admin/releases/register', {
+                  softwareId: regSoftware,
+                  version: regVersion.trim(),
+                  fileKey: regFileKey.trim(),
+                  fileName: regFileName.trim() || regFileKey.split('/').pop(),
+                  fileSize: Number(regFileSize) || 0,
+                  platform: regPlatform,
+                  label: regLabel.trim(),
+                  isLatest: false,
+                })
+                if (res.success) {
+                  toast.success('R2 已有文件登记成功')
+                  setRegisterModalOpen(false)
+                  queryClient.invalidateQueries({ queryKey: ['catalog'] })
+                } else {
+                  toast.error(res.msg || '登记失败')
+                }
+              } catch (err: any) {
+                toast.error(`登记异常：${err.message}`)
+              } finally {
+                setIsRegistering(false)
+              }
+            }}
+            className='space-y-3 py-2 text-xs'
+          >
+            <div className='space-y-1'>
+              <Label className='text-xs'>归属软件 *</Label>
               <select
                 value={regSoftware}
                 onChange={(e) => setRegSoftware(e.target.value)}
-                className='flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm'
+                className='h-8 w-full rounded border border-input bg-card px-2 text-xs'
               >
                 {softwareList.map((sw) => (
                   <option key={sw.slug} value={sw.slug}>
-                    {sw.name} ({sw.slug})
+                    {sw.name}
                   </option>
                 ))}
               </select>
             </div>
-            <div className='grid gap-1.5'>
-              <Label>版本号 *</Label>
+
+            <div className='space-y-1'>
+              <Label className='text-xs'>版本号 *</Label>
               <Input
-                placeholder='如 2.0.0'
                 value={regVersion}
+                placeholder='例如：2.0.0'
                 onChange={(e) => setRegVersion(e.target.value)}
+                className='h-8 text-xs'
               />
             </div>
-            <div className='grid gap-1.5'>
-              <Label>R2 File Key *</Label>
+
+            <div className='space-y-1'>
+              <Label className='text-xs'>R2 文件 Key (路径) *</Label>
               <Input
-                placeholder='如 releases/desktop/desktop-2.0.0.exe'
                 value={regFileKey}
+                placeholder='例如：software/desktop/2.0.0/setup.exe'
                 onChange={(e) => setRegFileKey(e.target.value)}
-                className='font-mono text-xs'
+                className='h-8 text-xs'
               />
             </div>
-            <div className='grid gap-1.5'>
-              <Label>展示文件名</Label>
-              <Input
-                placeholder='可选，默认为 Key 文件名'
-                value={regFileName}
-                onChange={(e) => setRegFileName(e.target.value)}
-              />
+
+            <div className='space-y-1'>
+              <Label className='text-xs'>平台分类</Label>
+              <select
+                value={regPlatform}
+                onChange={(e) => setRegPlatform(e.target.value)}
+                className='h-8 w-full rounded border border-input bg-card px-2 text-xs'
+              >
+                {PLATFORMS.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div className='grid grid-cols-2 gap-2'>
-              <div className='grid gap-1.5'>
-                <Label>平台</Label>
-                <select
-                  value={regPlatform}
-                  onChange={(e) => setRegPlatform(e.target.value)}
-                  className='flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm'
-                >
-                  {PLATFORMS.map((p) => (
-                    <option key={p.value} value={p.value}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className='grid gap-1.5'>
-                <Label>文件大小 (Bytes)</Label>
-                <Input
-                  type='number'
-                  value={regFileSize}
-                  onChange={(e) => setRegFileSize(Number(e.target.value))}
-                />
-              </div>
-            </div>
+
             <DialogFooter className='pt-2'>
               <Button
                 type='button'
                 variant='outline'
-                onClick={() => setRegisterModalOpen(false)}
                 disabled={isRegistering}
+                onClick={() => setRegisterModalOpen(false)}
               >
                 取消
               </Button>
               <Button type='submit' disabled={isRegistering}>
-                {isRegistering ? <Loader2 className='size-4 animate-spin' /> : '登记版本'}
+                {isRegistering ? <Loader2 className='size-3.5 animate-spin mr-1' /> : null}
+                确认登记
               </Button>
             </DialogFooter>
           </form>

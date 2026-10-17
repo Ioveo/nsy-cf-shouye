@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import {
   Layers,
   Plus,
@@ -10,64 +11,60 @@ import {
   ExternalLink,
   Loader2,
   AlertTriangle,
+  Upload,
+  Eye,
+  CheckCircle2,
+  Circle,
+  Copy,
+  ArrowUp,
+  ArrowDown,
+  Monitor,
+  Apple,
+  Terminal,
+  FolderArchive,
+  Smartphone,
+  Sparkles,
 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { useCatalog, Software, Category } from '@/lib/queries'
+import { useCatalog, Software, Category, Release } from '@/lib/queries'
 import { api } from '@/lib/api'
+// @ts-ignore
+import { uploadReleaseFile, formatBytes } from '@r2'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from '@/components/ui/sheet'
+import { Switch } from '@/components/ui/switch'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ConfirmDialog } from '@/components/confirm-dialog'
-
-interface HighlightItem {
-  title: string
-  text: string
-}
+import { cn } from '@/lib/utils'
 
 export function SoftwareFeature() {
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: catalog, isLoading } = useCatalog()
 
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
 
-  // Software Drawer state
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [editingSoftware, setEditingSoftware] = useState<Software | null>(null)
-  const [formSlug, setFormSlug] = useState('')
-  const [formName, setFormName] = useState('')
-  const [formCategory, setFormCategory] = useState('')
-  const [formTagline, setFormTagline] = useState('')
-  const [formDescription, setFormDescription] = useState('')
-  const [formRequirements, setFormRequirements] = useState('')
-  const [formLandingUrl, setFormLandingUrl] = useState('')
-  const [formSortOrder, setFormSortOrder] = useState<number>(0)
-  const [formHighlights, setFormHighlights] = useState<HighlightItem[]>([])
-  const [isSaving, setIsSaving] = useState(false)
+  // Fast reordering state
+  const [isSavingOrder, setIsSavingOrder] = useState(false)
 
   // Delete software state
   const [deletingSoftware, setDeletingSoftware] = useState<Software | null>(null)
@@ -79,7 +76,18 @@ export function SoftwareFeature() {
   const [categoryModalOpen, setCategoryModalOpen] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
   const [isSavingCategory, setIsSavingCategory] = useState(false)
-  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null)
+
+  // Quick Upload new release state (Entry 2)
+  const [quickUploadOpen, setQuickUploadOpen] = useState(false)
+  const [uploadSwSlug, setUploadSwSlug] = useState('')
+  const [uploadVersion, setUploadVersion] = useState('')
+  const [uploadChangelog, setUploadChangelog] = useState('')
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [isQuickUploading, setIsQuickUploading] = useState(false)
+
+  // Live preview modal state
+  const [previewSoftware, setPreviewSoftware] = useState<Software | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const softwareList = catalog?.software || []
   const categories = catalog?.categories || []
@@ -93,90 +101,114 @@ export function SoftwareFeature() {
       (s.tagline || '').toLowerCase().includes(search.toLowerCase())
     const matchCategory =
       selectedCategory === 'all' || s.categoryId === selectedCategory
-    return matchSearch && matchCategory
+    const matchStatus =
+      statusFilter === 'all' || (s.status || 'active') === statusFilter
+    return matchSearch && matchCategory && matchStatus
   })
 
-  function openCreateDrawer() {
-    setEditingSoftware(null)
-    setFormSlug('')
-    setFormName('')
-    setFormCategory(categories[0]?.id || 'general')
-    setFormTagline('')
-    setFormDescription('')
-    setFormRequirements('Windows 10 / 11 64位')
-    setFormLandingUrl('')
-    setFormSortOrder(softwareList.length)
-    setFormHighlights([])
-    setDrawerOpen(true)
+  // Format date
+  function formatDate(ts?: number | string) {
+    if (!ts) return '-'
+    const d = new Date(Number(ts) || ts)
+    if (isNaN(d.getTime())) return '-'
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   }
 
-  function openEditDrawer(sw: Software) {
-    setEditingSoftware(sw)
-    setFormSlug(sw.slug)
-    setFormName(sw.name)
-    setFormCategory(sw.categoryId || categories[0]?.id || '')
-    setFormTagline(sw.tagline || '')
-    setFormDescription(sw.description || '')
-    setFormRequirements(sw.requirements || '')
-    setFormLandingUrl(sw.landingUrl || '')
-    setFormSortOrder(sw.sortOrder ?? 0)
-    setFormHighlights(
-      Array.isArray(sw.highlights) ? JSON.parse(JSON.stringify(sw.highlights)) : []
+  // Calculate software stats
+  function getSoftwareStats(sw: Software) {
+    const swReleases = (sw.releases || releases.filter((r) => r.softwareId === sw.slug || r.softwareId === sw.id)) || []
+    const totalDownloads = swReleases.reduce((sum, r) => sum + (Number(r.downloadCount) || 0), 0)
+    const latestRel = swReleases.find((r) => r.isLatest) || swReleases[0]
+    const platforms = Array.from(
+      new Set(
+        swReleases
+          .map((r) => r.platform || 'windows')
+          .filter(Boolean)
+      )
     )
-    setDrawerOpen(true)
+    return {
+      totalDownloads,
+      latestVersion: latestRel ? `v${latestRel.version}` : '待上传',
+      platforms,
+      releaseCount: swReleases.length,
+    }
   }
 
-  async function handleSaveSoftware(e: React.FormEvent) {
-    e.preventDefault()
-    if (!formSlug.trim() || !formName.trim()) {
-      toast.error('软件标识 (Slug) 和名称为必填项')
-      return
-    }
-
-    setIsSaving(true)
+  // Toggle Featured switch (Instant serial save)
+  async function handleToggleFeatured(sw: Software, nextFeatured: boolean) {
     try {
       const payload = {
-        id: formSlug.trim(),
-        slug: formSlug.trim(),
-        name: formName.trim(),
-        categoryId: formCategory || categories[0]?.id || 'general',
-        tagline: formTagline.trim(),
-        description: formDescription.trim(),
-        requirements: formRequirements.trim(),
-        landingUrl: formLandingUrl.trim(),
-        sortOrder: Number(formSortOrder) || 0,
-        highlights: formHighlights.filter((h) => h.title.trim() || h.text.trim()),
+        ...sw,
+        id: sw.id || sw.slug,
+        featured: nextFeatured,
       }
-
       const res = await api.post('/api/admin/software', payload)
       if (res.success) {
-        toast.success(editingSoftware ? '软件资料已更新' : '软件创建成功')
-        setDrawerOpen(false)
+        toast.success(nextFeatured ? `已将「${sw.name}」设为主推` : `已取消「${sw.name}」的主推`)
         queryClient.invalidateQueries({ queryKey: ['catalog'] })
       } else {
-        toast.error(res.msg || '保存软件失败')
+        toast.error(res.msg || '切换主推失败')
       }
-    } catch (err: any) {
-      toast.error(`保存失败：${err.message}`)
-    } finally {
-      setIsSaving(false)
+    } catch (e: any) {
+      toast.error(`操作异常：${e.message}`)
     }
   }
 
-  function addHighlightItem() {
-    setFormHighlights([...formHighlights, { title: '', text: '' }])
+  // Quick toggle status (active <-> draft/disabled)
+  async function handleToggleStatus(sw: Software) {
+    const nextStatus = sw.status === 'active' ? 'disabled' : 'active'
+    try {
+      const payload = {
+        ...sw,
+        id: sw.id || sw.slug,
+        status: nextStatus,
+      }
+      const res = await api.post('/api/admin/software', payload)
+      if (res.success) {
+        toast.success(`软件状态已切换为「${nextStatus === 'active' ? '上架' : '下架'}」`)
+        queryClient.invalidateQueries({ queryKey: ['catalog'] })
+      } else {
+        toast.error(res.msg || '切换状态失败')
+      }
+    } catch (e: any) {
+      toast.error(`操作异常：${e.message}`)
+    }
   }
 
-  function updateHighlightItem(index: number, field: 'title' | 'text', val: string) {
-    const list = [...formHighlights]
-    list[index][field] = val
-    setFormHighlights(list)
+  // Serial reorder saving (Rule 4: for ... await)
+  async function handleMove(index: number, direction: 'up' | 'down') {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1
+    if (targetIndex < 0 || targetIndex >= filteredSoftware.length) return
+
+    const reordered = [...softwareList]
+    const itemA = filteredSoftware[index]
+    const itemB = filteredSoftware[targetIndex]
+
+    const idxA = reordered.findIndex((s) => s.id === itemA.id || s.slug === itemA.slug)
+    const idxB = reordered.findIndex((s) => s.id === itemB.id || s.slug === itemB.slug)
+
+    if (idxA < 0 || idxB < 0) return
+
+    // Swap sortOrders
+    const tempOrder = itemA.sortOrder ?? idxA
+    itemA.sortOrder = itemB.sortOrder ?? idxB
+    itemB.sortOrder = tempOrder
+
+    setIsSavingOrder(true)
+    try {
+      // Must save serially
+      await api.post('/api/admin/software', { ...itemA, id: itemA.id || itemA.slug })
+      await api.post('/api/admin/software', { ...itemB, id: itemB.id || itemB.slug })
+      toast.success('排序已保存')
+      queryClient.invalidateQueries({ queryKey: ['catalog'] })
+    } catch (e: any) {
+      toast.error(`排序保存失败：${e.message}`)
+    } finally {
+      setIsSavingOrder(false)
+    }
   }
 
-  function removeHighlightItem(index: number) {
-    setFormHighlights(formHighlights.filter((_, i) => i !== index))
-  }
-
+  // Execute delete software
   async function executeDeleteSoftware(force = false) {
     if (!deletingSoftware) return
     setIsDeleting(true)
@@ -209,40 +241,55 @@ export function SoftwareFeature() {
     }
   }
 
-  async function handleAddCategory(e: React.FormEvent) {
+  // Quick Release upload (Entry 2)
+  async function handleQuickUploadSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!newCategoryName.trim()) return
-    setIsSavingCategory(true)
+    if (!uploadSwSlug || !uploadVersion.trim() || !uploadFile) {
+      toast.error('请填写版本号并选择安装包')
+      return
+    }
+
+    setIsQuickUploading(true)
     try {
-      const res = await api.post('/api/admin/categories', {
-        name: newCategoryName.trim(),
-        sortOrder: categories.length,
+      const res = await uploadReleaseFile(uploadFile, {
+        softwareId: uploadSwSlug,
+        version: uploadVersion.trim(),
+        changelog: uploadChangelog.trim(),
+        isLatest: true,
       })
+
       if (res.success) {
-        toast.success('分类已添加')
-        setNewCategoryName('')
+        toast.success('新版本安装包上传成功！')
+        setQuickUploadOpen(false)
+        setUploadFile(null)
+        setUploadVersion('')
+        setUploadChangelog('')
         queryClient.invalidateQueries({ queryKey: ['catalog'] })
       } else {
-        toast.error(res.msg || '添加分类失败')
+        toast.error(res.msg || '版本发布失败')
       }
-    } catch (err: any) {
-      toast.error(`添加异常：${err.message}`)
+    } catch (e: any) {
+      toast.error(`发布异常：${e.message}`)
     } finally {
-      setIsSavingCategory(false)
+      setIsQuickUploading(false)
     }
   }
 
-  async function handleDeleteCategory(cat: Category) {
-    try {
-      const res = await api.post('/api/admin/categories/delete', { id: cat.id })
-      if (res.success) {
-        toast.success(`分类「${cat.name}」已删除`)
-        queryClient.invalidateQueries({ queryKey: ['catalog'] })
-      } else {
-        toast.error(res.msg || '删除分类失败')
-      }
-    } catch (err: any) {
-      toast.error(`删除分类异常：${err.message}`)
+  // Platform icon helper
+  function renderPlatformIcon(plat: string) {
+    switch (plat) {
+      case 'windows':
+        return <Monitor className='size-3 text-sky-400' />
+      case 'macos':
+        return <Apple className='size-3 text-slate-300' />
+      case 'linux':
+        return <Terminal className='size-3 text-amber-400' />
+      case 'portable':
+        return <FolderArchive className='size-3 text-emerald-400' />
+      case 'android':
+        return <Smartphone className='size-3 text-emerald-300' />
+      default:
+        return <Layers className='size-3 text-muted-foreground' />
     }
   }
 
@@ -253,22 +300,48 @@ export function SoftwareFeature() {
         <div>
           <h1 className='text-2xl font-bold tracking-tight md:text-3xl'>软件管理</h1>
           <p className='text-sm text-muted-foreground'>
-            维护软件资料、分类标签、特性亮点及各平台详情页配置
+            统一管理软件档案、多平台安装包、版本发布与首屏轮播主推
           </p>
         </div>
-        <div className='flex items-center gap-2'>
-          <Button variant='outline' size='sm' onClick={() => setCategoryModalOpen(true)}>
-            <FolderTree className='mr-2 size-4 text-primary' />
+        <div className='flex flex-wrap items-center gap-2'>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => setCategoryModalOpen(true)}
+            className='gap-1.5'
+          >
+            <FolderTree className='size-4 text-primary' />
             分类管理
           </Button>
-          <Button size='sm' onClick={openCreateDrawer}>
-            <Plus className='mr-2 size-4' />
-            新建软件
+
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => {
+              setUploadSwSlug(softwareList[0]?.slug || '')
+              setUploadVersion('')
+              setUploadChangelog('')
+              setUploadFile(null)
+              setQuickUploadOpen(true)
+            }}
+            className='gap-1.5'
+          >
+            <Upload className='size-4 text-primary' />
+            上传新版本
+          </Button>
+
+          <Button
+            size='sm'
+            onClick={() => navigate({ to: '/software/new' })}
+            className='gap-1.5 bg-primary text-primary-foreground font-medium shadow-sm'
+          >
+            <Plus className='size-4' />
+            发布新软件
           </Button>
         </div>
       </div>
 
-      {/* Filter Bar */}
+      {/* Filter & Search Bar */}
       <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
         <div className='flex flex-1 items-center gap-2 max-w-md'>
           <div className='relative w-full'>
@@ -281,29 +354,37 @@ export function SoftwareFeature() {
             />
           </div>
         </div>
-        <div className='flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0'>
-          <Button
-            variant={selectedCategory === 'all' ? 'secondary' : 'ghost'}
-            size='sm'
-            onClick={() => setSelectedCategory('all')}
-            className='text-xs'
+
+        <div className='flex flex-wrap items-center gap-2'>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className='h-9 rounded-md border border-input bg-card/60 px-3 py-1 text-xs text-foreground shadow-sm'
           >
-            全部 ({softwareList.length})
-          </Button>
-          {categories.map((c) => {
-            const count = softwareList.filter((s) => s.categoryId === c.id).length
-            return (
-              <Button
-                key={c.id}
-                variant={selectedCategory === c.id ? 'secondary' : 'ghost'}
-                size='sm'
-                onClick={() => setSelectedCategory(c.id)}
-                className='text-xs whitespace-nowrap'
-              >
-                {c.name} ({count})
-              </Button>
-            )
-          })}
+            <option value='all'>全部分类 ({softwareList.length})</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className='h-9 rounded-md border border-input bg-card/60 px-3 py-1 text-xs text-foreground shadow-sm'
+          >
+            <option value='all'>全部状态</option>
+            <option value='active'>已上架 (Active)</option>
+            <option value='draft'>草稿 (Draft)</option>
+            <option value='disabled'>已下架 (Disabled)</option>
+          </select>
+
+          {isSavingOrder && (
+            <Badge variant='outline' className='gap-1 text-xs text-amber-400 border-amber-500/40 bg-amber-500/10'>
+              <Loader2 className='size-3 animate-spin' /> 正在保存排序...
+            </Badge>
+          )}
         </div>
       </div>
 
@@ -313,45 +394,71 @@ export function SoftwareFeature() {
           <table className='w-full text-left text-sm'>
             <thead className='border-b border-border/60 bg-muted/40 text-xs font-semibold uppercase text-muted-foreground'>
               <tr>
-                <th className='px-4 py-3'>软件</th>
+                <th className='px-4 py-3'>图标 & 软件名称</th>
                 <th className='px-4 py-3'>分类</th>
-                <th className='px-4 py-3'>一句话介绍 / 特性亮点</th>
-                <th className='px-4 py-3'>系统要求</th>
-                <th className='px-4 py-3 text-center'>安装包数量</th>
-                <th className='px-4 py-3 text-center'>排序</th>
+                <th className='px-4 py-3'>支持平台</th>
+                <th className='px-4 py-3'>最新版本</th>
+                <th className='px-4 py-3 text-center'>总下载</th>
+                <th className='px-4 py-3 text-center'>首屏主推</th>
+                <th className='px-4 py-3 text-center'>状态</th>
+                <th className='px-4 py-3'>更新时间</th>
                 <th className='px-4 py-3 text-right'>操作</th>
               </tr>
             </thead>
             <tbody className='divide-y divide-border/40'>
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className='px-4 py-8 text-center text-muted-foreground'>
-                    <Loader2 className='mx-auto size-5 animate-spin text-primary' />
+                  <td colSpan={9} className='px-4 py-12 text-center text-muted-foreground'>
+                    <Loader2 className='mx-auto size-6 animate-spin text-primary' />
                     <p className='mt-2 text-xs'>加载软件列表中...</p>
                   </td>
                 </tr>
               ) : filteredSoftware.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className='px-4 py-8 text-center text-muted-foreground'>
-                    未找到匹配的软件
+                  <td colSpan={9} className='px-4 py-12 text-center text-muted-foreground'>
+                    <div className='flex flex-col items-center justify-center gap-2'>
+                      <Layers className='size-8 text-muted-foreground/40' />
+                      <p className='text-sm'>未找到符合条件的软件</p>
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        onClick={() => navigate({ to: '/software/new' })}
+                        className='mt-2 gap-1.5'
+                      >
+                        <Plus className='size-3.5' /> 发布第一个软件
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ) : (
-                filteredSoftware.map((sw) => {
+                filteredSoftware.map((sw, index) => {
                   const cat = categories.find((c) => c.id === sw.categoryId)
-                  const relCount = releases.filter((r) => r.softwareId === sw.slug).length
-                  const highlightsCount = (sw.highlights || []).length
+                  const stats = getSoftwareStats(sw)
+                  const isDraft = sw.status === 'draft'
+                  const isDisabled = sw.status === 'disabled'
+                  const isActive = sw.status === 'active' || (!sw.status && !isDraft && !isDisabled)
 
                   return (
                     <tr key={sw.slug} className='hover:bg-muted/30 transition-colors'>
+                      {/* Name & Icon */}
                       <td className='px-4 py-3'>
                         <div className='flex items-center gap-3'>
-                          <div className='flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-bold text-primary'>
-                            {sw.name[0] || '软'}
+                          <div className='relative size-10 shrink-0 overflow-hidden rounded-xl border border-border/80 bg-background/80 shadow-xs flex items-center justify-center'>
+                            {sw.iconUrl || sw.icon ? (
+                              <img
+                                src={sw.iconUrl || sw.icon}
+                                alt={sw.name}
+                                className='size-full object-cover'
+                              />
+                            ) : (
+                              <div className='font-bold text-primary'>
+                                {sw.name[0] || '软'}
+                              </div>
+                            )}
                           </div>
                           <div className='min-w-0'>
                             <div className='font-semibold text-foreground flex items-center gap-1.5'>
-                              <span>{sw.name}</span>
+                              <span className='truncate'>{sw.name}</span>
                               {sw.landingUrl && (
                                 <a
                                   href={sw.landingUrl}
@@ -364,67 +471,200 @@ export function SoftwareFeature() {
                                 </a>
                               )}
                             </div>
-                            <div className='font-mono text-xs text-muted-foreground'>
-                              {sw.slug}
+                            <div className='font-mono text-xs text-muted-foreground flex items-center gap-2'>
+                              <span>{sw.slug}</span>
+                              {sw.tagline && (
+                                <span className='truncate max-w-[180px] text-muted-foreground/80' title={sw.tagline}>
+                                  · {sw.tagline}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
                       </td>
+
+                      {/* Category */}
                       <td className='px-4 py-3'>
                         <Badge variant='outline' className='text-xs'>
                           {cat?.name || sw.categoryId || '通用'}
                         </Badge>
                       </td>
-                      <td className='px-4 py-3 max-w-xs'>
-                        <p className='truncate text-xs text-foreground'>
-                          {sw.tagline || '未设置一句话介绍'}
-                        </p>
-                        {highlightsCount > 0 && (
-                          <p className='text-xs text-muted-foreground'>
-                            {highlightsCount} 个亮点
-                          </p>
-                        )}
+
+                      {/* Platform Badges */}
+                      <td className='px-4 py-3'>
+                        <div className='flex flex-wrap items-center gap-1'>
+                          {stats.platforms.length === 0 ? (
+                            <span className='text-xs text-muted-foreground'>无安装包</span>
+                          ) : (
+                            stats.platforms.map((p) => (
+                              <span
+                                key={p}
+                                className='inline-flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.5 text-[10px] text-muted-foreground font-mono'
+                                title={p}
+                              >
+                                {renderPlatformIcon(p)}
+                                <span>{p}</span>
+                              </span>
+                            ))
+                          )}
+                        </div>
                       </td>
-                      <td className='px-4 py-3 text-xs text-muted-foreground'>
-                        {sw.requirements || '未限制'}
-                      </td>
-                      <td className='px-4 py-3 text-center'>
+
+                      {/* Latest Version */}
+                      <td className='px-4 py-3'>
                         <Badge
-                          variant={relCount > 0 ? 'secondary' : 'outline'}
-                          className='font-mono text-xs'
+                          variant='secondary'
+                          className='font-mono text-xs font-medium'
                         >
-                          {relCount}
+                          {stats.latestVersion}
                         </Badge>
                       </td>
-                      <td className='px-4 py-3 text-center font-mono text-xs text-muted-foreground'>
-                        {sw.sortOrder ?? 0}
+
+                      {/* Total Downloads */}
+                      <td className='px-4 py-3 text-center font-mono text-xs font-semibold text-foreground'>
+                        {stats.totalDownloads.toLocaleString()}
                       </td>
+
+                      {/* Featured Switch */}
+                      <td className='px-4 py-3 text-center'>
+                        <div className='flex items-center justify-center gap-1.5'>
+                          <Switch
+                            checked={Boolean(sw.featured)}
+                            onCheckedChange={(val) => handleToggleFeatured(sw, val)}
+                          />
+                          {sw.featured && (
+                            <span title='已设为主推'>
+                              <Sparkles className='size-3 text-primary animate-pulse' />
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Status */}
+                      <td className='px-4 py-3 text-center'>
+                        {isActive && (
+                          <Badge variant='outline' className='border-emerald-500/40 text-emerald-400 bg-emerald-500/10 text-xs'>
+                            已上架
+                          </Badge>
+                        )}
+                        {isDraft && (
+                          <Badge variant='outline' className='border-amber-500/40 text-amber-400 bg-amber-500/10 text-xs'>
+                            草稿
+                          </Badge>
+                        )}
+                        {isDisabled && (
+                          <Badge variant='outline' className='border-muted text-muted-foreground text-xs'>
+                            已下架
+                          </Badge>
+                        )}
+                      </td>
+
+                      {/* Updated Time */}
+                      <td className='px-4 py-3 text-xs text-muted-foreground whitespace-nowrap'>
+                        {formatDate(sw.updatedAt)}
+                      </td>
+
+                      {/* Actions */}
                       <td className='px-4 py-3 text-right'>
                         <div className='flex items-center justify-end gap-1'>
+                          {/* Reorder buttons */}
                           <Button
                             variant='ghost'
                             size='sm'
-                            className='size-8 p-0'
-                            onClick={() => openEditDrawer(sw)}
-                            title='编辑资料'
+                            disabled={index === 0 || isSavingOrder}
+                            className='size-7 p-0 text-muted-foreground hover:text-foreground'
+                            onClick={() => handleMove(index, 'up')}
+                            title='上移排序'
                           >
-                            <Edit2 className='size-4' />
+                            <ArrowUp className='size-3.5' />
                           </Button>
+                          <Button
+                            variant='ghost'
+                            size='sm'
+                            disabled={index === filteredSoftware.length - 1 || isSavingOrder}
+                            className='size-7 p-0 text-muted-foreground hover:text-foreground'
+                            onClick={() => handleMove(index, 'down')}
+                            title='下移排序'
+                          >
+                            <ArrowDown className='size-3.5' />
+                          </Button>
+
+                          {/* Edit button */}
+                          <Button
+                            variant='ghost'
+                            size='sm'
+                            className='size-7 p-0'
+                            onClick={() => navigate({ to: `/software/${sw.slug}` })}
+                            title='编辑软件资料'
+                          >
+                            <Edit2 className='size-3.5' />
+                          </Button>
+
+                          {/* More dropdown */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant='ghost' size='sm' className='size-8 p-0'>
+                              <Button variant='ghost' size='sm' className='size-7 p-0'>
                                 <MoreHorizontal className='size-4' />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align='end'>
                               <DropdownMenuItem
+                                onClick={() => navigate({ to: `/software/${sw.slug}` })}
+                              >
+                                <Edit2 className='mr-2 size-4' />
+                                进入向导编辑
+                              </DropdownMenuItem>
+
+                              <DropdownMenuItem
                                 onClick={() => {
-                                  window.open(`/download.html?app=${sw.slug}`, '_blank')
+                                  setUploadSwSlug(sw.slug)
+                                  setUploadVersion('')
+                                  setUploadChangelog('')
+                                  setUploadFile(null)
+                                  setQuickUploadOpen(true)
                                 }}
                               >
-                                <ExternalLink className='mr-2 size-4' />
-                                软件中心预览
+                                <Upload className='mr-2 size-4 text-primary' />
+                                上传新版本
                               </DropdownMenuItem>
+
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setPreviewSoftware(sw)
+                                  setPreviewOpen(true)
+                                }}
+                              >
+                                <Eye className='mr-2 size-4' />
+                                在线预览详情页
+                              </DropdownMenuItem>
+
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  const url = `${window.location.origin}/download/latest/${sw.slug}`
+                                  navigator.clipboard.writeText(url)
+                                  toast.success('最新版直链已复制到剪贴板')
+                                }}
+                              >
+                                <Copy className='mr-2 size-4' />
+                                复制最新下载链接
+                              </DropdownMenuItem>
+
+                              <DropdownMenuSeparator />
+
+                              <DropdownMenuItem onClick={() => handleToggleStatus(sw)}>
+                                {isActive ? (
+                                  <>
+                                    <Circle className='mr-2 size-4 text-amber-400' />
+                                    下架此软件
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 className='mr-2 size-4 text-emerald-400' />
+                                    重新上架
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+
                               <DropdownMenuItem
                                 className='text-destructive focus:text-destructive'
                                 onClick={() => {
@@ -448,231 +688,246 @@ export function SoftwareFeature() {
         </div>
       </div>
 
-      {/* Edit/Create Software Drawer (Offcanvas Sheet) */}
-      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent side='right' className='sm:max-w-lg overflow-y-auto w-full'>
-          <SheetHeader>
-            <SheetTitle>
-              {editingSoftware ? `编辑软件：${editingSoftware.name}` : '新建软件产品'}
-            </SheetTitle>
-            <SheetDescription>
-              保存后数据即刻同步至 Cloudflare R2 catalog，前台软件中心与门户实时更新。
-            </SheetDescription>
-          </SheetHeader>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className='max-w-md'>
+          <DialogHeader>
+            <DialogTitle className='flex items-center gap-2 text-destructive'>
+              <AlertTriangle className='size-5' />
+              确认删除软件
+            </DialogTitle>
+            <DialogDescription>
+              确定要删除软件「{deletingSoftware?.name}」吗？如果该软件下已关联版本安装包，将需要进行二次确认。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant='outline'
+              disabled={isDeleting}
+              onClick={() => setDeleteConfirmOpen(false)}
+            >
+              取消
+            </Button>
+            <Button
+              variant='destructive'
+              disabled={isDeleting}
+              onClick={() => executeDeleteSoftware(false)}
+            >
+              {isDeleting ? <Loader2 className='size-3.5 animate-spin mr-1' /> : null}
+              确认删除
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-          <form onSubmit={handleSaveSoftware} className='space-y-4 py-4 text-sm'>
-            <div className='grid gap-2'>
-              <Label htmlFor='slug'>软件标识 (Slug) *</Label>
-              <Input
-                id='slug'
-                placeholder='例如: desktop, novadisk, player'
-                value={formSlug}
-                onChange={(e) => setFormSlug(e.target.value)}
-                disabled={Boolean(editingSoftware)}
-                className='font-mono'
-              />
-              <p className='text-xs text-muted-foreground'>
-                唯一键，不可修改；用于 URL 参数（如 /download.html?app=desktop）
+      {/* Force Delete Confirmation Dialog (When software has releases) */}
+      <Dialog open={forceDeleteConfirmOpen} onOpenChange={setForceDeleteConfirmOpen}>
+        <DialogContent className='max-w-md'>
+          <DialogHeader>
+            <DialogTitle className='flex items-center gap-2 text-destructive'>
+              <AlertTriangle className='size-5' />
+              强行删除确认
+            </DialogTitle>
+            <DialogDescription className='space-y-2 text-xs'>
+              <p className='text-amber-300 font-medium'>
+                注意：该软件下存在已发布的安装包记录！
               </p>
-            </div>
+              <p>
+                强行删除将一并移除所有关联的版本元数据，前台将不再提供下载。请再次确认是否强行删除？
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant='outline'
+              disabled={isDeleting}
+              onClick={() => setForceDeleteConfirmOpen(false)}
+            >
+              取消
+            </Button>
+            <Button
+              variant='destructive'
+              disabled={isDeleting}
+              onClick={() => executeDeleteSoftware(true)}
+            >
+              {isDeleting ? <Loader2 className='size-3.5 animate-spin mr-1' /> : null}
+              确认强行删除
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-            <div className='grid gap-2'>
-              <Label htmlFor='name'>软件中文名称 *</Label>
-              <Input
-                id='name'
-                placeholder='例如: 天才猫桌面 2.0'
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-              />
-            </div>
+      {/* Quick Upload New Release Modal (Entry 2) */}
+      <Dialog open={quickUploadOpen} onOpenChange={setQuickUploadOpen}>
+        <DialogContent className='max-w-lg'>
+          <DialogHeader>
+            <DialogTitle className='flex items-center gap-2'>
+              <Upload className='size-5 text-primary' />
+              上传新版本 (快速通道)
+            </DialogTitle>
+            <DialogDescription>
+              30 秒快速为已有软件发布新版本，自动识别安装包并支持分片断点续传。
+            </DialogDescription>
+          </DialogHeader>
 
-            <div className='grid gap-2'>
-              <Label htmlFor='categoryId'>所属分类</Label>
+          <form onSubmit={handleQuickUploadSubmit} className='space-y-4 py-2 text-xs'>
+            <div className='space-y-1.5'>
+              <Label className='text-xs'>归属软件</Label>
               <select
-                id='categoryId'
-                value={formCategory}
-                onChange={(e) => setFormCategory(e.target.value)}
-                className='flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors'
+                value={uploadSwSlug}
+                onChange={(e) => setUploadSwSlug(e.target.value)}
+                className='h-9 w-full rounded-md border border-input bg-card px-3 py-1 text-xs shadow-sm'
               >
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
+                {softwareList.map((sw) => (
+                  <option key={sw.slug} value={sw.slug}>
+                    {sw.name} ({sw.slug})
                   </option>
                 ))}
               </select>
             </div>
 
-            <div className='grid gap-2'>
-              <Label htmlFor='tagline'>一句话宣传语 (Tagline)</Label>
+            <div className='space-y-1.5'>
+              <Label htmlFor='q-version' className='text-xs'>
+                版本号 (如 2.0.1)
+              </Label>
               <Input
-                id='tagline'
-                placeholder='例如: 极简流动的生产力工作台'
-                value={formTagline}
-                onChange={(e) => setFormTagline(e.target.value)}
+                id='q-version'
+                placeholder='例如：2.0.1'
+                value={uploadVersion}
+                onChange={(e) => setUploadVersion(e.target.value)}
+                className='h-8 text-xs bg-background/80'
               />
             </div>
 
-            <div className='grid gap-2'>
-              <Label htmlFor='requirements'>系统要求 (Requirements)</Label>
-              <Input
-                id='requirements'
-                placeholder='例如: Windows 10/11 64位, macOS 12+'
-                value={formRequirements}
-                onChange={(e) => setFormRequirements(e.target.value)}
-              />
-            </div>
-
-            <div className='grid gap-2'>
-              <Label htmlFor='landingUrl'>专属落地页 URL (Landing URL)</Label>
-              <Input
-                id='landingUrl'
-                placeholder='例如: /desktop.html 或 https://...'
-                value={formLandingUrl}
-                onChange={(e) => setFormLandingUrl(e.target.value)}
-              />
-            </div>
-
-            <div className='grid gap-2'>
-              <Label htmlFor='sortOrder'>展示排序权重</Label>
-              <Input
-                id='sortOrder'
-                type='number'
-                value={formSortOrder}
-                onChange={(e) => setFormSortOrder(Number(e.target.value))}
-              />
-              <p className='text-xs text-muted-foreground'>
-                数字越小排在越前面（0 居首位）
-              </p>
-            </div>
-
-            <div className='grid gap-2'>
-              <Label htmlFor='description'>详细介绍 (Markdown / 文本)</Label>
+            <div className='space-y-1.5'>
+              <Label htmlFor='q-notes' className='text-xs'>
+                更新日志说明
+              </Label>
               <Textarea
-                id='description'
+                id='q-notes'
                 rows={3}
-                placeholder='详细的产品功能描述...'
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
+                placeholder='写明本次升级内容...'
+                value={uploadChangelog}
+                onChange={(e) => setUploadChangelog(e.target.value)}
+                className='text-xs font-mono bg-background/80'
               />
             </div>
 
-            {/* Highlights Editor */}
-            <div className='space-y-2 border-t border-border/40 pt-4'>
-              <div className='flex items-center justify-between'>
-                <Label>核心特性亮点 (Highlights)</Label>
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  onClick={addHighlightItem}
-                  className='h-7 text-xs'
-                >
-                  <Plus className='mr-1 size-3' />
-                  添加亮点
-                </Button>
-              </div>
-              {formHighlights.length === 0 ? (
-                <p className='text-xs text-muted-foreground'>
-                  未添加亮点。软件中心仅在包含亮点时渲染 Bento 亮点卡片。
+            <div className='space-y-1.5'>
+              <Label className='text-xs'>选择安装包文件</Label>
+              <Input
+                type='file'
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) setUploadFile(f)
+                }}
+                className='h-9 text-xs bg-background/80'
+              />
+              {uploadFile && (
+                <p className='text-[11px] text-muted-foreground'>
+                  选中：{uploadFile.name} ({formatBytes(uploadFile.size)})
                 </p>
-              ) : (
-                <div className='space-y-3'>
-                  {formHighlights.map((hl, idx) => (
-                    <div
-                      key={idx}
-                      className='rounded-md border border-border/60 p-2.5 space-y-2 bg-secondary/20'
-                    >
-                      <div className='flex items-center justify-between gap-2'>
-                        <Input
-                          placeholder='亮点小标题 (例如: 极速启动)'
-                          value={hl.title}
-                          onChange={(e) =>
-                            updateHighlightItem(idx, 'title', e.target.value)
-                          }
-                          className='h-8 text-xs font-semibold'
-                        />
-                        <Button
-                          type='button'
-                          variant='ghost'
-                          size='sm'
-                          className='size-8 p-0 text-destructive'
-                          onClick={() => removeHighlightItem(idx)}
-                        >
-                          <Trash2 className='size-3.5' />
-                        </Button>
-                      </div>
-                      <Textarea
-                        placeholder='亮点描述文案...'
-                        rows={2}
-                        value={hl.text}
-                        onChange={(e) =>
-                          updateHighlightItem(idx, 'text', e.target.value)
-                        }
-                        className='text-xs'
-                      />
-                    </div>
-                  ))}
-                </div>
               )}
             </div>
 
-            <SheetFooter className='border-t border-border/40 pt-4'>
+            <DialogFooter className='pt-2'>
               <Button
                 type='button'
                 variant='outline'
-                onClick={() => setDrawerOpen(false)}
-                disabled={isSaving}
+                disabled={isQuickUploading}
+                onClick={() => setQuickUploadOpen(false)}
               >
                 取消
               </Button>
-              <Button type='submit' disabled={isSaving}>
-                {isSaving ? (
-                  <>
-                    <Loader2 className='mr-2 size-4 animate-spin' />
-                    正在保存...
-                  </>
+              <Button
+                type='submit'
+                disabled={isQuickUploading || !uploadFile || !uploadVersion.trim()}
+                className='bg-primary text-primary-foreground font-semibold shadow-sm'
+              >
+                {isQuickUploading ? (
+                  <Loader2 className='size-3.5 animate-spin mr-1' />
                 ) : (
-                  '保存软件资料'
+                  <Upload className='size-3.5 mr-1' />
                 )}
+                开始上传发布
               </Button>
-            </SheetFooter>
+            </DialogFooter>
           </form>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
-      {/* Category Management Dialog */}
+      {/* Category Management Modal */}
       <Dialog open={categoryModalOpen} onOpenChange={setCategoryModalOpen}>
-        <DialogContent className='sm:max-w-md'>
+        <DialogContent className='max-w-md'>
           <DialogHeader>
-            <DialogTitle>软件分类维护</DialogTitle>
+            <DialogTitle>软件分类管理</DialogTitle>
             <DialogDescription>
-              维护前台软件中心的分类标签与筛选 Tab。
+              维护前台下载中心分类维度。
             </DialogDescription>
           </DialogHeader>
-          <div className='space-y-4 py-2'>
-            <form onSubmit={handleAddCategory} className='flex items-center gap-2'>
+
+          <div className='space-y-4 py-2 text-xs'>
+            <div className='flex items-center gap-2'>
               <Input
-                placeholder='新分类名称 (例如: 效率办公)...'
+                placeholder='输入新分类名称...'
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
+                className='h-8 text-xs'
               />
-              <Button type='submit' disabled={isSavingCategory} size='sm'>
-                {isSavingCategory ? <Loader2 className='size-4 animate-spin' /> : '添加'}
+              <Button
+                size='sm'
+                disabled={isSavingCategory || !newCategoryName.trim()}
+                onClick={async () => {
+                  if (!newCategoryName.trim()) return
+                  setIsSavingCategory(true)
+                  try {
+                    const res = await api.post('/api/admin/categories', {
+                      name: newCategoryName.trim(),
+                      sortOrder: categories.length,
+                    })
+                    if (res.success) {
+                      toast.success(`分类「${newCategoryName.trim()}」已添加`)
+                      setNewCategoryName('')
+                      queryClient.invalidateQueries({ queryKey: ['catalog'] })
+                    } else {
+                      toast.error(res.msg || '添加分类失败')
+                    }
+                  } catch (e: any) {
+                    toast.error(`添加失败：${e.message}`)
+                  } finally {
+                    setIsSavingCategory(false)
+                  }
+                }}
+              >
+                {isSavingCategory ? <Loader2 className='size-3 animate-spin mr-1' /> : null}
+                添加
               </Button>
-            </form>
+            </div>
 
-            <div className='max-h-60 overflow-y-auto divide-y divide-border/40 rounded-lg border border-border/60'>
+            <div className='divide-y divide-border/40 rounded-lg border border-border/60 bg-background/60 overflow-hidden max-h-60 overflow-y-auto'>
               {categories.map((c) => (
-                <div
-                  key={c.id}
-                  className='flex items-center justify-between p-2.5 text-sm'
-                >
-                  <span className='font-medium'>{c.name}</span>
+                <div key={c.id} className='flex items-center justify-between p-2.5'>
+                  <div>
+                    <span className='font-semibold text-foreground'>{c.name}</span>
+                    <span className='ml-2 text-muted-foreground font-mono'>({c.slug || c.id})</span>
+                  </div>
                   <Button
                     variant='ghost'
                     size='sm'
-                    className='size-7 p-0 text-destructive'
-                    onClick={() => handleDeleteCategory(c)}
+                    className='size-7 p-0 text-red-400 hover:text-red-300'
+                    onClick={async () => {
+                      try {
+                        const res = await api.post('/api/admin/categories/delete', { id: c.id })
+                        if (res.success) {
+                          toast.success(`分类「${c.name}」已删除`)
+                          queryClient.invalidateQueries({ queryKey: ['catalog'] })
+                        } else {
+                          toast.error(res.msg || '删除分类失败')
+                        }
+                      } catch (e: any) {
+                        toast.error(`删除失败：${e.message}`)
+                      }
+                    }}
                   >
                     <Trash2 className='size-3.5' />
                   </Button>
@@ -683,42 +938,29 @@ export function SoftwareFeature() {
         </DialogContent>
       </Dialog>
 
-      {/* First Delete Confirm Dialog */}
-      <ConfirmDialog
-        open={deleteConfirmOpen}
-        onOpenChange={setDeleteConfirmOpen}
-        title='删除软件确认'
-        desc={`确定要删除软件「${deletingSoftware?.name}」吗？`}
-        confirmText='确认删除'
-        cancelBtnText='取消'
-        destructive
-        isLoading={isDeleting}
-        handleConfirm={() => executeDeleteSoftware(false)}
-      />
+      {/* Online Preview Modal */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className='max-w-5xl h-[85vh] flex flex-col p-0 overflow-hidden bg-background'>
+          <DialogHeader className='px-4 py-3 border-b border-border/60 flex flex-row items-center justify-between'>
+            <div className='flex items-center gap-3'>
+              <DialogTitle className='text-sm font-semibold'>前台详情页预览</DialogTitle>
+              {previewSoftware && (
+                <Badge variant='outline' className='text-xs text-primary border-primary/40'>
+                  {previewSoftware.name}
+                </Badge>
+              )}
+            </div>
+          </DialogHeader>
 
-      {/* Secondary Force Delete Confirm Dialog (when 409 needForce) */}
-      <ConfirmDialog
-        open={forceDeleteConfirmOpen}
-        onOpenChange={setForceDeleteConfirmOpen}
-        title='强制删除警告'
-        desc={
-          <div className='space-y-2 text-sm'>
-            <p className='text-destructive font-medium flex items-center gap-1.5'>
-              <AlertTriangle className='size-4' />
-              检测到该软件下存在已发布的安装包或历史版本！
-            </p>
-            <p className='text-muted-foreground'>
-              直接删除将清除该软件的所有版本索引与下载记录。确定要强制删除软件「
-              {deletingSoftware?.name}」吗？
-            </p>
+          <div className='flex-1 bg-muted/20 flex items-center justify-center p-2 overflow-hidden'>
+            <iframe
+              src={previewSoftware ? `/software.html?slug=${previewSoftware.slug}` : '/software.html'}
+              title='Software Live Preview'
+              className='size-full border border-border/60 rounded-lg shadow-xl bg-[#07090e]'
+            />
           </div>
-        }
-        confirmText='强制删除'
-        cancelBtnText='放弃'
-        destructive
-        isLoading={isDeleting}
-        handleConfirm={() => executeDeleteSoftware(true)}
-      />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
