@@ -1,262 +1,609 @@
-// 软件中心（download.html）：所有内容来自后台 /api/catalog
-// 后台新增软件 / 上传版本后，这个页面自动出现，无需改代码。
+// 天才猫软件中心列表页核心逻辑 (download.html)
+// 数据全部对接后台 /api/catalog 动态生成，支持主推轮播、平台分段筛选、多维排序、搜索与 Top 10 下载榜
 (function () {
+  // 1. 兼容旧版链接：/download.html?app=xxx -> /software.html?slug=xxx
+  const urlParams = new URLSearchParams(location.search);
+  const legacyApp = urlParams.get("app");
+  if (legacyApp) {
+    location.replace("/software.html?slug=" + encodeURIComponent(legacyApp));
+    return;
+  }
+
   const $ = id => document.getElementById(id);
-  const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
-  const PLATFORM = {
-    windows: { name: "Windows 安装版", icon: "monitor", desc: "适用于 Windows 10 / 11，一键安装。" },
-    portable: { name: "绿色便携版", icon: "package", desc: "免安装，解压即用，可放在 U 盘随身携带。" },
-    macos: { name: "macOS", icon: "apple", desc: "适用于 macOS。" },
-    linux: { name: "Linux", icon: "terminal", desc: "适用于主流 Linux 发行版。" },
-    android: { name: "Android", icon: "smartphone", desc: "适用于安卓手机和平板。" },
-    other: { name: "下载包", icon: "file-down", desc: "官方原版下载包。" }
+  const esc = val => String(val ?? "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[ch]);
+
+  const PLATFORMS = {
+    windows: { id: "windows", label: "Windows", icon: "monitor" },
+    portable: { id: "portable", label: "绿色便携", icon: "package" },
+    macos: { id: "macos", label: "macOS", icon: "apple" },
+    linux: { id: "linux", label: "Linux", icon: "terminal" },
+    android: { id: "android", label: "Android", icon: "smartphone" },
+    other: { id: "other", label: "其他", icon: "file-down" }
   };
-  const PLATFORM_ORDER = ["windows", "portable", "macos", "linux", "android", "other"];
-  const BTN_PRIMARY = "btn-shimmer h-[52px] min-w-[210px] px-7 rounded-[14px] bg-gradient-to-r from-accent-cyan to-[#06B6D4] text-[#04101A] font-bold text-[15px] flex items-center justify-center gap-3 transition-all duration-300 hover:shadow-[0_0_35px_rgba(0,242,254,0.45)] hover:-translate-y-0.5";
-  const BTN_GHOST = "h-[52px] min-w-[210px] px-7 rounded-[14px] bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.16] hover:border-white/30 text-white font-semibold text-[15px] flex items-center justify-center gap-3 transition-all duration-300 backdrop-blur-xl";
+  const PLATFORM_ORDER = ["windows", "macos", "portable", "linux", "android", "other"];
 
   let catalog = null;
-  let items = [];
-  let activeCategory = "all";
+  let allSoftware = [];
+  let availablePlatforms = [];
+  let carouselItems = [];
+  let currentCarouselIndex = 0;
+  let carouselTimer = null;
 
-  const downloadable = r => r && r.status === "published" && (r.fileKey || r.publicUrl) && r.version && r.version !== "待上传";
-  const pkgName = r => r.label || (PLATFORM[r.platform] || PLATFORM.other).name;
-  const dateText = ts => ts ? new Date(Number(ts)).toLocaleDateString("zh-CN") : "";
-  const icons = () => { try { window.lucide?.createIcons(); } catch {} };
+  // 状态
+  let currentPlatform = urlParams.get("platform") || "all";
+  let currentCategory = urlParams.get("cat") || "all";
+  let currentSort = urlParams.get("sort") || "recommend";
+  let currentQuery = urlParams.get("q") || "";
 
-  function prepare(software) {
-    const releases = (software.releases || []).filter(downloadable).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-    const latest = releases.find(r => r.isLatest) || releases[0] || null;
-    const packages = latest ? releases.filter(r => r.version === latest.version)
-      .sort((a, b) => PLATFORM_ORDER.indexOf(a.platform) - PLATFORM_ORDER.indexOf(b.platform) || (b.isLatest - a.isLatest)) : [];
-    if (latest && packages[0] !== latest && packages.includes(latest) && latest.platform === packages[0].platform) {
-      packages.splice(packages.indexOf(latest), 1);
-      packages.unshift(latest);
-    }
-    return { ...software, releasesReady: releases, latest, packages };
+  function safeIcons() {
+    try { window.lucide?.createIcons(); } catch {}
+  }
+
+  function formatDate(ts) {
+    if (!ts) return "-";
+    const d = new Date(Number(ts));
+    if (isNaN(d.getTime())) return String(ts).slice(0, 10);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
+  function formatBytes(bytes) {
+    if (!bytes || bytes <= 0) return "";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return (bytes / Math.pow(k, i)).toFixed(1) + " " + sizes[i];
+  }
+
+  function prepareSoftware(raw) {
+    const publishedReleases = (raw.releases || [])
+      .filter(r => r && r.status === "published" && (r.fileKey || r.publicUrl) && r.version && r.version !== "待上传")
+      .sort((a, b) => {
+        const timeA = typeof a.createdAt === "number" ? a.createdAt : new Date(a.createdAt || 0).getTime();
+        const timeB = typeof b.createdAt === "number" ? b.createdAt : new Date(b.createdAt || 0).getTime();
+        return timeB - timeA;
+      });
+
+    const latest = publishedReleases.find(r => r.isLatest) || publishedReleases[0] || null;
+    const platforms = Array.from(new Set(publishedReleases.map(r => r.platform || "other")));
+    const totalDownloads = publishedReleases.reduce((sum, r) => sum + (Number(r.downloadCount) || 0), 0);
+
+    const latestTimestamp = latest
+      ? (typeof latest.createdAt === "number" ? latest.createdAt : new Date(latest.createdAt || 0).getTime())
+      : (typeof raw.updatedAt === "number" ? raw.updatedAt : 0);
+
+    return {
+      ...raw,
+      releases: publishedReleases,
+      latest,
+      platforms,
+      totalDownloads,
+      latestTimestamp,
+    };
   }
 
   async function init() {
     try {
       const res = await fetch("/api/catalog", { cache: "no-store" });
-      if (!res.ok) throw new Error("catalog");
+      if (!res.ok) throw new Error("加载目录失败");
       catalog = await res.json();
-    } catch {
-      $("softwareList").innerHTML = `<p class="col-span-full text-center text-slate-400 text-sm">软件列表加载失败，请刷新重试。</p>`;
+    } catch (err) {
+      const grid = $("softwareGrid");
+      if (grid) grid.innerHTML = `<div class="col-span-full py-16 text-center text-slate-400">软件目录加载异常，请刷新重试。</div>`;
       return;
     }
-    items = (catalog.software || [])
-      .filter(s => s.status !== "disabled")
-      .map(prepare)
-      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
-    renderTabs();
-    renderList();
-    const wanted = new URLSearchParams(location.search).get("app");
-    const first = items.find(s => s.slug === wanted) || items.find(s => s.latest) || items[0];
-    if (first) select(first.slug, false);
-    else renderEmpty();
-  }
+    // 过滤上架软件并预处理
+    allSoftware = (catalog.software || [])
+      .filter(s => (s.status || "active") === "active")
+      .map(prepareSoftware);
 
-  function renderEmpty() {
-    $("heroTitle").textContent = "软件中心";
-    $("heroDesc").textContent = "暂时还没有上架的软件。";
-    $("heroVersion").textContent = "敬请期待";
-    $("downloadNow").innerHTML = "";
-    $("heroMeta").innerHTML = "";
-    ["features", "platforms", "changelog"].forEach(id => { const el = $(id); if (el) el.hidden = true; });
-  }
+    // 计算实际存在的平台
+    const pSet = new Set();
+    allSoftware.forEach(s => s.platforms.forEach(p => pSet.add(p)));
+    availablePlatforms = PLATFORM_ORDER.filter(p => pSet.has(p));
 
-  function renderTabs() {
-    const used = new Set(items.map(s => s.categoryId));
-    const categories = (catalog.categories || []).filter(c => used.has(c.id));
-    const box = $("softwareTabs");
-    if (categories.length < 2) { box.innerHTML = ""; return; }
-    box.innerHTML = [{ id: "all", name: "全部" }, ...categories].map(c =>
-      `<button type="button" data-cat="${esc(c.id)}" class="px-4 py-1.5 rounded-full text-[13px] border transition-colors ${c.id === activeCategory ? "bg-white/[0.08] border-white/[0.2] text-white" : "border-white/[0.08] text-slate-400 hover:text-white"}">${esc(c.name)}</button>`
-    ).join("");
-    box.querySelectorAll("[data-cat]").forEach(btn => btn.addEventListener("click", () => {
-      activeCategory = btn.dataset.cat;
-      renderTabs();
-      renderList();
-    }));
-  }
-
-  function renderList() {
-    const list = items.filter(s => activeCategory === "all" || s.categoryId === activeCategory);
-    const box = $("softwareList");
-    if (!list.length) { box.innerHTML = `<p class="col-span-full text-center text-slate-400 text-sm">该分类下暂无软件。</p>`; return; }
-    box.innerHTML = list.map(s => {
-      const primary = s.packages[0];
-      const cover = s.coverUrl
-        ? `<img src="${esc(s.coverUrl)}" alt="" loading="lazy" class="w-full h-full object-cover">`
-        : `<div class="w-full h-full flex items-center justify-center text-slate-500"><i data-lucide="box" class="w-8 h-8"></i></div>`;
-      return `<article class="glass-card glass-card-hover rounded-2xl overflow-hidden flex flex-col" data-slug="${esc(s.slug)}">
-        <div class="aspect-[16/9] bg-white/[0.03] border-b border-white/[0.06] overflow-hidden">${cover}</div>
-        <div class="p-6 flex flex-col flex-1">
-          <div class="flex items-center justify-between gap-3 mb-2">
-            <h3 class="text-lg font-bold text-white">${esc(s.name)}</h3>
-            ${s.latest ? `<span class="text-[11px] font-mono text-accent-cyan">v${esc(s.latest.version)}</span>` : `<span class="text-[11px] text-slate-500">即将发布</span>`}
-          </div>
-          <p class="text-sm text-slate-400 leading-relaxed mb-5 line-clamp-2">${esc(s.tagline || s.description || "")}</p>
-          <div class="mt-auto flex gap-3">
-            <button type="button" data-select="${esc(s.slug)}" class="flex-1 h-10 rounded-xl border border-white/[0.14] text-white text-sm font-semibold hover:bg-white/[0.06] transition-colors">查看详情</button>
-            ${primary ? `<a href="/download/${encodeURIComponent(primary.id)}" class="flex-1 h-10 rounded-xl bg-gradient-to-r from-accent-cyan to-[#06B6D4] text-[#04101A] text-sm font-bold flex items-center justify-center gap-1.5"><i data-lucide="download" class="w-4 h-4"></i>下载</a>` : ""}
-          </div>
-        </div>
-      </article>`;
-    }).join("");
-    box.querySelectorAll("[data-select]").forEach(btn => btn.addEventListener("click", () => select(btn.dataset.select, true)));
-    icons();
-  }
-
-  function select(slug, scroll) {
-    const s = items.find(item => item.slug === slug);
-    if (!s) return;
-    const url = new URL(location.href);
-    url.searchParams.set("app", slug);
-    history.replaceState(null, "", url);
-    document.title = `${s.name} 下载 - ${catalog.product || "天才猫软件中心"}`;
-    document.querySelectorAll("#softwareList [data-slug]").forEach(card => card.classList.toggle("ring-1", card.dataset.slug === slug));
-    renderHero(s);
-    renderFeatures(s);
-    renderPackages(s);
-    renderChangelog(s);
-    icons();
-    if (scroll) $("overview")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  function renderHero(s) {
-    const category = (catalog.categories || []).find(c => c.id === s.categoryId);
-    $("heroTagline").textContent = category?.name || "官方下载";
-    $("heroVersion").textContent = s.latest ? `v${s.latest.version} 现已就绪` : "即将发布";
-    $("navVersion").textContent = s.latest ? `v${s.latest.version}` : "敬请期待";
-    $("heroTitle").innerHTML = `${esc(s.name)}${s.tagline ? `<br><span class="bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">${esc(s.tagline)}</span>` : ""}`;
-    $("heroDesc").textContent = s.description || "";
-
-    const buttons = s.packages.slice(0, 2).map((r, i) =>
-      `<a href="/download/${encodeURIComponent(r.id)}" class="${i === 0 ? BTN_PRIMARY : BTN_GHOST}"><i data-lucide="${i === 0 ? "download" : (PLATFORM[r.platform] || PLATFORM.other).icon}" class="w-4 h-4"></i><span>下载 ${esc(pkgName(r))}</span></a>`
-    );
-    if (buttons.length < 2 && s.landingUrl) buttons.push(`<a href="${esc(s.landingUrl)}" class="${BTN_GHOST}"><span>了解详情</span><i data-lucide="arrow-up-right" class="w-4 h-4"></i></a>`);
-    if (!buttons.length) buttons.push(`<span class="${BTN_GHOST} opacity-60 cursor-not-allowed">暂未发布安装包</span>`);
-    $("downloadNow").innerHTML = buttons.join("");
-
-    const main = s.packages[0];
-    const meta = [];
-    if (main) meta.push(`<span class="flex items-center gap-1.5 text-slate-300"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-400"></i>${esc(main.size || "")} · ${esc(main.fileName || "")}</span>`);
-    if (s.requirements) meta.push(`<span>${esc(s.requirements)}</span>`);
-    if (main?.sha256) meta.push(`<button type="button" data-sha="${esc(main.sha256)}" class="inline-flex items-center gap-1.5 hover:text-white transition-colors"><span>SHA-256: ${esc(main.sha256.slice(0, 6))}...${esc(main.sha256.slice(-4))}</span><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>`);
-    $("heroMeta").innerHTML = meta.join(`<span>·</span>`);
-    $("heroMeta").querySelector("[data-sha]")?.addEventListener("click", event => copy(event.currentTarget.dataset.sha, "校验码已复制"));
-
-    const visual = $("heroVisual");
-    if (!visual.dataset.original) visual.dataset.original = visual.innerHTML;
-    visual.innerHTML = s.coverUrl
-      ? `<div class="glass-card rounded-2xl p-3 border border-white/[0.18] shadow-[0_30px_90px_rgba(0,0,0,0.85)] overflow-hidden"><img src="${esc(s.coverUrl)}" alt="${esc(s.name)} 界面截图" class="w-full rounded-xl object-cover"></div>`
-      : visual.dataset.original;
-  }
-
-  function renderFeatures(s) {
-    const section = $("features");
-    if (!s.highlights?.length) { section.hidden = true; return; }
-    section.hidden = false;
-    $("featuresEyebrow").textContent = "Highlights";
-    $("featuresTitle").textContent = `${s.name} 核心特性`;
-    $("featuresDesc").textContent = s.tagline || "";
-    const span = s.highlights.length % 3 === 0 ? "md:col-span-4" : "md:col-span-6";
-    $("featuresGrid").innerHTML = s.highlights.map((h, i) =>
-      `<div class="${span} glass-card glass-card-hover rounded-2xl p-6 sm:p-7 spotlight-card">
-        <span class="text-xs font-mono text-accent-cyan">${String(i + 1).padStart(2, "0")}</span>
-        <h3 class="text-lg font-bold text-white mt-3 mb-2">${esc(h.title)}</h3>
-        <p class="text-sm text-slate-400 leading-relaxed">${esc(h.text || "")}</p>
-      </div>`
-    ).join("");
-  }
-
-  function renderPackages(s) {
-    const section = $("platforms");
-    if (!s.packages.length) { section.hidden = true; return; }
-    section.hidden = false;
-    $("platformsTitle").textContent = `下载 ${s.name}`;
-    $("platformsDesc").textContent = `当前版本 v${s.latest.version} · 更新于 ${dateText(s.latest.createdAt)}，所有安装包均来自官方服务器。`;
-    const cols = s.packages.length >= 3 ? "md:grid-cols-3" : s.packages.length === 2 ? "md:grid-cols-2" : "md:grid-cols-1 max-w-md mx-auto";
-    const grid = $("platformGrid");
-    grid.className = `grid grid-cols-1 ${cols} gap-6`;
-    grid.innerHTML = s.packages.map((r, i) => {
-      const p = PLATFORM[r.platform] || PLATFORM.other;
-      return `<div class="glass-card glass-card-hover rounded-2xl p-7 flex flex-col justify-between spotlight-card">
-        <div>
-          <div class="w-12 h-12 rounded-xl bg-white/[0.05] border border-white/[0.1] flex items-center justify-center mb-5 text-accent-cyan"><i data-lucide="${p.icon}" class="w-6 h-6"></i></div>
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-xl font-bold text-white">${esc(pkgName(r))}</h3>
-            ${i === 0 ? `<span class="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">推荐</span>` : ""}
-          </div>
-          <p class="text-sm text-slate-400 leading-relaxed mb-6">${esc(r.description || p.desc)}</p>
-          <div class="space-y-2 text-xs text-slate-400 font-mono mb-8 border-t border-white/[0.06] pt-4">
-            <div class="flex justify-between gap-3"><span>版本号</span><span class="text-white">v${esc(r.version)}</span></div>
-            <div class="flex justify-between gap-3"><span>文件</span><span class="text-white truncate">${esc(r.fileName || "")}</span></div>
-            <div class="flex justify-between gap-3"><span>大小</span><span class="text-white">${esc(r.size || "")}</span></div>
-            ${r.arch ? `<div class="flex justify-between gap-3"><span>架构</span><span class="text-white">${esc(r.arch)}</span></div>` : ""}
-          </div>
-        </div>
-        <a href="/download/${encodeURIComponent(r.id)}" class="${i === 0 ? "btn-shimmer h-[52px] w-full rounded-[14px] bg-gradient-to-r from-accent-cyan to-[#06B6D4] text-[#04101A] font-bold" : "h-[52px] w-full rounded-[14px] bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.16] text-white font-semibold"} text-[15px] flex items-center justify-center gap-2.5 transition-all duration-300"><i data-lucide="download" class="w-4 h-4"></i><span>下载 ${esc(pkgName(r))}（${esc(r.size || "")}）</span></a>
-      </div>`;
-    }).join("");
-  }
-
-  function renderChangelog(s) {
-    const section = $("changelog");
-    const versions = new Map();
-    for (const r of s.releasesReady) {
-      if (!versions.has(r.version)) versions.set(r.version, []);
-      versions.get(r.version).push(r);
+    // 如果 URL 记录的平台已经不存在，则回退到 all
+    if (currentPlatform !== "all" && !pSet.has(currentPlatform)) {
+      currentPlatform = "all";
     }
-    if (!versions.size) { section.hidden = true; return; }
-    section.hidden = false;
-    const list = [...versions.entries()].slice(0, 15);
-    $("changelogList").innerHTML = list.map(([version, rels], index) => {
-      const notes = (rels.find(r => r.changelog)?.changelog || "").split(/\r?\n/).map(t => t.replace(/^\s*[-*•\d.、]+\s*/, "").trim()).filter(Boolean);
-      const open = index === 0;
-      return `<div class="glass-card rounded-xl overflow-hidden changelog-item">
-        <button type="button" class="w-full px-5 py-4 flex items-center justify-between text-left text-sm font-semibold text-white hover:bg-white/[0.02]" data-toggle>
-          <div class="flex items-center gap-3">
-            <span class="w-2 h-2 rounded-full ${index === 0 ? "bg-emerald-400" : "bg-slate-500"}"></span>
-            <span>v${esc(version)}${index === 0 ? " 最新版" : ""}</span>
-            <span class="text-[11px] font-normal text-slate-400 font-mono">${esc(dateText(rels[0].createdAt))}</span>
-          </div>
-          <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform duration-200 ${open ? "rotate-180" : ""}"></i>
-        </button>
-        <div class="px-5 pb-5 pt-1 text-xs sm:text-sm text-slate-300 space-y-2 border-t border-white/[0.06] ${open ? "" : "hidden"}" data-content>
-          ${notes.length ? notes.map(n => `<div class="flex items-start gap-2.5"><span class="text-accent-cyan">·</span><span>${esc(n)}</span></div>`).join("") : `<p class="text-slate-500">本版本暂无更新说明。</p>`}
-          <div class="flex flex-wrap gap-2 pt-3">${rels.map(r => `<a href="/download/${encodeURIComponent(r.id)}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.1] text-slate-300 hover:text-white hover:border-white/30 text-xs"><i data-lucide="download" class="w-3.5 h-3.5"></i>${esc(pkgName(r))} · ${esc(r.size || "")}</a>`).join("")}</div>
-        </div>
-      </div>`;
-    }).join("");
-    $("changelogList").querySelectorAll("[data-toggle]").forEach(btn => btn.addEventListener("click", () => {
-      const content = btn.nextElementSibling;
-      const willOpen = content.classList.contains("hidden");
-      content.classList.toggle("hidden", !willOpen);
-      btn.querySelector("[data-lucide], svg")?.classList.toggle("rotate-180", willOpen);
-    }));
+
+    renderFeaturedCarousel();
+    renderFilterBar();
+    applyFiltersAndRender();
+    renderSidebarRankings();
+
+    // 绑定搜索与排序事件
+    bindFilterEvents();
   }
 
-  async function copy(text, okText) {
-    try {
-      await navigator.clipboard.writeText(text);
-      flash(okText);
-    } catch {
-      flash("复制失败，请手动复制");
+  // 1. 主推轮播 (Featured Carousel)
+  function renderFeaturedCarousel() {
+    const sec = $("featuredCarouselSection");
+    if (!sec) return;
+
+    carouselItems = allSoftware
+      .filter(s => s.featured === true || s.featured === "true" || s.featured === "1")
+      .sort((a, b) => (Number(a.featuredOrder) || 0) - (Number(b.featuredOrder) || 0))
+      .slice(0, 5);
+
+    if (carouselItems.length === 0) {
+      sec.classList.add("hidden");
+      return;
+    }
+    sec.classList.remove("hidden");
+
+    const track = $("carouselTrack");
+    const dotsBox = $("carouselDots");
+    if (!track) return;
+
+    track.innerHTML = carouselItems.map((s, idx) => {
+      const cover = s.coverUrl || (s.screenshots && s.screenshots[0]) || "";
+      const cat = (catalog.categories || []).find(c => c.id === s.categoryId)?.name || "官方精选";
+      const detailHref = s.landingUrl || `/software.html?slug=${encodeURIComponent(s.slug || s.id)}`;
+      const downloadHref = s.latest ? `/download/${encodeURIComponent(s.latest.id)}` : detailHref;
+
+      const platformIcons = s.platforms.map(p => {
+        const item = PLATFORMS[p] || PLATFORMS.other;
+        return `<span class="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-white/[0.08] text-slate-300 border border-white/[0.1]">
+          <i data-lucide="${item.icon}" class="w-3.5 h-3.5"></i>
+          <span>${item.label}</span>
+        </span>`;
+      }).join("");
+
+      return `
+        <div class="carousel-slide w-full shrink-0 transition-opacity duration-700 ${idx === 0 ? 'opacity-100 relative z-10' : 'opacity-0 absolute inset-0 pointer-events-none'}" data-slide="${idx}">
+          <div class="glass-card rounded-3xl overflow-hidden border border-white/[0.12] shadow-2xl grid grid-cols-1 lg:grid-cols-12 min-h-[380px]">
+            <div class="lg:col-span-7 p-8 sm:p-10 flex flex-col justify-between">
+              <div>
+                <div class="flex flex-wrap items-center gap-2.5 mb-4">
+                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-accent-cyan animate-pulse"></span>
+                    <span>精选主推</span>
+                  </span>
+                  <span class="px-2.5 py-1 rounded-full text-xs text-slate-400 bg-white/[0.04] border border-white/[0.08]">${esc(cat)}</span>
+                  <span class="px-2.5 py-1 rounded-full text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 font-medium">${esc(s.priceLabel || "免费")}</span>
+                </div>
+                <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-3">${esc(s.name)}</h2>
+                <p class="text-slate-300 text-sm sm:text-base leading-relaxed line-clamp-3 mb-6">${esc(s.tagline || s.description || "体验极速效能与现代灵动设计。")}</p>
+                <div class="flex flex-wrap items-center gap-2 mb-6">
+                  ${platformIcons}
+                  ${s.latest ? `<span class="text-xs font-mono text-slate-400 ml-2">v${esc(s.latest.version)} (${esc(s.latest.size || formatBytes(s.latest.fileSize))})</span>` : ""}
+                </div>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-4 pt-4 border-t border-white/[0.08]">
+                ${s.latest ? `
+                  <a href="${downloadHref}" class="btn-shimmer h-[50px] px-8 rounded-xl bg-gradient-to-r from-accent-cyan to-[#06B6D4] text-[#04101A] font-bold text-sm flex items-center gap-2.5 shadow-[0_0_30px_rgba(0,242,254,0.35)] hover:-translate-y-0.5 transition-transform">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>立即下载</span>
+                  </a>
+                ` : `
+                  <a href="${detailHref}" class="btn-shimmer h-[50px] px-8 rounded-xl bg-gradient-to-r from-accent-cyan to-[#06B6D4] text-[#04101A] font-bold text-sm flex items-center gap-2.5 shadow-[0_0_30px_rgba(0,242,254,0.35)] hover:-translate-y-0.5 transition-transform">
+                    <span>了解详情</span>
+                  </a>
+                `}
+                <a href="${detailHref}" class="h-[50px] px-6 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.14] text-white font-semibold text-sm flex items-center gap-2 transition-all">
+                  <span>查看详情</span>
+                  <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400"></i>
+                </a>
+              </div>
+            </div>
+
+            <div class="lg:col-span-5 bg-gradient-to-br from-white/[0.04] to-transparent relative min-h-[240px] flex items-center justify-center p-6 overflow-hidden">
+              ${cover ? `
+                <img src="${esc(cover)}" alt="${esc(s.name)}" class="w-full h-full max-h-[340px] object-cover rounded-2xl border border-white/[0.1] shadow-2xl transition-transform duration-700 hover:scale-[1.02]" />
+              ` : `
+                <div class="flex flex-col items-center justify-center text-slate-500 gap-3">
+                  <i data-lucide="sparkles" class="w-16 h-16 text-accent-cyan/40"></i>
+                  <span class="text-xs tracking-widest text-slate-400 font-mono">TIANCAIMAO FLAGSHIP</span>
+                </div>
+              `}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    if (dotsBox) {
+      dotsBox.innerHTML = carouselItems.map((_, i) =>
+        `<button type="button" data-dot="${i}" class="carousel-dot transition-all duration-300 rounded-full ${i === 0 ? 'w-8 h-2 bg-accent-cyan' : 'w-2 h-2 bg-white/20 hover:bg-white/40'}" aria-label="Slide ${i+1}"></button>`
+      ).join("");
+    }
+
+    setupCarouselControls();
+    safeIcons();
+  }
+
+  function setupCarouselControls() {
+    const prevBtn = $("carouselPrev");
+    const nextBtn = $("carouselNext");
+    const container = $("featuredCarouselSection");
+
+    function goTo(idx) {
+      if (carouselItems.length <= 1) return;
+      currentCarouselIndex = (idx + carouselItems.length) % carouselItems.length;
+
+      document.querySelectorAll(".carousel-slide").forEach((el, i) => {
+        if (i === currentCarouselIndex) {
+          el.classList.remove("opacity-0", "pointer-events-none", "absolute");
+          el.classList.add("opacity-100", "relative", "z-10");
+        } else {
+          el.classList.add("opacity-0", "pointer-events-none", "absolute");
+          el.classList.remove("opacity-100", "relative", "z-10");
+        }
+      });
+
+      document.querySelectorAll(".carousel-dot").forEach((dot, i) => {
+        if (i === currentCarouselIndex) {
+          dot.className = "carousel-dot transition-all duration-300 rounded-full w-8 h-2 bg-accent-cyan";
+        } else {
+          dot.className = "carousel-dot transition-all duration-300 rounded-full w-2 h-2 bg-white/20 hover:bg-white/40";
+        }
+      });
+      safeIcons();
+    }
+
+    if (prevBtn) prevBtn.onclick = () => goTo(currentCarouselIndex - 1);
+    if (nextBtn) nextBtn.onclick = () => goTo(currentCarouselIndex + 1);
+
+    document.querySelectorAll(".carousel-dot").forEach(btn => {
+      btn.onclick = () => goTo(Number(btn.dataset.dot));
+    });
+
+    function startAuto() {
+      stopAuto();
+      if (carouselItems.length > 1) {
+        carouselTimer = setInterval(() => goTo(currentCarouselIndex + 1), 6000);
+      }
+    }
+    function stopAuto() {
+      if (carouselTimer) { clearInterval(carouselTimer); carouselTimer = null; }
+    }
+
+    if (container) {
+      container.onmouseenter = stopAuto;
+      container.onmouseleave = startAuto;
+    }
+    startAuto();
+  }
+
+  // 2. 筛选条 (Filter Bar)
+  function renderFilterBar() {
+    // 2.1 平台分段按钮
+    const seg = $("platformSegmented");
+    if (seg) {
+      const segItems = [
+        { id: "all", label: "全部平台", icon: "layout-grid" },
+        ...availablePlatforms.map(p => PLATFORMS[p] || { id: p, label: p, icon: "package" })
+      ];
+
+      seg.innerHTML = segItems.map(p => {
+        const active = currentPlatform === p.id;
+        return `
+          <button type="button" data-platform="${esc(p.id)}" class="platform-tab px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${active ? 'bg-white/[0.14] text-white border border-white/20 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'}">
+            <i data-lucide="${esc(p.icon)}" class="w-3.5 h-3.5"></i>
+            <span>${esc(p.label)}</span>
+          </button>
+        `;
+      }).join("");
+
+      seg.querySelectorAll("[data-platform]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          currentPlatform = btn.dataset.platform;
+          syncUrl();
+          renderFilterBar();
+          applyFiltersAndRender();
+        });
+      });
+    }
+
+    // 2.2 分类标签
+    const catBox = $("categoryTabs");
+    if (catBox) {
+      const usedCats = new Set(allSoftware.map(s => s.categoryId));
+      const cats = [{ id: "all", name: "全部分类" }, ...(catalog.categories || []).filter(c => usedCats.has(c.id))];
+
+      catBox.innerHTML = cats.map(c => {
+        const active = currentCategory === c.id;
+        return `
+          <button type="button" data-cat="${esc(c.id)}" class="px-3 py-1 rounded-full text-xs font-medium border transition-colors ${active ? 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/40' : 'bg-transparent text-slate-400 border-white/[0.08] hover:text-white hover:border-white/20'}">
+            ${esc(c.name)}
+          </button>
+        `;
+      }).join("");
+
+      catBox.querySelectorAll("[data-cat]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          currentCategory = btn.dataset.cat;
+          syncUrl();
+          renderFilterBar();
+          applyFiltersAndRender();
+        });
+      });
+    }
+
+    // 2.3 状态同步回输入框
+    const qInput = $("searchInput");
+    if (qInput && qInput.value !== currentQuery) {
+      qInput.value = currentQuery;
+    }
+    const sortSel = $("sortSelect");
+    if (sortSel && sortSel.value !== currentSort) {
+      sortSel.value = currentSort;
+    }
+
+    safeIcons();
+  }
+
+  function bindFilterEvents() {
+    const qInput = $("searchInput");
+    if (qInput) {
+      let debounceTimer = null;
+      qInput.addEventListener("input", e => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          currentQuery = e.target.value.trim();
+          syncUrl();
+          applyFiltersAndRender();
+        }, 250);
+      });
+    }
+
+    const sortSel = $("sortSelect");
+    if (sortSel) {
+      sortSel.addEventListener("change", e => {
+        currentSort = e.target.value;
+        syncUrl();
+        applyFiltersAndRender();
+      });
+    }
+
+    const resetBtn = $("resetFiltersBtn");
+    if (resetBtn) {
+      resetBtn.addEventListener("click", () => {
+        currentPlatform = "all";
+        currentCategory = "all";
+        currentQuery = "";
+        currentSort = "recommend";
+        syncUrl();
+        renderFilterBar();
+        applyFiltersAndRender();
+      });
     }
   }
 
-  function flash(text) {
-    const tip = document.createElement("div");
-    tip.textContent = text;
-    tip.className = "fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] px-4 py-2 rounded-xl bg-black/80 border border-white/10 text-sm text-white";
-    document.body.append(tip);
-    setTimeout(() => tip.remove(), 1800);
+  function syncUrl() {
+    const p = new URLSearchParams();
+    if (currentPlatform && currentPlatform !== "all") p.set("platform", currentPlatform);
+    if (currentCategory && currentCategory !== "all") p.set("cat", currentCategory);
+    if (currentSort && currentSort !== "recommend") p.set("sort", currentSort);
+    if (currentQuery) p.set("q", currentQuery);
+
+    const qs = p.toString();
+    const newUrl = location.pathname + (qs ? "?" + qs : "");
+    history.replaceState(null, "", newUrl);
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-  else init();
+  // 3. 过滤并渲染主体卡片网格
+  function applyFiltersAndRender() {
+    let filtered = [...allSoftware];
+
+    // 平台筛选：软件必须有该平台的安装包
+    if (currentPlatform !== "all") {
+      filtered = filtered.filter(s => s.platforms.includes(currentPlatform));
+    }
+
+    // 分类筛选
+    if (currentCategory !== "all") {
+      filtered = filtered.filter(s => s.categoryId === currentCategory);
+    }
+
+    // 搜索词过滤（名称、tagline、description）
+    if (currentQuery) {
+      const q = currentQuery.toLowerCase();
+      filtered = filtered.filter(s =>
+        (s.name && s.name.toLowerCase().includes(q)) ||
+        (s.tagline && s.tagline.toLowerCase().includes(q)) ||
+        (s.description && s.description.toLowerCase().includes(q)) ||
+        (s.slug && s.slug.toLowerCase().includes(q))
+      );
+    }
+
+    // 排序
+    if (currentSort === "downloads") {
+      filtered.sort((a, b) => b.totalDownloads - a.totalDownloads);
+    } else if (currentSort === "updated") {
+      filtered.sort((a, b) => b.latestTimestamp - a.latestTimestamp);
+    } else {
+      filtered.sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0));
+    }
+
+    const grid = $("softwareGrid");
+    const empty = $("emptyState");
+    const countEl = $("filteredCount");
+
+    if (countEl) {
+      countEl.textContent = `共 ${filtered.length} 款软件`;
+    }
+
+    if (filtered.length === 0) {
+      if (grid) grid.innerHTML = "";
+      if (empty) empty.classList.remove("hidden");
+      return;
+    }
+
+    if (empty) empty.classList.add("hidden");
+    if (!grid) return;
+
+    grid.innerHTML = filtered.map(s => {
+      const cat = (catalog.categories || []).find(c => c.id === s.categoryId)?.name || "工具";
+      const icon = s.iconUrl
+        ? `<img src="${esc(s.iconUrl)}" alt="" class="w-12 h-12 rounded-xl object-cover border border-white/[0.1] shrink-0" />`
+        : `<div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-accent-indigo/40 to-accent-cyan/30 border border-white/[0.12] flex items-center justify-center text-white font-bold text-lg shrink-0">${esc((s.name || "软")[0])}</div>`;
+
+      const platformIcons = s.platforms.map(p => {
+        const item = PLATFORMS[p] || PLATFORMS.other;
+        return `<span title="${item.label}" class="text-slate-400 hover:text-white transition-colors"><i data-lucide="${item.icon}" class="w-4 h-4"></i></span>`;
+      }).join("");
+
+      const detailHref = s.landingUrl || `/software.html?slug=${encodeURIComponent(s.slug || s.id)}`;
+      const downloadHref = s.latest ? `/download/${encodeURIComponent(s.latest.id)}` : detailHref;
+
+      return `
+        <article class="glass-card glass-card-hover rounded-2xl p-5 sm:p-6 flex flex-col justify-between transition-all group">
+          <div>
+            <div class="flex items-start justify-between gap-3 mb-3">
+              <div class="flex items-center gap-3 min-w-0">
+                ${icon}
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-bold text-white group-hover:text-accent-cyan transition-colors truncate">
+                      <a href="${detailHref}">${esc(s.name)}</a>
+                    </h3>
+                  </div>
+                  <div class="flex items-center gap-2 mt-0.5">
+                    <span class="text-[11px] px-2 py-0.5 rounded-full bg-white/[0.06] text-slate-400 border border-white/[0.08]">${esc(cat)}</span>
+                    <span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 font-medium border border-amber-500/20">${esc(s.priceLabel || "免费")}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p class="text-slate-400 text-xs sm:text-sm leading-relaxed line-clamp-2 min-h-[38px] mb-4">
+              ${esc(s.tagline || s.description || "暂无描述")}
+            </p>
+
+            <div class="flex items-center justify-between text-xs text-slate-400 py-3 border-t border-white/[0.06] mb-4">
+              <div class="flex items-center gap-2">
+                ${platformIcons || '<span class="text-[11px] text-slate-500">即将发布</span>'}
+              </div>
+              <div class="flex items-center gap-2 font-mono text-[11px]">
+                ${s.latest ? `<span>v${esc(s.latest.version)}</span>` : ""}
+                ${s.latest?.size ? `<span>· ${esc(s.latest.size)}</span>` : ""}
+                <span>· ${s.totalDownloads} 次下载</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5 pt-2">
+            ${s.latest ? `
+              <a href="${downloadHref}" class="btn-shimmer h-[42px] rounded-xl bg-gradient-to-r from-accent-cyan to-[#06B6D4] text-[#04101A] font-bold text-xs flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(0,242,254,0.25)] hover:-translate-y-0.5 transition-transform">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span>立即下载</span>
+              </a>
+            ` : `
+              <span class="h-[42px] rounded-xl bg-white/[0.04] text-slate-500 font-medium text-xs flex items-center justify-center cursor-not-allowed border border-white/[0.06]">
+                即将发布
+              </span>
+            `}
+            <a href="${detailHref}" class="h-[42px] rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.12] text-white font-medium text-xs flex items-center justify-center gap-1 transition-all">
+              <span>查看详情</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-slate-400"></i>
+            </a>
+          </div>
+        </article>
+      `;
+    }).join("");
+
+    safeIcons();
+  }
+
+  // 4. 右侧边栏：下载榜 Top 10 与 最近更新
+  function renderSidebarRankings() {
+    // 4.1 下载榜 Top 10
+    const topRankBox = $("rankingTop10");
+    if (topRankBox) {
+      const topList = [...allSoftware]
+        .sort((a, b) => b.totalDownloads - a.totalDownloads)
+        .slice(0, 10);
+
+      if (topList.length === 0) {
+        topRankBox.innerHTML = `<div class="p-4 text-center text-xs text-slate-500">暂无下载排行数据</div>`;
+      } else {
+        topRankBox.innerHTML = topList.map((s, idx) => {
+          const rank = idx + 1;
+          const isGold = rank <= 3;
+          const detailHref = s.landingUrl || `/software.html?slug=${encodeURIComponent(s.slug || s.id)}`;
+          const icon = s.iconUrl
+            ? `<img src="${esc(s.iconUrl)}" class="w-7 h-7 rounded-lg object-cover" alt="" />`
+            : `<div class="w-7 h-7 rounded-lg bg-white/[0.08] flex items-center justify-center text-xs font-bold text-white">${esc((s.name || "软")[0])}</div>`;
+
+          return `
+            <a href="${detailHref}" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/[0.05] transition-colors group">
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="w-5 text-center font-bold font-mono text-sm ${isGold ? 'text-[#e8a33d]' : 'text-slate-500'}">${rank}</span>
+                ${icon}
+                <div class="min-w-0">
+                  <div class="text-xs font-semibold text-white group-hover:text-accent-cyan truncate transition-colors">${esc(s.name)}</div>
+                  <div class="text-[10px] text-slate-500 font-mono">${s.latest ? 'v' + esc(s.latest.version) : '即将发布'}</div>
+                </div>
+              </div>
+              <div class="text-[11px] font-mono text-slate-400 shrink-0 ml-2">
+                ${s.totalDownloads.toLocaleString()} 次
+              </div>
+            </a>
+          `;
+        }).join("");
+      }
+    }
+
+    // 4.2 最近更新 (Top 5 发版)
+    const recentBox = $("recentUpdates");
+    if (recentBox) {
+      const allReleases = [];
+      allSoftware.forEach(s => {
+        s.releases.forEach(r => {
+          allReleases.push({
+            softwareName: s.name,
+            slug: s.slug || s.id,
+            landingUrl: s.landingUrl,
+            version: r.version,
+            platform: r.platform,
+            createdAt: r.createdAt,
+            downloadId: r.id
+          });
+        });
+      });
+
+      allReleases.sort((a, b) => {
+        const timeA = typeof a.createdAt === "number" ? a.createdAt : new Date(a.createdAt || 0).getTime();
+        const timeB = typeof b.createdAt === "number" ? b.createdAt : new Date(b.createdAt || 0).getTime();
+        return timeB - timeA;
+      });
+
+      const topRecent = allReleases.slice(0, 5);
+
+      if (topRecent.length === 0) {
+        recentBox.innerHTML = `<div class="p-4 text-center text-xs text-slate-500">暂无版本发布记录</div>`;
+      } else {
+        recentBox.innerHTML = topRecent.map(r => {
+          const detailHref = r.landingUrl || `/software.html?slug=${encodeURIComponent(r.slug)}`;
+          const pItem = PLATFORMS[r.platform] || PLATFORMS.other;
+          return `
+            <a href="${detailHref}" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/[0.05] transition-colors group">
+              <div class="min-w-0 flex items-center gap-2">
+                <i data-lucide="${pItem.icon}" class="w-3.5 h-3.5 text-slate-400 group-hover:text-accent-cyan shrink-0 transition-colors"></i>
+                <div class="min-w-0">
+                  <div class="text-xs font-semibold text-white group-hover:text-accent-cyan truncate transition-colors">${esc(r.softwareName)}</div>
+                  <div class="text-[10px] text-slate-500 font-mono">v${esc(r.version)} · ${pItem.label}</div>
+                </div>
+              </div>
+              <span class="text-[10px] text-slate-500 font-mono shrink-0 ml-2">${formatDate(r.createdAt)}</span>
+            </a>
+          `;
+        }).join("");
+      }
+    }
+
+    safeIcons();
+  }
+
+  // 页面加载完成后启动
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
 })();
