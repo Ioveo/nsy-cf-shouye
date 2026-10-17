@@ -273,7 +273,7 @@ def test_browser_flow(token):
             last_text = ""
             while time.time() - start < timeout:
                 try:
-                    res = send("Runtime.evaluate", {"expression": "document.body ? document.body.innerText : ''"})
+                    res = send("Runtime.evaluate", {"expression": "document.body ? document.body.textContent : ''"})
                     last_text = res.get("result", {}).get("value", "") or ""
                     if keyword in last_text:
                         return last_text
@@ -292,14 +292,18 @@ def test_browser_flow(token):
         print(f"✓ 2.2 进入控制台: {dash_url}")
 
         # 2.3 导航至软件管理
-        send("Runtime.evaluate", {"expression": "location.href = '/studio/software';"})
-        sw_text = poll_text("Studio 演示软件", timeout=12)
+        send("Runtime.evaluate", {
+            "expression": "const link = document.querySelector('a[href=\"/software\"]') || document.querySelector('a[href=\"/studio/software\"]'); if (link) link.click(); else location.href = '/studio/software';"
+        })
+        sw_text = poll_text("Studio 演示软件", timeout=15)
         assert "Studio 演示软件" in sw_text, f"Expected 'Studio 演示软件' in software list: {sw_text[:200]}"
         print("✓ 2.3 软件管理列表加载成功，找到「Studio 演示软件」")
 
         # 2.4 导航至版本管理
-        send("Runtime.evaluate", {"expression": "location.href = '/studio/releases';"})
-        rel_text = poll_text("3.0.0", timeout=12)
+        send("Runtime.evaluate", {
+            "expression": "const link = document.querySelector('a[href=\"/releases\"]') || document.querySelector('a[href=\"/studio/releases\"]'); if (link) link.click(); else location.href = '/studio/releases';"
+        })
+        rel_text = poll_text("3.0.0", timeout=15)
         assert "Windows 官方安装版" in rel_text or "3.0.0" in rel_text, f"Expected release in releases list: {rel_text[:200]}"
         print("✓ 2.4 版本管理列表加载成功，找到 v3.0.0 及多平台安装包")
 

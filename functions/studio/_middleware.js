@@ -7,6 +7,7 @@ export async function onRequest(context) {
     return next();
   }
 
-  // Otherwise SPA route: serve /studio/index.html with status 200
-  return env.ASSETS.fetch(new URL("/studio/index.html", request.url));
+  // Otherwise SPA subroutes (e.g. /studio/sign-in, /studio/software):
+  // Fetch /studio/ to avoid Cloudflare Pages 308 pretty URL redirect loop
+  return env.ASSETS.fetch(new URL("/studio/", request.url));
 }
