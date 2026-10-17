@@ -198,7 +198,7 @@
       }
     </style>
   </head>
-  <body class="relative min-h-screen">
+  <body class="relative min-h-screen" data-landing-page="software">
     <!-- Aurora Background Gradients -->
     <div class="aurora-mesh" aria-hidden="true">
       <div class="aurora-orb aurora-orb-1"></div>
@@ -269,13 +269,13 @@
             </div>
 
             <!-- Title -->
-            <h1 id="heroTitle" class="text-4xl sm:text-5xl lg:text-[62px] font-bold tracking-tight leading-[1.08] text-white mb-6">
+            <h1 id="heroTitle" data-landing="heroTitle" class="text-4xl sm:text-5xl lg:text-[62px] font-bold tracking-tight leading-[1.08] text-white mb-6">
               新一代创作者<br>
               <span class="bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">桌面效率引擎</span>
             </h1>
 
             <!-- Subtitle -->
-            <p id="heroDesc" class="text-slate-400 text-base sm:text-lg leading-golden max-w-xl mb-9">
+            <p id="heroDesc" data-landing="heroSubtitle" class="text-slate-400 text-base sm:text-lg leading-golden max-w-xl mb-9">
               融合 visionOS 半透明磨砂玻璃设计与极致系统底层性能。内置自包含运行时免除依赖环境，搭载 Windows 原生 NTFS 软链接无损搬迁技术与丝滑抽屉吸附交互。
             </p>
 
@@ -823,5 +823,6 @@
 
     </script>
     <script src="/software-center.js?v=20261017"></script>
+    <script src="/js/landing-bind.js?v=20261017"></script>
   </body>
 </html>

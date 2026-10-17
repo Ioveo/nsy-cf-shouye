@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" href="/logo.png?v=20260509" />
     <link rel="stylesheet" href="/photo-wall.css?v=20260518-photo-wall-fold" />
   </head>
-  <body class="photo-wall-page">
+  <body class="photo-wall-page" data-landing-page="photo-wall">
     <main class="photo-wall-shell" data-photo-wall>
       <div id="photo-wall-canvas"></div>
       <div class="photo-wall-bg-image" data-photo-wall-bg-image></div>
@@ -28,8 +28,8 @@
 
       <footer class="photo-wall-footer">
         <span>TIANCAIMAO PHOTO WALL</span>
-        <strong data-photo-wall-title>NSY Gallery</strong>
-        <a href="/gallery.html">ALL PHOTOS</a>
+        <strong data-photo-wall-title data-landing="heroTitle">NSY Gallery</strong>
+        <a href="/gallery.html" data-landing="ctaText" data-landing-href="ctaHref">ALL PHOTOS</a>
       </footer>
     </main>
 
@@ -53,5 +53,6 @@
 
     <script src="/curtains.umd.min.js"></script>
     <script src="/photo-wall.js?v=20261010-fluid-kinematics" type="module"></script>
+    <script src="/js/landing-bind.js?v=20261017"></script>
   </body>
 </html>

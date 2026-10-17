@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="/styles.css?v=20260510-premium-detail" />
     <link rel="stylesheet" href="/site-theme.css?v=20260518-home-unified-pages" />
   </head>
-  <body class="articles-page">
+  <body class="articles-page" data-landing-page="articles">
     <header class="topbar">
       <a class="brand" href="/"><img src="/logo.png" alt="" /><span>天才猫</span></a>
       <nav aria-label="主导航" data-nav>
@@ -20,8 +20,8 @@
     <main>
       <section class="page-hero article-hero">
         <p class="eyebrow">Articles</p>
-        <h1>软件介绍、教程与运营方法。</h1>
-        <p>把产品能力、使用步骤和真实业务场景整理成可阅读、可转发的内容。</p>
+        <h1 data-landing="heroTitle">软件介绍、教程与运营方法。</h1>
+        <p data-landing="heroSubtitle">把产品能力、使用步骤和真实业务场景整理成可阅读、可转发的内容。</p>
       </section>
       <section class="article-list page-section" aria-label="文章列表">
         <div class="article-list__head">
@@ -42,5 +42,6 @@
     </main>
     <footer><span>天才猫软件中心</span><span>Articles</span></footer>
     <script src="/articles.js?v=20260518-home-unified-pages" type="module"></script>
+    <script src="/js/landing-bind.js?v=20261017"></script>
   </body>
 </html>

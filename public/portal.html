@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" href="/logo.png?v=20260509" />
     <link rel="stylesheet" href="/apple-design.css?v=20261014-gold" />
   </head>
-  <body>
+  <body data-landing-page="portal">
     <!-- SVG Sprite Definitions -->
     <svg width="0" height="0" class="svg-sprite-defs" aria-hidden="true">
       <defs>
@@ -47,17 +47,17 @@
       <!-- Hero Section -->
       <section class="apple-hero">
         <span class="apple-eyebrow" data-site-text="homeHeroKicker">Tiancaimao Command Center</span>
-        <h1 class="apple-hero__title" data-site-text="homeHeroTitle">
+        <h1 class="apple-hero__title" data-landing="heroTitle" data-site-text="homeHeroTitle">
           把直播运营与常用工具，<br>
           <em>收进更轻快的灵动桌面</em>
         </h1>
-        <p class="apple-hero__subtitle" data-site-text="homeHeroDescription">
+        <p class="apple-hero__subtitle" data-landing="heroSubtitle" data-site-text="homeHeroDescription">
           专为 Windows 打造的灵动桌面与运营中枢。抽屉收纳、Alt快捷盲操、C盘无损搬家与治愈桌宠，开箱即用零依赖。
         </p>
         <div class="apple-hero__actions">
-          <a class="apple-btn apple-btn--primary" href="/desktop.html">
+          <a class="apple-btn apple-btn--primary" href="/desktop.html" data-landing-href="ctaHref">
             <svg class="ico"><use href="#i-dock"/></svg>
-            <span>体验天才猫桌面 2.0</span>
+            <span data-landing="ctaText">体验天才猫桌面 2.0</span>
             <i>→</i>
           </a>
           <a class="apple-btn apple-btn--secondary" href="#softwareMatrix">
@@ -69,7 +69,7 @@
 
         <!-- 真实大画幅界面展示 (消灭留白，高清晰度) -->
         <div class="hero-preview-frame">
-          <img src="/card-desktop-full.png" alt="天才猫桌面 2.0 全景界面展示" />
+          <img src="/card-desktop-full.png" data-landing-src="heroImage" alt="天才猫桌面 2.0 全景界面展示" />
         </div>
 
         <!-- 静默极简命令检索器 -->
@@ -385,5 +385,6 @@
 
     <!-- 动态数据交互引擎 -->
     <script src="/home.js?v=20261014-gold" type="module"></script>
+    <script src="/js/landing-bind.js?v=20261017"></script>
   </body>
 </html>

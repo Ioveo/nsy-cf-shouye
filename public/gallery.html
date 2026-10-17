@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/gallery.css?v=20260518-smooth-viewer" />
     <link rel="stylesheet" href="/site-theme.css?v=20260518-home-unified-pages" />
   </head>
-  <body class="gallery-page">
+  <body class="gallery-page" data-landing-page="gallery">
     <header class="topbar">
       <a class="brand" href="/">
         <img src="/logo.png" alt="" />
@@ -31,9 +31,9 @@
         <div class="gallery-hero__shade"></div>
         <div class="gallery-hero__content">
           <p class="eyebrow">Tiancaimao Gallery</p>
-          <h1>数字影像画廊</h1>
-          <p>产品、现场与创作过程里的关键画面，在这里以原图质感呈现。</p>
-          <a class="gallery-hero__action" href="#galleryWall">开始浏览</a>
+          <h1 data-landing="heroTitle">数字影像画廊</h1>
+          <p data-landing="heroSubtitle">产品、现场与创作过程里的关键画面，在这里以原图质感呈现。</p>
+          <a class="gallery-hero__action" href="#galleryWall" data-landing="ctaText" data-landing-href="ctaHref">开始浏览</a>
         </div>
       </section>
 
@@ -74,5 +74,6 @@
     </div>
 
     <script src="/gallery.js?v=20260518-smooth-viewer" type="module"></script>
+    <script src="/js/landing-bind.js?v=20261017"></script>
   </body>
 </html>
