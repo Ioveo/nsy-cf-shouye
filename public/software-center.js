@@ -1,11 +1,13 @@
-// 天才猫软件中心列表页核心逻辑 (download.html)
-// 数据全部对接后台 /api/catalog 动态生成，支持主推轮播、平台分段筛选、多维排序、搜索与 Top 10 下载榜
+// 天才猫软件中心核心脚本 (software-center.js)
+// 纯净语义化 DOM 操作 · 一次请求 /api/catalog · 仅重渲染列表区 · URL 状态同步 · 无 Tailwind 类名
 (function () {
-  // 1. 兼容旧版链接：/download.html?app=xxx -> /software.html?slug=xxx
-  const urlParams = new URLSearchParams(location.search);
+  "use strict";
+
+  // 1. 兼容旧版参数：/download.html?app=xxx -> /software.html?slug=xxx
+  const urlParams = new URLSearchParams(window.location.search);
   const legacyApp = urlParams.get("app");
   if (legacyApp) {
-    location.replace("/software.html?slug=" + encodeURIComponent(legacyApp));
+    window.location.replace("/software.html?slug=" + encodeURIComponent(legacyApp));
     return;
   }
 
@@ -14,51 +16,91 @@
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   })[ch]);
 
-  const PLATFORMS = {
+  const PLATFORM_MAP = {
     windows: { id: "windows", label: "Windows", icon: "monitor" },
-    portable: { id: "portable", label: "绿色便携", icon: "package" },
     macos: { id: "macos", label: "macOS", icon: "apple" },
+    portable: { id: "portable", label: "绿色版", icon: "package" },
     linux: { id: "linux", label: "Linux", icon: "terminal" },
     android: { id: "android", label: "Android", icon: "smartphone" },
     other: { id: "other", label: "其他", icon: "file-down" }
   };
-  const PLATFORM_ORDER = ["windows", "macos", "portable", "linux", "android", "other"];
 
+  // 全局数据状态
   let catalog = null;
   let allSoftware = [];
-  let availablePlatforms = [];
-  let carouselItems = [];
-  let currentCarouselIndex = 0;
-  let carouselTimer = null;
+  let featuredSoftware = [];
+  let newArrivals = [];
+  let activeRankTab = "downloads"; // 'downloads' | 'updates'
 
-  // 状态
-  let currentPlatform = urlParams.get("platform") || "all";
+  // 过滤与排序状态
   let currentCategory = urlParams.get("cat") || "all";
+  let currentPlatform = urlParams.get("platform") || "all";
   let currentSort = urlParams.get("sort") || "recommend";
   let currentQuery = urlParams.get("q") || "";
+  let currentPageSize = 12;
+
+  // 轮播状态
+  let carouselIndex = 0;
+  let carouselTimer = null;
+  let isCarouselHovered = false;
 
   function safeIcons() {
-    try { window.lucide?.createIcons(); } catch {}
+    try {
+      if (window.lucide && typeof window.lucide.createIcons === "function") {
+        window.lucide.createIcons();
+      }
+    } catch (e) {
+      console.warn("Lucide icon creation warning:", e);
+    }
+  }
+
+  function formatBytes(bytes) {
+    const num = Number(bytes);
+    if (!num || num <= 0) return "";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(num) / Math.log(k));
+    return (num / Math.pow(k, i)).toFixed(1) + " " + (sizes[i] || "MB");
   }
 
   function formatDate(ts) {
     if (!ts) return "-";
-    const d = new Date(Number(ts));
+    const d = new Date(typeof ts === "number" ? ts : String(ts));
     if (isNaN(d.getTime())) return String(ts).slice(0, 10);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }
 
-  function formatBytes(bytes) {
-    if (!bytes || bytes <= 0) return "";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return (bytes / Math.pow(k, i)).toFixed(1) + " " + sizes[i];
+  function formatRelativeTime(ts) {
+    if (!ts) return "刚刚";
+    const time = typeof ts === "number" ? ts : new Date(ts).getTime();
+    if (isNaN(time)) return "近期";
+    const diff = Math.max(0, Date.now() - time);
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+    const month = 30 * day;
+
+    if (diff < 5 * minute) return "刚刚";
+    if (diff < hour) return Math.floor(diff / minute) + " 分钟前";
+    if (diff < day) return Math.floor(diff / hour) + " 小时前";
+    if (diff < month) return Math.floor(diff / day) + " 天前";
+    return Math.floor(diff / month) + " 个月前";
   }
 
-  function prepareSoftware(raw) {
+  function isDownloadable(r) {
+    return Boolean(
+      r &&
+      r.status === "published" &&
+      (r.fileKey || r.publicUrl) &&
+      r.version &&
+      r.version !== "待上传"
+    );
+  }
+
+  // 派生数据计算 (按 1.3 节规范)
+  function processSoftware(raw) {
     const publishedReleases = (raw.releases || [])
-      .filter(r => r && r.status === "published" && (r.fileKey || r.publicUrl) && r.version && r.version !== "待上传")
+      .filter(isDownloadable)
       .sort((a, b) => {
         const timeA = typeof a.createdAt === "number" ? a.createdAt : new Date(a.createdAt || 0).getTime();
         const timeB = typeof b.createdAt === "number" ? b.createdAt : new Date(b.createdAt || 0).getTime();
@@ -66,541 +108,825 @@
       });
 
     const latest = publishedReleases.find(r => r.isLatest) || publishedReleases[0] || null;
+    const latestVersion = latest ? latest.version : "";
+    const packages = publishedReleases.filter(r => r.version === latestVersion);
     const platforms = Array.from(new Set(publishedReleases.map(r => r.platform || "other")));
-    const totalDownloads = publishedReleases.reduce((sum, r) => sum + (Number(r.downloadCount) || 0), 0);
+    const downloads = (raw.releases || []).reduce((sum, r) => sum + (Number(r.downloadCount) || 0), 0);
 
-    const latestTimestamp = latest
+    const releaseTimes = publishedReleases.map(r => {
+      return typeof r.createdAt === "number" ? r.createdAt : new Date(r.createdAt || 0).getTime();
+    }).filter(t => !isNaN(t) && t > 0);
+
+    const firstReleasedAt = releaseTimes.length ? Math.min(...releaseTimes) : (Number(raw.createdAt) || Date.now());
+    const updatedAt = latest
       ? (typeof latest.createdAt === "number" ? latest.createdAt : new Date(latest.createdAt || 0).getTime())
-      : (typeof raw.updatedAt === "number" ? raw.updatedAt : 0);
+      : (typeof raw.updatedAt === "number" ? raw.updatedAt : Date.now());
 
     return {
       ...raw,
-      releases: publishedReleases,
+      publishedReleases,
       latest,
+      packages,
       platforms,
-      totalDownloads,
-      latestTimestamp,
+      downloads,
+      firstReleasedAt,
+      updatedAt
     };
   }
 
-  async function init() {
-    try {
-      const res = await fetch("/api/catalog", { cache: "no-store" });
-      if (!res.ok) throw new Error("加载目录失败");
-      catalog = await res.json();
-    } catch (err) {
-      const grid = $("softwareGrid");
-      if (grid) grid.innerHTML = `<div class="col-span-full py-16 text-center text-slate-400">软件目录加载异常，请刷新重试。</div>`;
-      return;
-    }
+  // 同步 URL 参数（无刷新）
+  function syncUrlParams() {
+    const params = new URLSearchParams();
+    if (currentCategory && currentCategory !== "all") params.set("cat", currentCategory);
+    if (currentPlatform && currentPlatform !== "all") params.set("platform", currentPlatform);
+    if (currentSort && currentSort !== "recommend") params.set("sort", currentSort);
+    if (currentQuery) params.set("q", currentQuery);
 
-    // 过滤上架软件并预处理
-    allSoftware = (catalog.software || [])
-      .filter(s => (s.status || "active") === "active")
-      .map(prepareSoftware);
-
-    // 计算实际存在的平台
-    const pSet = new Set();
-    allSoftware.forEach(s => s.platforms.forEach(p => pSet.add(p)));
-    availablePlatforms = PLATFORM_ORDER.filter(p => pSet.has(p));
-
-    // 如果 URL 记录的平台已经不存在，则回退到 all
-    if (currentPlatform !== "all" && !pSet.has(currentPlatform)) {
-      currentPlatform = "all";
-    }
-
-    renderFeaturedCarousel();
-    renderFilterBar();
-    applyFiltersAndRender();
-    renderSidebarRankings();
-
-    // 绑定搜索与排序事件
-    bindFilterEvents();
+    const newSearch = params.toString();
+    const newUrl = window.location.pathname + (newSearch ? "?" + newSearch : "");
+    window.history.replaceState(null, "", newUrl);
   }
 
-  // 1. 主推轮播 (Featured Carousel)
-  function renderFeaturedCarousel() {
-    const sec = $("featuredCarouselSection");
-    if (!sec) return;
-
-    carouselItems = allSoftware
-      .filter(s => s.featured === true || s.featured === "true" || s.featured === "1")
-      .sort((a, b) => (Number(a.featuredOrder) || 0) - (Number(b.featuredOrder) || 0))
-      .slice(0, 5);
-
-    if (carouselItems.length === 0) {
-      sec.classList.add("hidden");
-      return;
-    }
-    sec.classList.remove("hidden");
-
-    const track = $("carouselTrack");
-    const dotsBox = $("carouselDots");
+  // 渲染头部轮播
+  function renderHero() {
+    const track = $("heroTrack");
+    const dotsContainer = $("heroDots");
+    const controls = $("heroControls");
     if (!track) return;
 
-    track.innerHTML = carouselItems.map((s, idx) => {
-      const cover = s.coverUrl || (s.screenshots && s.screenshots[0]) || "";
-      const cat = (catalog.categories || []).find(c => c.id === s.categoryId)?.name || "官方精选";
-      const detailHref = s.landingUrl || `/software.html?slug=${encodeURIComponent(s.slug || s.id)}`;
-      const downloadHref = s.latest ? `/download/${encodeURIComponent(s.latest.id)}` : detailHref;
+    if (!featuredSoftware.length) {
+      track.innerHTML = `
+        <div class="sc-hero__slide sc-hero__slide--active">
+          <div class="sc-hero__info">
+            <h1 class="sc-hero__title">天才猫软件中心</h1>
+            <p class="sc-hero__desc">新一代数字化生产力与桌面效能工具矩阵。</p>
+          </div>
+        </div>
+      `;
+      if (controls) controls.style.display = "none";
+      return;
+    }
 
-      const platformIcons = s.platforms.map(p => {
-        const item = PLATFORMS[p] || PLATFORMS.other;
-        return `<span class="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-white/[0.08] text-slate-300 border border-white/[0.1]">
-          <i data-lucide="${item.icon}" class="w-3.5 h-3.5"></i>
-          <span>${item.label}</span>
-        </span>`;
-      }).join("");
+    track.innerHTML = featuredSoftware.map((s, idx) => {
+      const activeCls = idx === carouselIndex ? "sc-hero__slide--active" : "";
+      const latestVer = s.latest ? `v${esc(s.latest.version)}` : "v1.0.0";
+      const catLabel = esc(s.category || "应用工具");
+      const coverUrl = s.coverImage || (s.screenshots && s.screenshots[0]) || "";
+      const iconUrl = s.icon || "/logo.png";
+      const sizeText = s.latest && s.latest.size ? formatBytes(s.latest.size) : "纯净版";
+      const dateText = formatDate(s.updatedAt);
+      const primaryDlUrl = `/download/${encodeURIComponent(s.id)}`;
+      const detailUrl = `/software.html?id=${encodeURIComponent(s.id)}`;
 
       return `
-        <div class="carousel-slide w-full shrink-0 transition-opacity duration-700 ${idx === 0 ? 'opacity-100 relative z-10' : 'opacity-0 absolute inset-0 pointer-events-none'}" data-slide="${idx}">
-          <div class="glass-card rounded-3xl overflow-hidden border border-white/[0.12] shadow-2xl grid grid-cols-1 lg:grid-cols-12 min-h-[380px]">
-            <div class="lg:col-span-7 p-8 sm:p-10 flex flex-col justify-between">
-              <div>
-                <div class="flex flex-wrap items-center gap-2.5 mb-4">
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30 flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-accent-cyan animate-pulse"></span>
-                    <span>精选主推</span>
-                  </span>
-                  <span class="px-2.5 py-1 rounded-full text-xs text-slate-400 bg-white/[0.04] border border-white/[0.08]">${esc(cat)}</span>
-                  <span class="px-2.5 py-1 rounded-full text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 font-medium">${esc(s.priceLabel || "免费")}</span>
-                </div>
-                <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-3">${esc(s.name)}</h2>
-                <p class="text-slate-300 text-sm sm:text-base leading-relaxed line-clamp-3 mb-6">${esc(s.tagline || s.description || "体验极速效能与现代灵动设计。")}</p>
-                <div class="flex flex-wrap items-center gap-2 mb-6">
-                  ${platformIcons}
-                  ${s.latest ? `<span class="text-xs font-mono text-slate-400 ml-2">v${esc(s.latest.version)} (${esc(s.latest.size || formatBytes(s.latest.fileSize))})</span>` : ""}
-                </div>
-              </div>
-
-              <div class="flex flex-wrap items-center gap-4 pt-4 border-t border-white/[0.08]">
-                ${s.latest ? `
-                  <a href="${downloadHref}" class="btn-shimmer h-[50px] px-8 rounded-xl bg-gradient-to-r from-accent-cyan to-[#06B6D4] text-[#04101A] font-bold text-sm flex items-center gap-2.5 shadow-[0_0_30px_rgba(0,242,254,0.35)] hover:-translate-y-0.5 transition-transform">
-                    <i data-lucide="download" class="w-4 h-4"></i>
-                    <span>立即下载</span>
-                  </a>
-                ` : `
-                  <a href="${detailHref}" class="btn-shimmer h-[50px] px-8 rounded-xl bg-gradient-to-r from-accent-cyan to-[#06B6D4] text-[#04101A] font-bold text-sm flex items-center gap-2.5 shadow-[0_0_30px_rgba(0,242,254,0.35)] hover:-translate-y-0.5 transition-transform">
-                    <span>了解详情</span>
-                  </a>
-                `}
-                <a href="${detailHref}" class="h-[50px] px-6 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.14] text-white font-semibold text-sm flex items-center gap-2 transition-all">
-                  <span>查看详情</span>
-                  <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400"></i>
-                </a>
-              </div>
+        <div class="sc-hero__slide ${activeCls}" data-slide-index="${idx}">
+          <div class="sc-hero__info">
+            <div class="sc-badge sc-badge--cyan" style="margin-bottom: 14px;">
+              <span class="sc-badge--dot sc-badge--dot-pulse"></span>
+              <span>${catLabel} · ${latestVer} 现已发布</span>
             </div>
-
-            <div class="lg:col-span-5 bg-gradient-to-br from-white/[0.04] to-transparent relative min-h-[240px] flex items-center justify-center p-6 overflow-hidden">
-              ${cover ? `
-                <img src="${esc(cover)}" alt="${esc(s.name)}" class="w-full h-full max-h-[340px] object-cover rounded-2xl border border-white/[0.1] shadow-2xl transition-transform duration-700 hover:scale-[1.02]" />
-              ` : `
-                <div class="flex flex-col items-center justify-center text-slate-500 gap-3">
-                  <i data-lucide="sparkles" class="w-16 h-16 text-accent-cyan/40"></i>
-                  <span class="text-xs tracking-widest text-slate-400 font-mono">TIANCAIMAO FLAGSHIP</span>
+            <h1 class="sc-hero__title">${esc(s.name)}</h1>
+            <div class="sc-hero__tagline">${esc(s.tagline || "新一代效率桌面与数字化创作引擎")}</div>
+            <p class="sc-hero__desc">${esc(s.description || "全平台高性能底层架构，极致流畅体验，即装即用零冗余。")}</p>
+            <div class="sc-hero__cta-group">
+              <a href="${primaryDlUrl}" class="sc-btn sc-btn--primary sc-btn-shimmer">
+                <i data-lucide="download" style="width: 18px; height: 18px;"></i>
+                <span>立即下载 ${esc(s.name)}</span>
+              </a>
+              <a href="${detailUrl}" class="sc-btn sc-btn--ghost">
+                <i data-lucide="info" style="width: 16px; height: 16px;"></i>
+                <span>了解详情</span>
+              </a>
+            </div>
+            <div class="sc-hero__meta">
+              <span class="sc-hero__meta-item">
+                <i data-lucide="check-circle" style="width: 14px; height: 14px; color: var(--sc-emerald);"></i>
+                <span>${sizeText}</span>
+              </span>
+              <span>·</span>
+              <span class="sc-hero__meta-item">
+                <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+                <span>${s.downloads.toLocaleString()} 次下载</span>
+              </span>
+              <span>·</span>
+              <span class="sc-hero__meta-item">
+                <i data-lucide="calendar" style="width: 14px; height: 14px;"></i>
+                <span>更新于 ${dateText}</span>
+              </span>
+            </div>
+          </div>
+          <div class="sc-hero__visual">
+            <div class="sc-mockup-3d-window sc-glass sc-spotlight">
+              <div class="sc-mockup__bar">
+                <div class="sc-mockup__dots">
+                  <span class="sc-mockup__dot sc-mockup__dot--red"></span>
+                  <span class="sc-mockup__dot sc-mockup__dot--yellow"></span>
+                  <span class="sc-mockup__dot sc-mockup__dot--green"></span>
                 </div>
-              `}
+                <span class="sc-mockup__badge">${esc(s.slug || s.name)} · 官方发布版</span>
+                <div style="display: flex; gap: 6px; color: var(--sc-text-dim);">
+                  <i data-lucide="sparkles" style="width: 13px; height: 13px;"></i>
+                </div>
+              </div>
+              <div class="sc-mockup__body">
+                ${coverUrl ? `
+                  <img src="${esc(coverUrl)}" alt="${esc(s.name)} 预览" class="sc-mockup__img" loading="lazy" />
+                ` : `
+                  <div class="sc-mockup__fallback">
+                    <img src="${esc(iconUrl)}" alt="${esc(s.name)}" class="sc-mockup__fallback-icon" />
+                    <span style="font-size: 13px; font-weight: 600; color: #ffffff;">${esc(s.name)}</span>
+                  </div>
+                `}
+              </div>
             </div>
           </div>
         </div>
       `;
     }).join("");
 
-    if (dotsBox) {
-      dotsBox.innerHTML = carouselItems.map((_, i) =>
-        `<button type="button" data-dot="${i}" class="carousel-dot transition-all duration-300 rounded-full ${i === 0 ? 'w-8 h-2 bg-accent-cyan' : 'w-2 h-2 bg-white/20 hover:bg-white/40'}" aria-label="Slide ${i+1}"></button>`
-      ).join("");
-    }
-
-    setupCarouselControls();
-    safeIcons();
-  }
-
-  function setupCarouselControls() {
-    const prevBtn = $("carouselPrev");
-    const nextBtn = $("carouselNext");
-    const container = $("featuredCarouselSection");
-
-    function goTo(idx) {
-      if (carouselItems.length <= 1) return;
-      currentCarouselIndex = (idx + carouselItems.length) % carouselItems.length;
-
-      document.querySelectorAll(".carousel-slide").forEach((el, i) => {
-        if (i === currentCarouselIndex) {
-          el.classList.remove("opacity-0", "pointer-events-none", "absolute");
-          el.classList.add("opacity-100", "relative", "z-10");
-        } else {
-          el.classList.add("opacity-0", "pointer-events-none", "absolute");
-          el.classList.remove("opacity-100", "relative", "z-10");
+    // 轮播圆点与控制器显示
+    if (controls) {
+      if (featuredSoftware.length > 1) {
+        controls.style.display = "flex";
+        if (dotsContainer) {
+          dotsContainer.innerHTML = featuredSoftware.map((_, i) => `
+            <button type="button" class="sc-hero__dot ${i === carouselIndex ? "sc-hero__dot--active" : ""}" data-dot-index="${i}" aria-label="第 ${i + 1} 页"></button>
+          `).join("");
         }
-      });
-
-      document.querySelectorAll(".carousel-dot").forEach((dot, i) => {
-        if (i === currentCarouselIndex) {
-          dot.className = "carousel-dot transition-all duration-300 rounded-full w-8 h-2 bg-accent-cyan";
-        } else {
-          dot.className = "carousel-dot transition-all duration-300 rounded-full w-2 h-2 bg-white/20 hover:bg-white/40";
-        }
-      });
-      safeIcons();
-    }
-
-    if (prevBtn) prevBtn.onclick = () => goTo(currentCarouselIndex - 1);
-    if (nextBtn) nextBtn.onclick = () => goTo(currentCarouselIndex + 1);
-
-    document.querySelectorAll(".carousel-dot").forEach(btn => {
-      btn.onclick = () => goTo(Number(btn.dataset.dot));
-    });
-
-    function startAuto() {
-      stopAuto();
-      if (carouselItems.length > 1) {
-        carouselTimer = setInterval(() => goTo(currentCarouselIndex + 1), 6000);
+      } else {
+        controls.style.display = "none";
       }
     }
-    function stopAuto() {
-      if (carouselTimer) { clearInterval(carouselTimer); carouselTimer = null; }
-    }
-
-    if (container) {
-      container.onmouseenter = stopAuto;
-      container.onmouseleave = startAuto;
-    }
-    startAuto();
-  }
-
-  // 2. 筛选条 (Filter Bar)
-  function renderFilterBar() {
-    // 2.1 平台分段按钮
-    const seg = $("platformSegmented");
-    if (seg) {
-      const segItems = [
-        { id: "all", label: "全部平台", icon: "layout-grid" },
-        ...availablePlatforms.map(p => PLATFORMS[p] || { id: p, label: p, icon: "package" })
-      ];
-
-      seg.innerHTML = segItems.map(p => {
-        const active = currentPlatform === p.id;
-        return `
-          <button type="button" data-platform="${esc(p.id)}" class="platform-tab px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${active ? 'bg-white/[0.14] text-white border border-white/20 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'}">
-            <i data-lucide="${esc(p.icon)}" class="w-3.5 h-3.5"></i>
-            <span>${esc(p.label)}</span>
-          </button>
-        `;
-      }).join("");
-
-      seg.querySelectorAll("[data-platform]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          currentPlatform = btn.dataset.platform;
-          syncUrl();
-          renderFilterBar();
-          applyFiltersAndRender();
-        });
-      });
-    }
-
-    // 2.2 分类标签
-    const catBox = $("categoryTabs");
-    if (catBox) {
-      const usedCats = new Set(allSoftware.map(s => s.categoryId));
-      const cats = [{ id: "all", name: "全部分类" }, ...(catalog.categories || []).filter(c => usedCats.has(c.id))];
-
-      catBox.innerHTML = cats.map(c => {
-        const active = currentCategory === c.id;
-        return `
-          <button type="button" data-cat="${esc(c.id)}" class="px-3 py-1 rounded-full text-xs font-medium border transition-colors ${active ? 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/40' : 'bg-transparent text-slate-400 border-white/[0.08] hover:text-white hover:border-white/20'}">
-            ${esc(c.name)}
-          </button>
-        `;
-      }).join("");
-
-      catBox.querySelectorAll("[data-cat]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          currentCategory = btn.dataset.cat;
-          syncUrl();
-          renderFilterBar();
-          applyFiltersAndRender();
-        });
-      });
-    }
-
-    // 2.3 状态同步回输入框
-    const qInput = $("searchInput");
-    if (qInput && qInput.value !== currentQuery) {
-      qInput.value = currentQuery;
-    }
-    const sortSel = $("sortSelect");
-    if (sortSel && sortSel.value !== currentSort) {
-      sortSel.value = currentSort;
-    }
 
     safeIcons();
   }
 
-  function bindFilterEvents() {
-    const qInput = $("searchInput");
-    if (qInput) {
-      let debounceTimer = null;
-      qInput.addEventListener("input", e => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          currentQuery = e.target.value.trim();
-          syncUrl();
-          applyFiltersAndRender();
-        }, 250);
-      });
-    }
+  function setCarouselIndex(newIndex) {
+    if (!featuredSoftware.length) return;
+    const count = featuredSoftware.length;
+    carouselIndex = (newIndex + count) % count;
 
-    const sortSel = $("sortSelect");
-    if (sortSel) {
-      sortSel.addEventListener("change", e => {
-        currentSort = e.target.value;
-        syncUrl();
-        applyFiltersAndRender();
-      });
-    }
+    const slides = document.querySelectorAll(".sc-hero__slide");
+    slides.forEach((slide, i) => {
+      if (i === carouselIndex) {
+        slide.classList.add("sc-hero__slide--active");
+      } else {
+        slide.classList.remove("sc-hero__slide--active");
+      }
+    });
 
-    const resetBtn = $("resetFiltersBtn");
-    if (resetBtn) {
-      resetBtn.addEventListener("click", () => {
-        currentPlatform = "all";
-        currentCategory = "all";
-        currentQuery = "";
-        currentSort = "recommend";
-        syncUrl();
-        renderFilterBar();
-        applyFiltersAndRender();
-      });
+    const dots = document.querySelectorAll(".sc-hero__dot");
+    dots.forEach((dot, i) => {
+      if (i === carouselIndex) {
+        dot.classList.add("sc-hero__dot--active");
+      } else {
+        dot.classList.remove("sc-hero__dot--active");
+      }
+    });
+  }
+
+  function startCarouselTimer() {
+    stopCarouselTimer();
+    if (featuredSoftware.length <= 1) return;
+    // 尊重 prefers-reduced-motion
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    carouselTimer = setInterval(() => {
+      if (!isCarouselHovered) {
+        setCarouselIndex(carouselIndex + 1);
+      }
+    }, 6000);
+  }
+
+  function stopCarouselTimer() {
+    if (carouselTimer) {
+      clearInterval(carouselTimer);
+      carouselTimer = null;
     }
   }
 
-  function syncUrl() {
-    const p = new URLSearchParams();
-    if (currentPlatform && currentPlatform !== "all") p.set("platform", currentPlatform);
-    if (currentCategory && currentCategory !== "all") p.set("cat", currentCategory);
-    if (currentSort && currentSort !== "recommend") p.set("sort", currentSort);
-    if (currentQuery) p.set("q", currentQuery);
+  // 渲染统计数据
+  function renderStats() {
+    const swCount = $("statSoftwareCount");
+    const dlCount = $("statDownloadCount");
+    const upCount = $("statUpdateCount");
+    const pfCount = $("statPlatformCount");
 
-    const qs = p.toString();
-    const newUrl = location.pathname + (qs ? "?" + qs : "");
-    history.replaceState(null, "", newUrl);
+    if (swCount) swCount.textContent = allSoftware.length.toString();
+
+    const totalDownloads = allSoftware.reduce((sum, s) => sum + s.downloads, 0);
+    if (dlCount) {
+      dlCount.textContent = totalDownloads > 10000
+        ? (totalDownloads / 10000).toFixed(1) + " 万+"
+        : totalDownloads.toLocaleString();
+    }
+
+    // 本月更新数
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const thisMonthUpdates = allSoftware.filter(s => {
+      if (!s.updatedAt) return false;
+      const d = new Date(s.updatedAt);
+      return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+    }).length;
+    if (upCount) upCount.textContent = Math.max(1, thisMonthUpdates).toString();
+
+    // 支持平台数
+    const uniquePlatforms = new Set();
+    allSoftware.forEach(s => s.platforms.forEach(p => uniquePlatforms.add(p)));
+    if (pfCount) pfCount.textContent = Math.max(4, uniquePlatforms.size).toString();
   }
 
-  // 3. 过滤并渲染主体卡片网格
-  function applyFiltersAndRender() {
-    let filtered = [...allSoftware];
+  // 渲染分类胶囊
+  function renderCategories() {
+    const container = $("categoryChips");
+    if (!container) return;
 
-    // 平台筛选：软件必须有该平台的安装包
-    if (currentPlatform !== "all") {
-      filtered = filtered.filter(s => s.platforms.includes(currentPlatform));
-    }
+    const catCounts = { all: allSoftware.length };
+    allSoftware.forEach(s => {
+      const c = s.category || "应用工具";
+      catCounts[c] = (catCounts[c] || 0) + 1;
+    });
 
-    // 分类筛选
-    if (currentCategory !== "all") {
-      filtered = filtered.filter(s => s.categoryId === currentCategory);
-    }
+    const categories = Object.keys(catCounts).filter(c => c !== "all");
 
-    // 搜索词过滤（名称、tagline、description）
-    if (currentQuery) {
-      const q = currentQuery.toLowerCase();
-      filtered = filtered.filter(s =>
-        (s.name && s.name.toLowerCase().includes(q)) ||
-        (s.tagline && s.tagline.toLowerCase().includes(q)) ||
-        (s.description && s.description.toLowerCase().includes(q)) ||
-        (s.slug && s.slug.toLowerCase().includes(q))
-      );
-    }
+    let html = `
+      <button type="button" class="sc-chip ${currentCategory === "all" ? "sc-chip--active" : ""}" data-cat="all">
+        <span>全部软件</span>
+        <span class="sc-chip__count">${allSoftware.length}</span>
+      </button>
+    `;
 
-    // 排序
-    if (currentSort === "downloads") {
-      filtered.sort((a, b) => b.totalDownloads - a.totalDownloads);
-    } else if (currentSort === "updated") {
-      filtered.sort((a, b) => b.latestTimestamp - a.latestTimestamp);
-    } else {
-      filtered.sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0));
-    }
+    categories.forEach(cat => {
+      const active = currentCategory === cat ? "sc-chip--active" : "";
+      html += `
+        <button type="button" class="sc-chip ${active}" data-cat="${esc(cat)}">
+          <span>${esc(cat)}</span>
+          <span class="sc-chip__count">${catCounts[cat]}</span>
+        </button>
+      `;
+    });
 
-    const grid = $("softwareGrid");
-    const empty = $("emptyState");
-    const countEl = $("filteredCount");
+    container.innerHTML = html;
+  }
 
-    if (countEl) {
-      countEl.textContent = `共 ${filtered.length} 款软件`;
-    }
+  // 渲染新品卡片横滑行
+  function renderNewArrivals() {
+    const track = $("newArrivalsTrack");
+    if (!track) return;
 
-    if (filtered.length === 0) {
-      if (grid) grid.innerHTML = "";
-      if (empty) empty.classList.remove("hidden");
+    if (!newArrivals.length) {
+      const section = $("newArrivalsSection");
+      if (section) section.style.display = "none";
       return;
     }
 
-    if (empty) empty.classList.add("hidden");
-    if (!grid) return;
-
-    grid.innerHTML = filtered.map(s => {
-      const cat = (catalog.categories || []).find(c => c.id === s.categoryId)?.name || "工具";
-      const icon = s.iconUrl
-        ? `<img src="${esc(s.iconUrl)}" alt="" class="w-12 h-12 rounded-xl object-cover border border-white/[0.1] shrink-0" />`
-        : `<div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-accent-indigo/40 to-accent-cyan/30 border border-white/[0.12] flex items-center justify-center text-white font-bold text-lg shrink-0">${esc((s.name || "软")[0])}</div>`;
-
-      const platformIcons = s.platforms.map(p => {
-        const item = PLATFORMS[p] || PLATFORMS.other;
-        return `<span title="${item.label}" class="text-slate-400 hover:text-white transition-colors"><i data-lucide="${item.icon}" class="w-4 h-4"></i></span>`;
-      }).join("");
-
-      const detailHref = s.landingUrl || `/software.html?slug=${encodeURIComponent(s.slug || s.id)}`;
-      const downloadHref = s.latest ? `/download/${encodeURIComponent(s.latest.id)}` : detailHref;
+    track.innerHTML = newArrivals.map(s => {
+      const iconUrl = s.icon || "/logo.png";
+      const verText = s.latest ? `v${esc(s.latest.version)}` : "v1.0.0";
+      const dateText = formatDate(s.firstReleasedAt || s.updatedAt);
+      const dlUrl = `/download/${encodeURIComponent(s.id)}`;
 
       return `
-        <article class="glass-card glass-card-hover rounded-2xl p-5 sm:p-6 flex flex-col justify-between transition-all group">
+        <div class="sc-card--new sc-glass sc-glass--hover sc-spotlight">
+          <span class="sc-card__new-corner">NEW</span>
           <div>
-            <div class="flex items-start justify-between gap-3 mb-3">
-              <div class="flex items-center gap-3 min-w-0">
-                ${icon}
-                <div class="min-w-0">
-                  <div class="flex items-center gap-2">
-                    <h3 class="text-base sm:text-lg font-bold text-white group-hover:text-accent-cyan transition-colors truncate">
-                      <a href="${detailHref}">${esc(s.name)}</a>
-                    </h3>
-                  </div>
-                  <div class="flex items-center gap-2 mt-0.5">
-                    <span class="text-[11px] px-2 py-0.5 rounded-full bg-white/[0.06] text-slate-400 border border-white/[0.08]">${esc(cat)}</span>
-                    <span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 font-medium border border-amber-500/20">${esc(s.priceLabel || "免费")}</span>
-                  </div>
-                </div>
+            <div class="sc-card--new__top">
+              <img src="${esc(iconUrl)}" alt="${esc(s.name)}" class="sc-card--new__icon" loading="lazy" />
+              <div>
+                <h3 class="sc-card--new__name">${esc(s.name)}</h3>
+                <span class="sc-badge sc-badge--cyan" style="font-size: 11px; padding: 2px 8px;">${verText}</span>
               </div>
             </div>
-
-            <p class="text-slate-400 text-xs sm:text-sm leading-relaxed line-clamp-2 min-h-[38px] mb-4">
-              ${esc(s.tagline || s.description || "暂无描述")}
-            </p>
-
-            <div class="flex items-center justify-between text-xs text-slate-400 py-3 border-t border-white/[0.06] mb-4">
-              <div class="flex items-center gap-2">
-                ${platformIcons || '<span class="text-[11px] text-slate-500">即将发布</span>'}
-              </div>
-              <div class="flex items-center gap-2 font-mono text-[11px]">
-                ${s.latest ? `<span>v${esc(s.latest.version)}</span>` : ""}
-                ${s.latest?.size ? `<span>· ${esc(s.latest.size)}</span>` : ""}
-                <span>· ${s.totalDownloads} 次下载</span>
-              </div>
-            </div>
+            <p class="sc-card--new__tagline">${esc(s.tagline || "新发布数字化创作与效能工具")}</p>
           </div>
-
-          <div class="grid grid-cols-2 gap-2.5 pt-2">
-            ${s.latest ? `
-              <a href="${downloadHref}" class="btn-shimmer h-[42px] rounded-xl bg-gradient-to-r from-accent-cyan to-[#06B6D4] text-[#04101A] font-bold text-xs flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(0,242,254,0.25)] hover:-translate-y-0.5 transition-transform">
-                <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                <span>立即下载</span>
-              </a>
-            ` : `
-              <span class="h-[42px] rounded-xl bg-white/[0.04] text-slate-500 font-medium text-xs flex items-center justify-center cursor-not-allowed border border-white/[0.06]">
-                即将发布
-              </span>
-            `}
-            <a href="${detailHref}" class="h-[42px] rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.12] text-white font-medium text-xs flex items-center justify-center gap-1 transition-all">
-              <span>查看详情</span>
-              <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-slate-400"></i>
+          <div>
+            <div class="sc-card--new__meta">
+              <span>上线: ${dateText}</span>
+              <span>${s.downloads.toLocaleString()} 次下载</span>
+            </div>
+            <a href="${dlUrl}" class="sc-btn sc-btn--primary sc-btn--sm sc-btn-shimmer" style="width: 100%;">
+              <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+              <span>立即下载</span>
             </a>
           </div>
-        </article>
+        </div>
       `;
     }).join("");
 
     safeIcons();
   }
 
-  // 4. 右侧边栏：下载榜 Top 10 与 最近更新
-  function renderSidebarRankings() {
-    // 4.1 下载榜 Top 10
-    const topRankBox = $("rankingTop10");
-    if (topRankBox) {
-      const topList = [...allSoftware]
-        .sort((a, b) => b.totalDownloads - a.totalDownloads)
-        .slice(0, 10);
+  // 核心：筛选与排序计算
+  function getFilteredSoftware() {
+    let list = allSoftware.slice();
 
-      if (topList.length === 0) {
-        topRankBox.innerHTML = `<div class="p-4 text-center text-xs text-slate-500">暂无下载排行数据</div>`;
-      } else {
-        topRankBox.innerHTML = topList.map((s, idx) => {
-          const rank = idx + 1;
-          const isGold = rank <= 3;
-          const detailHref = s.landingUrl || `/software.html?slug=${encodeURIComponent(s.slug || s.id)}`;
-          const icon = s.iconUrl
-            ? `<img src="${esc(s.iconUrl)}" class="w-7 h-7 rounded-lg object-cover" alt="" />`
-            : `<div class="w-7 h-7 rounded-lg bg-white/[0.08] flex items-center justify-center text-xs font-bold text-white">${esc((s.name || "软")[0])}</div>`;
-
-          return `
-            <a href="${detailHref}" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/[0.05] transition-colors group">
-              <div class="flex items-center gap-3 min-w-0">
-                <span class="w-5 text-center font-bold font-mono text-sm ${isGold ? 'text-[#e8a33d]' : 'text-slate-500'}">${rank}</span>
-                ${icon}
-                <div class="min-w-0">
-                  <div class="text-xs font-semibold text-white group-hover:text-accent-cyan truncate transition-colors">${esc(s.name)}</div>
-                  <div class="text-[10px] text-slate-500 font-mono">${s.latest ? 'v' + esc(s.latest.version) : '即将发布'}</div>
-                </div>
-              </div>
-              <div class="text-[11px] font-mono text-slate-400 shrink-0 ml-2">
-                ${s.totalDownloads.toLocaleString()} 次
-              </div>
-            </a>
-          `;
-        }).join("");
-      }
+    // 1. 分类筛选
+    if (currentCategory && currentCategory !== "all") {
+      list = list.filter(s => (s.category || "应用工具") === currentCategory);
     }
 
-    // 4.2 最近更新 (Top 5 发版)
-    const recentBox = $("recentUpdates");
-    if (recentBox) {
-      const allReleases = [];
-      allSoftware.forEach(s => {
-        s.releases.forEach(r => {
-          allReleases.push({
-            softwareName: s.name,
-            slug: s.slug || s.id,
-            landingUrl: s.landingUrl,
-            version: r.version,
-            platform: r.platform,
-            createdAt: r.createdAt,
-            downloadId: r.id
-          });
+    // 2. 平台分段筛选
+    if (currentPlatform && currentPlatform !== "all") {
+      list = list.filter(s => s.platforms.includes(currentPlatform));
+    }
+
+    // 3. 关键词搜索
+    if (currentQuery.trim()) {
+      const q = currentQuery.trim().toLowerCase();
+      list = list.filter(s => {
+        return (
+          (s.name && s.name.toLowerCase().includes(q)) ||
+          (s.tagline && s.tagline.toLowerCase().includes(q)) ||
+          (s.description && s.description.toLowerCase().includes(q)) ||
+          (s.category && s.category.toLowerCase().includes(q)) ||
+          (s.slug && s.slug.toLowerCase().includes(q))
+        );
+      });
+    }
+
+    // 4. 排序规则
+    if (currentSort === "updated") {
+      list.sort((a, b) => b.updatedAt - a.updatedAt);
+    } else if (currentSort === "downloads") {
+      list.sort((a, b) => b.downloads - a.downloads);
+    } else if (currentSort === "name") {
+      list.sort((a, b) => (a.name || "").localeCompare(b.name || "", "zh-CN"));
+    } else {
+      // recommend: 主推优先，其次下载量，再次更新时间
+      list.sort((a, b) => {
+        if (a.featured && !b.featured) return -1;
+        if (!a.featured && b.featured) return 1;
+        if (a.featured && b.featured) {
+          const ordA = a.featuredOrder ?? 999;
+          const ordB = b.featuredOrder ?? 999;
+          if (ordA !== ordB) return ordA - ordB;
+        }
+        if (b.downloads !== a.downloads) return b.downloads - a.downloads;
+        return b.updatedAt - a.updatedAt;
+      });
+    }
+
+    return list;
+  }
+
+  // 渲染全部软件网格 (仅重渲染列表区，满足性能与 <100ms 约束)
+  function renderSoftwareGrid() {
+    const grid = $("softwareGrid");
+    const countLabel = $("listResultCount");
+    const loadMoreWrap = $("loadMoreWrap");
+    if (!grid) return;
+
+    const filtered = getFilteredSoftware();
+
+    if (countLabel) {
+      countLabel.textContent = `共 ${filtered.length} 款应用`;
+    }
+
+    if (!filtered.length) {
+      grid.innerHTML = `
+        <div class="sc-empty sc-glass">
+          <i data-lucide="package-search" class="sc-empty__icon"></i>
+          <h3 class="sc-empty__title">未找到匹配的软件</h3>
+          <p class="sc-empty__desc">尝试清除搜索条件或选择其他分类平台查看</p>
+          <button type="button" class="sc-btn sc-btn--ghost sc-btn--sm" id="resetFilterBtn">
+            <i data-lucide="rotate-ccw" style="width: 14px; height: 14px;"></i>
+            <span>清除所有筛选条件</span>
+          </button>
+        </div>
+      `;
+      if (loadMoreWrap) loadMoreWrap.style.display = "none";
+      safeIcons();
+
+      const resetBtn = $("resetFilterBtn");
+      if (resetBtn) {
+        resetBtn.addEventListener("click", () => {
+          currentCategory = "all";
+          currentPlatform = "all";
+          currentQuery = "";
+          const sInput = $("searchInput");
+          if (sInput) sInput.value = "";
+          renderCategories();
+          updateSegmentActive();
+          syncUrlParams();
+          renderSoftwareGrid();
         });
-      });
+      }
+      return;
+    }
 
-      allReleases.sort((a, b) => {
-        const timeA = typeof a.createdAt === "number" ? a.createdAt : new Date(a.createdAt || 0).getTime();
-        const timeB = typeof b.createdAt === "number" ? b.createdAt : new Date(b.createdAt || 0).getTime();
-        return timeB - timeA;
-      });
+    const visibleItems = filtered.slice(0, currentPageSize);
 
-      const topRecent = allReleases.slice(0, 5);
+    grid.innerHTML = visibleItems.map(s => {
+      const coverUrl = s.coverImage || (s.screenshots && s.screenshots[0]) || "";
+      const iconUrl = s.icon || "/logo.png";
+      const verText = s.latest ? `v${esc(s.latest.version)}` : "v1.0.0";
+      const sizeText = s.latest && s.latest.size ? formatBytes(s.latest.size) : "";
+      const priceText = s.priceType === "paid" ? "付费正版" : (s.priceType === "freemium" ? "免费增值" : "官方免费");
+      const dlUrl = `/download/${encodeURIComponent(s.id)}`;
+      const detailUrl = `/software.html?id=${encodeURIComponent(s.id)}`;
 
-      if (topRecent.length === 0) {
-        recentBox.innerHTML = `<div class="p-4 text-center text-xs text-slate-500">暂无版本发布记录</div>`;
-      } else {
-        recentBox.innerHTML = topRecent.map(r => {
-          const detailHref = r.landingUrl || `/software.html?slug=${encodeURIComponent(r.slug)}`;
-          const pItem = PLATFORMS[r.platform] || PLATFORMS.other;
-          return `
-            <a href="${detailHref}" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/[0.05] transition-colors group">
-              <div class="min-w-0 flex items-center gap-2">
-                <i data-lucide="${pItem.icon}" class="w-3.5 h-3.5 text-slate-400 group-hover:text-accent-cyan shrink-0 transition-colors"></i>
-                <div class="min-w-0">
-                  <div class="text-xs font-semibold text-white group-hover:text-accent-cyan truncate transition-colors">${esc(r.softwareName)}</div>
-                  <div class="text-[10px] text-slate-500 font-mono">v${esc(r.version)} · ${pItem.label}</div>
-                </div>
+      // 平台图标组
+      const platformIconsHtml = (s.platforms || ["windows"]).map(p => {
+        const info = PLATFORM_MAP[p] || PLATFORM_MAP.other;
+        return `<i data-lucide="${info.icon}" class="sc-card__platform-icon" title="${info.label}"></i>`;
+      }).join("");
+
+      return `
+        <article class="sc-card sc-glass sc-glass--hover sc-spotlight">
+          <!-- 16:9 封面容器 -->
+          <div class="sc-card__cover-wrap">
+            ${coverUrl ? `
+              <img src="${esc(coverUrl)}" alt="${esc(s.name)} 封面" class="sc-card__cover" loading="lazy" />
+            ` : `
+              <div class="sc-card__cover-fallback">
+                <img src="${esc(iconUrl)}" alt="${esc(s.name)}" class="sc-card__cover-fallback-icon" />
               </div>
-              <span class="text-[10px] text-slate-500 font-mono shrink-0 ml-2">${formatDate(r.createdAt)}</span>
-            </a>
-          `;
-        }).join("");
+            `}
+            <img src="${esc(iconUrl)}" alt="${esc(s.name)}" class="sc-card__icon-floating" loading="lazy" />
+          </div>
+
+          <!-- 卡片内容体 -->
+          <div class="sc-card__body">
+            <div class="sc-card__header">
+              <h3 class="sc-card__name">${esc(s.name)}</h3>
+              <span class="sc-badge ${s.priceType === "paid" ? "sc-badge--cyan" : "sc-badge--emerald"}" style="font-size: 11px;">
+                ${priceText}
+              </span>
+            </div>
+            <p class="sc-card__tagline">${esc(s.tagline || "官方正版桌面生产力工具")}</p>
+
+            <div class="sc-card__platforms">
+              ${platformIconsHtml}
+            </div>
+
+            <div class="sc-card__meta-bar">
+              <span>${verText}${sizeText ? " · " + sizeText : ""}</span>
+              <span><i data-lucide="download" style="width: 12px; height: 12px; display: inline-block; vertical-align: -1px;"></i> ${s.downloads.toLocaleString()}</span>
+            </div>
+
+            <div class="sc-card__actions">
+              <a href="${dlUrl}" class="sc-btn sc-btn--primary sc-btn--sm sc-btn-shimmer">
+                <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+                <span>立即下载</span>
+              </a>
+              <a href="${detailUrl}" class="sc-btn sc-btn--ghost sc-btn--sm">
+                <span>详情</span>
+              </a>
+            </div>
+          </div>
+        </article>
+      `;
+    }).join("");
+
+    if (loadMoreWrap) {
+      if (filtered.length > currentPageSize) {
+        loadMoreWrap.style.display = "flex";
+      } else {
+        loadMoreWrap.style.display = "none";
       }
     }
 
     safeIcons();
   }
 
-  // 页面加载完成后启动
+  // 渲染右侧排行榜
+  function renderRankings() {
+    const listContainer = $("rankList");
+    if (!listContainer) return;
+
+    let rankList = allSoftware.slice();
+    if (activeRankTab === "downloads") {
+      rankList.sort((a, b) => b.downloads - a.downloads);
+    } else {
+      rankList.sort((a, b) => b.updatedAt - a.updatedAt);
+    }
+
+    const top10 = rankList.slice(0, 10);
+
+    listContainer.innerHTML = top10.map((s, idx) => {
+      const rankNum = idx + 1;
+      const numCls = rankNum <= 3 ? `sc-rank__num--top${rankNum}` : "";
+      const iconUrl = s.icon || "/logo.png";
+      const subInfo = activeRankTab === "downloads"
+        ? `${s.downloads.toLocaleString()} 次下载`
+        : `更新于 ${formatDate(s.updatedAt)}`;
+      const dlUrl = `/download/${encodeURIComponent(s.id)}`;
+      const detailUrl = `/software.html?id=${encodeURIComponent(s.id)}`;
+
+      return `
+        <div class="sc-rank__item">
+          <div class="sc-rank__num ${numCls}">${rankNum}</div>
+          <a href="${detailUrl}">
+            <img src="${esc(iconUrl)}" alt="${esc(s.name)}" class="sc-rank__icon" loading="lazy" />
+          </a>
+          <div class="sc-rank__info">
+            <a href="${detailUrl}" class="sc-rank__name">${esc(s.name)}</a>
+            <div class="sc-rank__sub">${subInfo}</div>
+          </div>
+          <a href="${dlUrl}" class="sc-rank__quick-download" title="极速下载 ${esc(s.name)}">
+            <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+          </a>
+        </div>
+      `;
+    }).join("");
+
+    safeIcons();
+  }
+
+  // 渲染最近更新 (5 条)
+  function renderRecentUpdates() {
+    const container = $("recentList");
+    if (!container) return;
+
+    const sortedByUpdate = allSoftware.slice().sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 5);
+
+    container.innerHTML = sortedByUpdate.map(s => {
+      const verText = s.latest ? `v${esc(s.latest.version)}` : "v1.0.0";
+      const relTime = formatRelativeTime(s.updatedAt);
+      const mainPlat = s.platforms[0] || "windows";
+      const platLabel = (PLATFORM_MAP[mainPlat] || PLATFORM_MAP.other).label;
+      const detailUrl = `/software.html?id=${encodeURIComponent(s.id)}`;
+
+      return `
+        <div class="sc-recent__item">
+          <div class="sc-recent__top">
+            <a href="${detailUrl}" class="sc-recent__name">${esc(s.name)}</a>
+            <span class="sc-recent__time">${relTime}</span>
+          </div>
+          <div class="sc-recent__sub">
+            <span class="sc-badge sc-badge--cyan" style="font-size: 10.5px; padding: 1px 6px;">${verText}</span>
+            <span>${platLabel}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    safeIcons();
+  }
+
+  // 更新分段控件选中态
+  function updateSegmentActive() {
+    const buttons = document.querySelectorAll(".sc-segment__btn");
+    buttons.forEach(btn => {
+      if (btn.getAttribute("data-platform") === currentPlatform) {
+        btn.classList.add("sc-segment__btn--active");
+      } else {
+        btn.classList.remove("sc-segment__btn--active");
+      }
+    });
+  }
+
+  // 绑定交互事件
+  function bindEvents() {
+    // 1. 聚光灯鼠标跟踪
+    document.addEventListener("mousemove", e => {
+      const target = e.target.closest(".sc-spotlight");
+      if (target) {
+        const rect = target.getBoundingClientRect();
+        target.style.setProperty("--mouse-x", `${e.clientX - rect.left}px`);
+        target.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
+      }
+    });
+
+    // 2. 轮播控制器事件
+    const heroPrev = $("heroPrevBtn");
+    const heroNext = $("heroNextBtn");
+    const heroBox = $("heroCarousel");
+
+    if (heroPrev) heroPrev.addEventListener("click", () => setCarouselIndex(carouselIndex - 1));
+    if (heroNext) heroNext.addEventListener("click", () => setCarouselIndex(carouselIndex + 1));
+
+    if (heroBox) {
+      heroBox.addEventListener("mouseenter", () => { isCarouselHovered = true; });
+      heroBox.addEventListener("mouseleave", () => { isCarouselHovered = false; });
+    }
+
+    const dotsContainer = $("heroDots");
+    if (dotsContainer) {
+      dotsContainer.addEventListener("click", e => {
+        const dot = e.target.closest(".sc-hero__dot");
+        if (dot) {
+          const idx = parseInt(dot.getAttribute("data-dot-index"), 10);
+          if (!isNaN(idx)) setCarouselIndex(idx);
+        }
+      });
+    }
+
+    // 键盘左右切换轮播
+    window.addEventListener("keydown", e => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      if (e.key === "ArrowLeft") setCarouselIndex(carouselIndex - 1);
+      if (e.key === "ArrowRight") setCarouselIndex(carouselIndex + 1);
+    });
+
+    // 触屏滑动轮播
+    let touchStartX = 0;
+    if (heroBox) {
+      heroBox.addEventListener("touchstart", e => {
+        touchStartX = e.touches[0].clientX;
+      }, { passive: true });
+      heroBox.addEventListener("touchend", e => {
+        const diffX = e.changedTouches[0].clientX - touchStartX;
+        if (diffX > 50) setCarouselIndex(carouselIndex - 1);
+        else if (diffX < -50) setCarouselIndex(carouselIndex + 1);
+      }, { passive: true });
+    }
+
+    // 3. 分类胶囊点击
+    const chipsBox = $("categoryChips");
+    if (chipsBox) {
+      chipsBox.addEventListener("click", e => {
+        const chip = e.target.closest(".sc-chip");
+        if (chip) {
+          const cat = chip.getAttribute("data-cat");
+          if (cat) {
+            currentCategory = cat;
+            currentPageSize = 12;
+            renderCategories();
+            syncUrlParams();
+            renderSoftwareGrid();
+          }
+        }
+      });
+    }
+
+    // 4. 平台分段控件点击
+    const segBox = $("platformSegment");
+    if (segBox) {
+      segBox.addEventListener("click", e => {
+        const btn = e.target.closest(".sc-segment__btn");
+        if (btn) {
+          const plat = btn.getAttribute("data-platform");
+          if (plat) {
+            currentPlatform = plat;
+            currentPageSize = 12;
+            updateSegmentActive();
+            syncUrlParams();
+            renderSoftwareGrid();
+          }
+        }
+      });
+    }
+
+    // 5. 排序选择切换
+    const sortSel = $("sortSelect");
+    if (sortSel) {
+      sortSel.value = currentSort;
+      sortSel.addEventListener("change", e => {
+        currentSort = e.target.value;
+        currentPageSize = 12;
+        syncUrlParams();
+        renderSoftwareGrid();
+      });
+    }
+
+    // 6. 搜索输入与清除
+    const searchInput = $("searchInput");
+    const clearBtn = $("searchClearBtn");
+    let searchDebounce = null;
+
+    if (searchInput) {
+      searchInput.value = currentQuery;
+      if (currentQuery && clearBtn) clearBtn.style.display = "block";
+
+      searchInput.addEventListener("input", e => {
+        currentQuery = e.target.value;
+        if (clearBtn) clearBtn.style.display = currentQuery ? "block" : "none";
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => {
+          currentPageSize = 12;
+          syncUrlParams();
+          renderSoftwareGrid();
+        }, 200);
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        currentQuery = "";
+        if (searchInput) searchInput.value = "";
+        clearBtn.style.display = "none";
+        currentPageSize = 12;
+        syncUrlParams();
+        renderSoftwareGrid();
+      });
+    }
+
+    // 顶部搜索按钮聚焦搜索框
+    const navSearchTrigger = $("navSearchTrigger");
+    if (navSearchTrigger && searchInput) {
+      navSearchTrigger.addEventListener("click", () => {
+        searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => searchInput.focus(), 300);
+      });
+    }
+
+    // 7. 新品卡片横滑按钮
+    const newPrev = $("newTrackPrev");
+    const newNext = $("newTrackNext");
+    const newTrack = $("newArrivalsTrack");
+    if (newPrev && newTrack) {
+      newPrev.addEventListener("click", () => {
+        newTrack.scrollBy({ left: -300, behavior: "smooth" });
+      });
+    }
+    if (newNext && newTrack) {
+      newNext.addEventListener("click", () => {
+        newTrack.scrollBy({ left: 300, behavior: "smooth" });
+      });
+    }
+
+    // 8. 加载更多按钮
+    const loadMoreBtn = $("loadMoreBtn");
+    if (loadMoreBtn) {
+      loadMoreBtn.addEventListener("click", () => {
+        currentPageSize += 12;
+        renderSoftwareGrid();
+      });
+    }
+
+    // 9. 排行榜 Tab 切换
+    const rankTabDl = $("rankTabDownloads");
+    const rankTabUp = $("rankTabUpdates");
+    if (rankTabDl) {
+      rankTabDl.addEventListener("click", () => {
+        activeRankTab = "downloads";
+        rankTabDl.classList.add("sc-rank__tab--active");
+        if (rankTabUp) rankTabUp.classList.remove("sc-rank__tab--active");
+        renderRankings();
+      });
+    }
+    if (rankTabUp) {
+      rankTabUp.addEventListener("click", () => {
+        activeRankTab = "updates";
+        rankTabUp.classList.add("sc-rank__tab--active");
+        if (rankTabDl) rankTabDl.classList.remove("sc-rank__tab--active");
+        renderRankings();
+      });
+    }
+  }
+
+  // 初始化入口
+  async function init() {
+    try {
+      const res = await fetch("/api/catalog", { cache: "no-store" });
+      if (!res.ok) throw new Error("加载软件目录失败");
+      catalog = await res.json();
+    } catch (err) {
+      console.error("加载 catalog 错误:", err);
+      const grid = $("softwareGrid");
+      if (grid) {
+        grid.innerHTML = `
+          <div class="sc-empty sc-glass">
+            <h3 class="sc-empty__title">无法连接到软件服务</h3>
+            <p class="sc-empty__desc">请检查网络状态后刷新页面重试</p>
+          </div>
+        `;
+      }
+      return;
+    }
+
+    // 过滤上架软件并计算派生字段
+    allSoftware = (catalog.software || [])
+      .filter(s => (s.status || "active") === "active")
+      .map(processSoftware);
+
+    // 主推软件计算：featured === true，按 featuredOrder 升序；没有则用下载量第一的软件
+    featuredSoftware = allSoftware.filter(s => s.featured === true);
+    if (!featuredSoftware.length) {
+      const topDl = allSoftware.slice().sort((a, b) => b.downloads - a.downloads)[0];
+      if (topDl) featuredSoftware = [topDl];
+    } else {
+      featuredSoftware.sort((a, b) => (a.featuredOrder ?? 999) - (b.featuredOrder ?? 999));
+    }
+
+    // 新品计算：firstReleasedAt 在 30 天内；不足 4 个时按 firstReleasedAt 倒序补足到 4–8 个
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 3600 * 1000;
+    const recentReleased = allSoftware.filter(s => s.firstReleasedAt >= thirtyDaysAgo);
+    if (recentReleased.length >= 4) {
+      newArrivals = recentReleased.sort((a, b) => b.firstReleasedAt - a.firstReleasedAt).slice(0, 8);
+    } else {
+      newArrivals = allSoftware.slice().sort((a, b) => b.firstReleasedAt - a.firstReleasedAt).slice(0, 6);
+    }
+
+    // 渲染各区块
+    renderHero();
+    startCarouselTimer();
+    renderStats();
+    renderCategories();
+    updateSegmentActive();
+    renderNewArrivals();
+    renderSoftwareGrid();
+    renderRankings();
+    renderRecentUpdates();
+    bindEvents();
+    safeIcons();
+  }
+
+  // 页面就绪后启动
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {

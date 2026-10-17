@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" class="scroll-smooth">
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,361 +8,330 @@
     <link rel="icon" type="image/png" href="/logo.png?v=20261017" />
     <link rel="apple-touch-icon" href="/logo.png?v=20261017" />
 
-    <!-- Local Vendor CSS & Icons -->
-    <link rel="stylesheet" href="/vendor/software-center.css?v=20261017" />
+    <!-- 语义化样式与图标库（无外部 CDN / 无 Tailwind 依赖） -->
+    <link rel="stylesheet" href="/css/software-center.css?v=20261017" />
     <script src="/vendor/lucide.min.js?v=20261017"></script>
-
-    <style>
-      :root {
-        --color-bg: #07090e;
-        --color-cyan: #00f2fe;
-        --color-violet: #7c3aed;
-      }
-
-      body {
-        background-color: #07090e;
-        color: #f8fafc;
-        overflow-x: hidden;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-
-      ::selection {
-        background: rgba(0, 242, 254, 0.28);
-        color: #ffffff;
-      }
-
-      /* Apple-grade Glassmorphic Panels */
-      .glass-card {
-        background: rgba(255, 255, 255, 0.035);
-        backdrop-filter: blur(24px) saturate(180%);
-        -webkit-backdrop-filter: blur(24px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-top: 1px solid rgba(255, 255, 255, 0.22);
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-      }
-
-      .glass-card-hover {
-        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-                    border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-                    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-      }
-      .glass-card-hover:hover {
-        border-color: rgba(255, 255, 255, 0.25);
-        border-top-color: rgba(0, 242, 254, 0.5);
-        box-shadow: 0 30px 70px rgba(0, 0, 0, 0.65), 0 0 40px rgba(0, 242, 254, 0.08);
-        transform: translateY(-2px);
-      }
-
-      /* Glowing Aurora Mesh Gradients */
-      .aurora-mesh {
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        z-index: 0;
-        overflow: hidden;
-      }
-      .aurora-orb {
-        position: absolute;
-        border-radius: 9999px;
-        filter: blur(100px);
-        opacity: 0.18;
-        mix-blend-mode: screen;
-        animation: auroraFloat 18s ease-in-out infinite alternate;
-      }
-      .aurora-orb-1 {
-        top: -15%;
-        left: 20%;
-        width: 700px;
-        height: 600px;
-        background: radial-gradient(circle, #4f46e5 0%, #06b6d4 100%);
-      }
-      .aurora-orb-2 {
-        top: 25%;
-        right: -10%;
-        width: 650px;
-        height: 650px;
-        background: radial-gradient(circle, #7c3aed 0%, #00f2fe 100%);
-        animation-duration: 22s;
-        animation-delay: -5s;
-      }
-      .aurora-orb-3 {
-        bottom: 5%;
-        left: -5%;
-        width: 600px;
-        height: 500px;
-        background: radial-gradient(circle, #06b6d4 0%, #4338ca 100%);
-        animation-duration: 26s;
-        animation-delay: -10s;
-      }
-
-      @keyframes auroraFloat {
-        0% { transform: translate(0, 0) scale(1); }
-        50% { transform: translate(40px, 30px) scale(1.08); }
-        100% { transform: translate(-30px, 50px) scale(0.96); }
-      }
-
-      /* Button Shimmer Effect */
-      .btn-shimmer {
-        position: relative;
-        overflow: hidden;
-      }
-      .btn-shimmer::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -150%;
-        width: 80%;
-        height: 200%;
-        background: linear-gradient(
-          60deg,
-          transparent,
-          rgba(255, 255, 255, 0.35),
-          transparent
-        );
-        transform: rotate(30deg);
-        animation: shimmerSweep 4.5s ease-in-out infinite;
-      }
-      @keyframes shimmerSweep {
-        0% { left: -150%; }
-        25% { left: 180%; }
-        100% { left: 180%; }
-      }
-
-      /* Staggered Entrance Animations */
-      .stagger-in {
-        opacity: 0;
-        transform: translateY(20px);
-        animation: staggerFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-      }
-      @keyframes staggerFadeIn {
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .stagger-1 { animation-delay: 0.1s; }
-      .stagger-2 { animation-delay: 0.2s; }
-      .stagger-3 { animation-delay: 0.3s; }
-      .stagger-4 { animation-delay: 0.4s; }
-    </style>
   </head>
-  <body class="relative min-h-screen" data-landing-page="software">
-    <!-- Aurora Background Gradients -->
-    <div class="aurora-mesh" aria-hidden="true">
-      <div class="aurora-orb aurora-orb-1"></div>
-      <div class="aurora-orb aurora-orb-2"></div>
-      <div class="aurora-orb aurora-orb-3"></div>
-      <div class="absolute inset-0 bg-[radial-gradient(#ffffff08_1px,transparent_1px)] [background-size:24px_24px] opacity-40"></div>
+  <body>
+    <!-- 极光弥散渐变背景 -->
+    <div class="sc-aurora-mesh" aria-hidden="true">
+      <div class="sc-aurora-orb sc-aurora-orb--1"></div>
+      <div class="sc-aurora-orb sc-aurora-orb--2"></div>
+      <div class="sc-aurora-orb sc-aurora-orb--3"></div>
+      <div class="sc-aurora-grid"></div>
     </div>
 
-    <!-- 1. Floating Capsule Glass Navigation -->
-    <header class="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-full max-w-5xl px-4 stagger-in stagger-1">
-      <div class="glass-card rounded-full px-5 sm:px-6 py-2.5 flex items-center justify-between shadow-[0_16px_40px_rgba(0,0,0,0.65)]">
+    <!-- 1. 顶部悬浮胶囊导航 -->
+    <header class="sc-nav-wrap">
+      <div class="sc-nav sc-glass">
         <!-- Logo -->
-        <a href="/" class="flex items-center gap-3 group">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-accent-indigo via-accent-cyan to-accent-violet flex items-center justify-center p-[1px] shadow-[0_0_16px_rgba(0,242,254,0.35)]">
-            <div class="w-full h-full bg-[#07090e] rounded-full flex items-center justify-center">
-              <svg class="w-4 h-4 text-accent-cyan transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
+        <a href="/" class="sc-nav__brand">
+          <div class="sc-nav__logo">
+            <div class="sc-nav__logo-inner">
+              <i data-lucide="layers" style="width: 16px; height: 16px;"></i>
             </div>
           </div>
-          <div class="flex items-baseline gap-1.5">
-            <span class="font-bold text-lg tracking-tight text-white group-hover:text-accent-cyan transition-colors">NSY</span>
-            <span class="text-xs text-slate-400 font-medium hidden sm:inline" id="brandSub">软件中心</span>
+          <div>
+            <span class="sc-nav__title">NSY</span>
+            <span class="sc-nav__subtitle">软件中心</span>
           </div>
         </a>
 
-        <!-- Center Nav Links -->
-        <nav class="hidden md:flex items-center gap-1 text-[13.5px] font-medium text-slate-400">
-          <a href="/" class="px-3 py-1.5 rounded-full hover:text-white transition-colors">首页</a>
-          <a href="/desktop.html" class="px-3 py-1.5 rounded-full hover:text-white transition-colors">桌面 2.0</a>
-          <a href="/download.html" class="px-3.5 py-1.5 rounded-full text-white bg-white/[0.08] border border-white/[0.1] shadow-inner flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-accent-cyan shadow-[0_0_6px_#00F2FE]"></span>
+        <!-- 导航链接 -->
+        <nav class="sc-nav__links">
+          <a href="/" class="sc-nav__link">官网首页</a>
+          <a href="/download.html" class="sc-nav__link sc-nav__link--active">
+            <span class="sc-badge--dot sc-badge--dot-pulse" style="color: var(--sc-cyan);"></span>
             <span>软件中心</span>
           </a>
-          <a href="/articles.html" class="px-3 py-1.5 rounded-full hover:text-white transition-colors">文章教程</a>
-          <a href="/gallery.html" class="px-3 py-1.5 rounded-full hover:text-white transition-colors">画廊</a>
-          <a href="/music.html" class="px-3 py-1.5 rounded-full hover:text-white transition-colors">音乐</a>
+          <a href="/articles.html" class="sc-nav__link">使用教程</a>
+          <a href="/desktop.html" class="sc-nav__link">
+            <span>桌面 2.0</span>
+            <i data-lucide="arrow-up-right" style="width: 14px; height: 14px;"></i>
+          </a>
         </nav>
 
-        <!-- Right Action Button -->
-        <div class="flex items-center gap-2">
-          <a href="/studio/" class="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] hover:border-white/20 transition-all flex items-center gap-1.5">
-            <i data-lucide="shield" class="w-3.5 h-3.5 text-accent-cyan"></i>
-            <span>Studio 后台</span>
+        <!-- 右侧操作 -->
+        <div class="sc-nav__actions">
+          <button type="button" class="sc-nav__search-btn" id="navSearchTrigger" title="聚焦搜索">
+            <i data-lucide="search" style="width: 16px; height: 16px;"></i>
+          </button>
+          <a href="/desktop.html" class="sc-btn sc-btn--ghost sc-btn--sm sc-btn-shimmer">
+            <i data-lucide="sparkles" style="width: 14px; height: 14px; color: var(--sc-cyan);"></i>
+            <span>体验旗舰桌面</span>
           </a>
         </div>
       </div>
     </header>
 
-    <main class="relative z-10 pt-28 pb-20">
-      <!-- 2. 主推轮播展示区 (Featured Carousel, 1-5 apps) -->
-      <section id="featuredCarouselSection" class="max-w-6xl mx-auto px-4 mb-10 stagger-in stagger-2 relative">
-        <div class="relative overflow-hidden rounded-3xl" id="carouselViewport">
-          <div id="carouselTrack" class="relative w-full min-h-[380px]">
-            <!-- 由 software-center.js 动态渲染 -->
+    <!-- 主内容区 -->
+    <main class="sc-main">
+      <div class="sc-container">
+        
+        <!-- 2. 头部推广轮播 HERO -->
+        <section class="sc-hero sc-glass" id="heroCarousel" aria-label="主推软件轮播">
+          <div class="sc-hero__track" id="heroTrack">
+            <!-- 骨架屏轮播初始占位 -->
+            <div class="sc-hero__slide sc-hero__slide--active">
+              <div class="sc-hero__info">
+                <div class="sc-skeleton" style="width: 140px; height: 26px; border-radius: 9999px; margin-bottom: 16px;"></div>
+                <div class="sc-skeleton" style="width: 320px; height: 48px; margin-bottom: 16px;"></div>
+                <div class="sc-skeleton" style="width: 260px; height: 24px; margin-bottom: 16px;"></div>
+                <div class="sc-skeleton" style="width: 480px; height: 40px; margin-bottom: 24px;"></div>
+                <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+                  <div class="sc-skeleton" style="width: 160px; height: 50px; border-radius: 14px;"></div>
+                  <div class="sc-skeleton" style="width: 140px; height: 50px; border-radius: 14px;"></div>
+                </div>
+              </div>
+              <div class="sc-hero__visual">
+                <div class="sc-skeleton" style="width: 380px; height: 260px; border-radius: 16px;"></div>
+              </div>
+            </div>
           </div>
 
-          <!-- 轮播切换按钮 -->
-          <button id="carouselPrev" type="button" class="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 border border-white/20 text-white flex items-center justify-center transition-all backdrop-blur-md" aria-label="上一个">
-            <i data-lucide="chevron-left" class="w-5 h-5"></i>
-          </button>
-          <button id="carouselNext" type="button" class="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 border border-white/20 text-white flex items-center justify-center transition-all backdrop-blur-md" aria-label="下一个">
-            <i data-lucide="chevron-right" class="w-5 h-5"></i>
-          </button>
-
-          <!-- 轮播圆点指示器 -->
-          <div id="carouselDots" class="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
-            <!-- 动态渲染圆点 -->
+          <!-- 轮播控制器 -->
+          <div class="sc-hero__controls" id="heroControls" style="display: none;">
+            <div class="sc-hero__dots" id="heroDots"></div>
+            <div class="sc-hero__arrows">
+              <button type="button" class="sc-hero__arrow" id="heroPrevBtn" aria-label="上一个">
+                <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+              </button>
+              <button type="button" class="sc-hero__arrow" id="heroNextBtn" aria-label="下一个">
+                <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+              </button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- 3. 吸顶筛选与搜索控制条 (Sticky Filter Bar) -->
-      <div id="filterBar" class="sticky top-20 z-40 bg-[#07090e]/85 backdrop-blur-2xl py-3 border-y border-white/[0.08] shadow-lg mb-8 stagger-in stagger-3">
-        <div class="max-w-6xl mx-auto px-4 flex flex-col gap-3">
-          <!-- 上排：平台分段与搜索排序 -->
-          <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-            <!-- 平台分段按钮 (仅显示实际存在的平台) -->
-            <div id="platformSegmented" class="inline-flex p-1 rounded-xl bg-white/[0.04] border border-white/[0.08] overflow-x-auto no-scrollbar shrink-0">
-              <!-- 动态填充 -->
+        <!-- 3. 核心数据条 (一行 4 个小玻璃块) -->
+        <section class="sc-stats-row" id="statsRow" aria-label="数据概览">
+          <div class="sc-stat-card sc-glass">
+            <div class="sc-stat-card__icon">
+              <i data-lucide="boxes" style="width: 22px; height: 22px;"></i>
+            </div>
+            <div>
+              <div class="sc-stat-card__val" id="statSoftwareCount">-</div>
+              <div class="sc-stat-card__label">收录软件产品</div>
+            </div>
+          </div>
+
+          <div class="sc-stat-card sc-glass">
+            <div class="sc-stat-card__icon">
+              <i data-lucide="download-cloud" style="width: 22px; height: 22px;"></i>
+            </div>
+            <div>
+              <div class="sc-stat-card__val" id="statDownloadCount">-</div>
+              <div class="sc-stat-card__label">累计安全下载</div>
+            </div>
+          </div>
+
+          <div class="sc-stat-card sc-glass">
+            <div class="sc-stat-card__icon">
+              <i data-lucide="refresh-cw" style="width: 22px; height: 22px;"></i>
+            </div>
+            <div>
+              <div class="sc-stat-card__val" id="statUpdateCount">-</div>
+              <div class="sc-stat-card__label">本月版本更新</div>
+            </div>
+          </div>
+
+          <div class="sc-stat-card sc-glass">
+            <div class="sc-stat-card__icon">
+              <i data-lucide="cpu" style="width: 22px; height: 22px;"></i>
+            </div>
+            <div>
+              <div class="sc-stat-card__val" id="statPlatformCount">-</div>
+              <div class="sc-stat-card__label">支持平台架构</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. 分类导航与筛选栏 (吸顶) -->
+        <section class="sc-filter-sticky">
+          <div class="sc-filter-bar sc-glass">
+            <!-- 分类胶囊 (全部 + 各分类) -->
+            <div class="sc-filter-bar__left" id="categoryChips">
+              <button type="button" class="sc-chip sc-chip--active" data-cat="all">
+                <span>全部软件</span>
+                <span class="sc-chip__count" id="chipCountAll">0</span>
+              </button>
             </div>
 
-            <!-- 搜索框与排序器 -->
-            <div class="flex items-center gap-3 w-full md:w-auto">
+            <!-- 右侧平台分段与搜索 -->
+            <div class="sc-filter-bar__right">
+              <!-- 平台分段控件 -->
+              <div class="sc-segment" id="platformSegment">
+                <button type="button" class="sc-segment__btn sc-segment__btn--active" data-platform="all">全部</button>
+                <button type="button" class="sc-segment__btn" data-platform="windows">Windows</button>
+                <button type="button" class="sc-segment__btn" data-platform="macos">macOS</button>
+                <button type="button" class="sc-segment__btn" data-platform="portable">绿色版</button>
+                <button type="button" class="sc-segment__btn" data-platform="other">其他</button>
+              </div>
+
               <!-- 搜索框 -->
-              <div class="relative flex-1 md:w-64">
-                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
-                <input
-                  type="text"
-                  id="searchInput"
-                  placeholder="搜索软件名称、介绍..."
-                  class="w-full h-9 pl-9 pr-3 rounded-lg bg-white/[0.05] border border-white/[0.1] text-xs text-white placeholder-slate-500 focus:outline-none focus:border-accent-cyan/60 transition-colors"
-                />
+              <div class="sc-search">
+                <i data-lucide="search" class="sc-search__icon" style="width: 15px; height: 15px;"></i>
+                <input type="text" class="sc-search__input" id="searchInput" placeholder="搜索软件或功能..." autocomplete="off" />
+                <i data-lucide="x" class="sc-search__clear" id="searchClearBtn" style="width: 14px; height: 14px;"></i>
               </div>
-
-              <!-- 排序选择器 -->
-              <select
-                id="sortSelect"
-                class="h-9 px-3 rounded-lg bg-white/[0.05] border border-white/[0.1] text-xs text-slate-300 focus:outline-none focus:border-accent-cyan/60 shrink-0 cursor-pointer"
-              >
-                <option value="recommend" class="bg-[#0f1420] text-white">默认推荐</option>
-                <option value="updated" class="bg-[#0f1420] text-white">最近更新</option>
-                <option value="downloads" class="bg-[#0f1420] text-white">下载最多</option>
-              </select>
             </div>
           </div>
+        </section>
 
-          <!-- 下排：功能分类标签与数量统计 -->
-          <div class="flex items-center justify-between gap-4 pt-1">
-            <div id="categoryTabs" class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-              <!-- 动态分类标签 -->
+        <!-- 5. 新品上架 (横滑卡片行) -->
+        <section class="sc-new-wrap" id="newArrivalsSection">
+          <div class="sc-section-header">
+            <div class="sc-section-title">
+              <i data-lucide="sparkles" style="width: 18px; height: 18px; color: var(--sc-cyan);"></i>
+              <span>新品首发上架</span>
+              <span class="sc-badge sc-badge--cyan" style="font-size: 11px;">最新收录</span>
             </div>
-            <span id="filteredCount" class="text-xs text-slate-400 shrink-0 font-mono hidden sm:inline">
-              计算中...
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 4. 两栏主体网格 (Main Content: Software Grid + Sidebar Rankings) -->
-      <div class="max-w-6xl mx-auto px-4 stagger-in stagger-4">
-        <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 items-start">
-          <!-- 左侧：软件卡片网格 -->
-          <div class="min-w-0">
-            <div id="softwareGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <!-- 动态软件卡片 -->
-            </div>
-
-            <!-- 空状态提示 -->
-            <div id="emptyState" class="hidden glass-card rounded-2xl p-12 text-center flex flex-col items-center justify-center">
-              <div class="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-slate-400 mb-4">
-                <i data-lucide="package-search" class="w-7 h-7 text-accent-cyan/60"></i>
-              </div>
-              <h4 class="text-base font-bold text-white mb-1">没有符合条件的软件</h4>
-              <p class="text-xs text-slate-400 mb-5">尝试切换平台、分类或清除关键词搜索</p>
-              <button
-                type="button"
-                id="resetFiltersBtn"
-                class="px-5 py-2 rounded-xl text-xs font-semibold bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.16] text-white transition-all"
-              >
-                清除筛选条件
+            <div class="sc-section-header__actions">
+              <button type="button" class="sc-slider-arrow" id="newTrackPrev" aria-label="向左滚动">
+                <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+              </button>
+              <button type="button" class="sc-slider-arrow" id="newTrackNext" aria-label="向右滚动">
+                <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
               </button>
             </div>
           </div>
 
-          <!-- 右侧边栏：下载排行榜 Top 10 与 最近更新 -->
-          <aside class="flex flex-col gap-6 w-full lg:w-[320px]">
-            <!-- 下载榜 Top 10 -->
-            <div class="glass-card rounded-2xl p-5 border border-white/[0.1] shadow-xl">
-              <div class="flex items-center justify-between pb-3 mb-3 border-b border-white/[0.08]">
-                <div class="flex items-center gap-2">
-                  <i data-lucide="flame" class="w-4 h-4 text-[#e8a33d]"></i>
-                  <h3 class="text-sm font-bold text-white tracking-wide">全网下载榜 Top 10</h3>
-                </div>
-                <span class="text-[10px] text-slate-500 font-mono">REALTIME</span>
+          <div class="sc-new-track-wrap">
+            <div class="sc-new-track" id="newArrivalsTrack">
+              <!-- 初始骨架卡片 -->
+              <div class="sc-card--new sc-glass">
+                <div class="sc-skeleton" style="width: 100%; height: 160px; border-radius: 12px;"></div>
               </div>
-              <div id="rankingTop10" class="flex flex-col divide-y divide-white/[0.04]">
-                <!-- 动态排行榜 -->
+              <div class="sc-card--new sc-glass">
+                <div class="sc-skeleton" style="width: 100%; height: 160px; border-radius: 12px;"></div>
+              </div>
+              <div class="sc-card--new sc-glass">
+                <div class="sc-skeleton" style="width: 100%; height: 160px; border-radius: 12px;"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. 主体两栏布局 (左: 全部软件, 右: 排行榜与更新动态) -->
+        <div class="sc-layout">
+          <!-- 左侧全部软件列表 -->
+          <section>
+            <div class="sc-list-header">
+              <div class="sc-section-title">
+                <i data-lucide="layout-grid" style="width: 18px; height: 18px; color: var(--sc-cyan);"></i>
+                <span>全部软件矩阵</span>
+                <span class="sc-list-header__count" id="listResultCount">共 0 款应用</span>
+              </div>
+              <div>
+                <select class="sc-select" id="sortSelect" aria-label="软件排序">
+                  <option value="recommend">推荐优先</option>
+                  <option value="updated">最近更新</option>
+                  <option value="downloads">下载最多</option>
+                  <option value="name">名称排序</option>
+                </select>
               </div>
             </div>
 
-            <!-- 最近更新发版 -->
-            <div class="glass-card rounded-2xl p-5 border border-white/[0.1] shadow-xl">
-              <div class="flex items-center justify-between pb-3 mb-3 border-b border-white/[0.08]">
-                <div class="flex items-center gap-2">
-                  <i data-lucide="sparkles" class="w-4 h-4 text-accent-cyan"></i>
-                  <h3 class="text-sm font-bold text-white tracking-wide">最近版本动态</h3>
+            <!-- 卡片网格 -->
+            <div class="sc-grid" id="softwareGrid">
+              <!-- 初始骨架屏 (12 个卡片占位) -->
+              <div class="sc-card sc-glass">
+                <div class="sc-skeleton" style="aspect-ratio: 16/9; width: 100%;"></div>
+                <div style="padding: 24px 18px 18px;">
+                  <div class="sc-skeleton" style="width: 60%; height: 20px; margin-bottom: 12px;"></div>
+                  <div class="sc-skeleton" style="width: 90%; height: 16px; margin-bottom: 8px;"></div>
+                  <div class="sc-skeleton" style="width: 75%; height: 16px; margin-bottom: 16px;"></div>
+                  <div class="sc-skeleton" style="width: 100%; height: 40px; border-radius: 12px;"></div>
                 </div>
-                <span class="text-[10px] text-slate-500 font-mono">UPDATES</span>
               </div>
-              <div id="recentUpdates" class="flex flex-col divide-y divide-white/[0.04]">
-                <!-- 动态更新 -->
+              <div class="sc-card sc-glass">
+                <div class="sc-skeleton" style="aspect-ratio: 16/9; width: 100%;"></div>
+                <div style="padding: 24px 18px 18px;">
+                  <div class="sc-skeleton" style="width: 60%; height: 20px; margin-bottom: 12px;"></div>
+                  <div class="sc-skeleton" style="width: 90%; height: 16px; margin-bottom: 8px;"></div>
+                  <div class="sc-skeleton" style="width: 75%; height: 16px; margin-bottom: 16px;"></div>
+                  <div class="sc-skeleton" style="width: 100%; height: 40px; border-radius: 12px;"></div>
+                </div>
+              </div>
+              <div class="sc-card sc-glass">
+                <div class="sc-skeleton" style="aspect-ratio: 16/9; width: 100%;"></div>
+                <div style="padding: 24px 18px 18px;">
+                  <div class="sc-skeleton" style="width: 60%; height: 20px; margin-bottom: 12px;"></div>
+                  <div class="sc-skeleton" style="width: 90%; height: 16px; margin-bottom: 8px;"></div>
+                  <div class="sc-skeleton" style="width: 75%; height: 16px; margin-bottom: 16px;"></div>
+                  <div class="sc-skeleton" style="width: 100%; height: 40px; border-radius: 12px;"></div>
+                </div>
               </div>
             </div>
 
-            <!-- 极简生态推广卡片 -->
-            <div class="glass-card rounded-2xl p-5 border border-white/[0.1] bg-gradient-to-br from-accent-indigo/10 via-transparent to-transparent">
-              <div class="flex items-center gap-2 mb-2 text-xs font-bold text-accent-cyan">
-                <i data-lucide="layers" class="w-4 h-4"></i>
-                <span>开放应用生态</span>
+            <!-- 加载更多 -->
+            <div class="sc-load-more-wrap" id="loadMoreWrap" style="display: none;">
+              <button type="button" class="sc-btn sc-btn--ghost" id="loadMoreBtn">
+                <i data-lucide="chevron-down" style="width: 16px; height: 16px;"></i>
+                <span>加载更多应用</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- 右侧边栏: 排行榜 + 最近更新 -->
+          <aside class="sc-aside">
+            <!-- 排行榜卡片 -->
+            <div class="sc-rank sc-glass">
+              <div class="sc-rank__tabs">
+                <button type="button" class="sc-rank__tab sc-rank__tab--active" id="rankTabDownloads" data-tab="downloads">下载总榜</button>
+                <button type="button" class="sc-rank__tab" id="rankTabUpdates" data-tab="updates">最近更新榜</button>
               </div>
-              <p class="text-xs text-slate-400 leading-relaxed mb-4">
-                欢迎独立开发者入驻。支持全自动分发、极速热更新与多端安装包归档。
-              </p>
-              <a href="/studio/" class="w-full py-2 rounded-xl text-xs font-semibold bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.12] text-white flex items-center justify-center gap-1.5 transition-all">
-                <span>进入发布后台</span>
-                <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-slate-400"></i>
-              </a>
+              <div class="sc-rank__list" id="rankList">
+                <div class="sc-skeleton" style="height: 48px; border-radius: 8px; margin-bottom: 8px;"></div>
+                <div class="sc-skeleton" style="height: 48px; border-radius: 8px; margin-bottom: 8px;"></div>
+                <div class="sc-skeleton" style="height: 48px; border-radius: 8px;"></div>
+              </div>
+            </div>
+
+            <!-- 最近更新卡片 (5 条) -->
+            <div class="sc-recent sc-glass">
+              <div class="sc-recent__title">
+                <i data-lucide="history" style="width: 16px; height: 16px; color: var(--sc-cyan);"></i>
+                <span>最新发布动态</span>
+              </div>
+              <div class="sc-recent__list" id="recentList">
+                <div class="sc-skeleton" style="height: 38px; border-radius: 6px; margin-bottom: 8px;"></div>
+                <div class="sc-skeleton" style="height: 38px; border-radius: 6px; margin-bottom: 8px;"></div>
+                <div class="sc-skeleton" style="height: 38px; border-radius: 6px;"></div>
+              </div>
             </div>
           </aside>
         </div>
+
       </div>
     </main>
 
-    <!-- 页脚 (Footer) -->
-    <footer class="border-t border-white/[0.08] bg-[#05070B] py-12 px-4 relative z-10">
-      <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs text-slate-400">
-        <div class="flex items-center gap-3">
-          <img src="/logo.png" alt="NSY" class="w-6 h-6 opacity-80" />
-          <span class="font-bold text-white text-sm">天才猫软件中心</span>
-          <span>© 2026 NSY Tech. All rights reserved.</span>
-        </div>
-        <div class="flex flex-wrap items-center gap-6 text-slate-400">
-          <a href="/" class="hover:text-white transition-colors">首页</a>
-          <a href="/desktop.html" class="hover:text-white transition-colors">桌面 2.0</a>
-          <a href="/download.html" class="hover:text-white transition-colors">软件中心</a>
-          <a href="/articles.html" class="hover:text-white transition-colors">文章教程</a>
-          <a href="/license.html" class="hover:text-white transition-colors">授权购买</a>
-          <a href="/studio/" class="hover:text-white transition-colors">管理控制台</a>
+    <!-- 7. 页脚 -->
+    <footer class="sc-footer">
+      <div class="sc-container">
+        <div class="sc-footer__content">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-weight: 700; color: #ffffff; font-size: 15px;">NSY</span>
+            <span>·</span>
+            <span>Copyright © 2026 天才猫工作室. 保留所有权利.</span>
+          </div>
+          <div class="sc-footer__links">
+            <a href="/" class="sc-footer__link">官网首页</a>
+            <a href="/desktop.html" class="sc-footer__link">桌面 2.0 旗舰</a>
+            <a href="/articles.html" class="sc-footer__link">使用教程与专栏</a>
+            <a href="/license.html" class="sc-footer__link">正版授权购买</a>
+          </div>
         </div>
       </div>
     </footer>
 
-    <!-- 逻辑脚本 -->
-    <script src="/software-center.js?v=20261017-v2"></script>
-    <script src="/js/landing-bind.js?v=20261017"></script>
+    <!-- Toast 提示 -->
+    <div class="sc-toast sc-glass" id="scToast">
+      <i data-lucide="check-circle" style="width: 16px; height: 16px; color: var(--sc-emerald);"></i>
+      <span id="scToastMsg">操作成功</span>
+    </div>
+
+    <!-- 核心逻辑脚本 (纯净原生 JS) -->
+    <script src="/software-center.js?v=20261017"></script>
   </body>
 </html>

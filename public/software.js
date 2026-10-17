@@ -1,57 +1,74 @@
-// 天才猫软件详情页核心逻辑 (software.html)
-// 支持公开线上展示与 Studio iframe 实时无缝草稿预览 (?preview=1 + postMessage)
+// 天才猫软件详情页核心脚本 (software.js)
+// 纯净语义化 DOM · 支持公开访问与 Studio iframe 无缝预览 (?preview=1 + postMessage) · 无 Tailwind 类名
 (function () {
+  "use strict";
+
   const $ = id => document.getElementById(id);
   const esc = val => String(val ?? "").replace(/[&<>"']/g, ch => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   })[ch]);
 
-  const PLATFORMS = {
+  const PLATFORM_MAP = {
     windows: { id: "windows", label: "Windows 安装版", icon: "monitor" },
+    macos: { id: "macos", label: "macOS 通用包", icon: "apple" },
     portable: { id: "portable", label: "绿色便携版", icon: "package" },
-    macos: { id: "macos", label: "macOS", icon: "apple" },
-    linux: { id: "linux", label: "Linux", icon: "terminal" },
-    android: { id: "android", label: "Android", icon: "smartphone" },
+    linux: { id: "linux", label: "Linux 运行包", icon: "terminal" },
+    android: { id: "android", label: "Android APK", icon: "smartphone" },
     other: { id: "other", label: "下载包", icon: "file-down" }
   };
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const isPreviewMode = urlParams.get("preview") === "1";
+  const targetId = urlParams.get("id");
+  const targetSlug = urlParams.get("slug");
+
+  let catalog = null;
+  let currentSoftware = null;
   let currentScreenshots = [];
-  let currentLightboxIdx = 0;
+  let lightboxIndex = 0;
 
   function safeIcons() {
-    try { window.lucide?.createIcons(); } catch {}
+    try {
+      if (window.lucide && typeof window.lucide.createIcons === "function") {
+        window.lucide.createIcons();
+      }
+    } catch (e) {
+      console.warn("Lucide icon creation warning:", e);
+    }
+  }
+
+  function formatBytes(bytes) {
+    const num = Number(bytes);
+    if (!num || num <= 0) return "";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(num) / Math.log(k));
+    return (num / Math.pow(k, i)).toFixed(1) + " " + (sizes[i] || "MB");
   }
 
   function formatDate(ts) {
     if (!ts) return "-";
-    const d = new Date(Number(ts));
+    const d = new Date(typeof ts === "number" ? ts : String(ts));
     if (isNaN(d.getTime())) return String(ts).slice(0, 10);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }
 
-  function formatBytes(bytes) {
-    if (!bytes || bytes <= 0) return "";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return (bytes / Math.pow(k, i)).toFixed(1) + " " + sizes[i];
-  }
-
-  // 安全轻量 Markdown 渲染器（只允许段落、标题、粗体、斜体、列表、引用、代码块与链接）
-  function markdownToHtml(md) {
+  // 轻量安全 Markdown 解析器
+  function renderMarkdown(md) {
     if (!md) return "";
     const lines = String(md).replace(/\r\n/g, "\n").split("\n");
     const blocks = [];
     let paragraph = [];
     let list = [];
-    let code = [];
     let inCode = false;
+    let code = [];
 
     const flushP = () => {
       if (!paragraph.length) return;
       blocks.push(`<p>${inlineMarkdown(paragraph.join("<br>"))}</p>`);
       paragraph = [];
     };
+
     const flushList = () => {
       if (!list.length) return;
       blocks.push(`<ul>${list.map(item => `<li>${inlineMarkdown(item)}</li>`).join("")}</ul>`);
@@ -99,34 +116,94 @@
         flushList();
         blocks.push(`<blockquote>${inlineMarkdown(trimmed.replace(/^>\s+/, ""))}</blockquote>`);
       } else {
-        flushList();
         paragraph.push(trimmed);
       }
     }
+
     flushP();
     flushList();
-    if (inCode && code.length) {
+    if (inCode) {
       blocks.push(`<pre><code>${esc(code.join("\n"))}</code></pre>`);
     }
+
     return blocks.join("");
   }
 
   function inlineMarkdown(text) {
-    return String(text || "")
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    return esc(text)
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
       .replace(/\*(.+?)\*/g, "<em>$1</em>")
-      .replace(/`(.+?)`/g, "<code>$1</code>")
-      .replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
   }
 
-  // 渲染主体函数
-  function renderSoftware(software, category, articles = []) {
-    const root = $("softwareDetailRoot");
-    if (!root) return;
+  // 复制提示
+  function showToast(msg) {
+    const toast = $("scToast");
+    const label = $("scToastMsg");
+    if (!toast) return;
+    if (label) label.textContent = msg || "操作成功";
+    toast.classList.add("sc-toast--show");
+    setTimeout(() => {
+      toast.classList.remove("sc-toast--show");
+    }, 2400);
+  }
 
+  // 检测客户端操作系统
+  function detectClientOS() {
+    const ua = navigator.userAgent.toLowerCase();
+    if (/macintosh|mac os x/.test(ua)) return "macos";
+    if (/windows|win32|win64/.test(ua)) return "windows";
+    if (/android/.test(ua)) return "android";
+    if (/linux/.test(ua)) return "linux";
+    return "windows";
+  }
+
+  // 渲染软件详情
+  function renderSoftware(software) {
+    if (!software) return;
+    currentSoftware = software;
+
+    document.title = `${software.name || "软件详情"} — 天才猫软件中心`;
+
+    // 隐藏骨架屏，显示内容
+    const skeleton = $("detailSkeleton");
+    const content = $("detailContent");
+    if (skeleton) skeleton.style.display = "none";
+    if (content) content.style.display = "block";
+
+    // 1. 基础信息
+    const iconEl = $("appIcon");
+    if (iconEl) iconEl.src = software.icon || "/logo.png";
+
+    const nameEl = $("appName");
+    if (nameEl) nameEl.textContent = software.name || "未命名软件";
+
+    const tagEl = $("appTagline");
+    if (tagEl) tagEl.textContent = software.tagline || "";
+
+    const catBadge = $("appCategoryBadge");
+    if (catBadge) catBadge.textContent = software.category || "应用工具";
+
+    const priceBadge = $("appPriceBadge");
+    if (priceBadge) {
+      priceBadge.textContent = software.priceType === "paid" ? "付费正版" : (software.priceType === "freemium" ? "免费增值" : "官方免费");
+      priceBadge.className = `sc-badge ${software.priceType === "paid" ? "sc-badge--cyan" : "sc-badge--emerald"}`;
+    }
+
+    const landingBadge = $("landingLinkBadge");
+    if (landingBadge) {
+      if (software.landingUrl) {
+        landingBadge.href = software.landingUrl;
+        landingBadge.style.display = "inline-flex";
+      } else {
+        landingBadge.style.display = "none";
+      }
+    }
+
+    // 2. 发布版本计算
     const publishedReleases = (software.releases || [])
-      .filter(r => r && (r.status === "published" || !r.status) && (r.fileKey || r.publicUrl) && r.version && r.version !== "待上传")
+      .filter(r => r && r.status === "published" && (r.fileKey || r.publicUrl) && r.version && r.version !== "待上传")
       .sort((a, b) => {
         const timeA = typeof a.createdAt === "number" ? a.createdAt : new Date(a.createdAt || 0).getTime();
         const timeB = typeof b.createdAt === "number" ? b.createdAt : new Date(b.createdAt || 0).getTime();
@@ -134,424 +211,498 @@
       });
 
     const latest = publishedReleases.find(r => r.isLatest) || publishedReleases[0] || null;
-    const sameVersionPackages = latest ? publishedReleases.filter(r => r.version === latest.version) : [];
-    const olderReleases = latest ? publishedReleases.filter(r => r.version !== latest.version) : [];
+    const latestVersion = latest ? latest.version : "";
+    const latestPackages = publishedReleases.filter(r => r.version === latestVersion);
 
-    // SEO 与页面标题
-    document.title = `${software.name || "软件详情"} — 天才猫软件中心`;
-    const desc = software.tagline || software.description || "天才猫官方软件发布与更新日志。";
-    let metaDesc = document.querySelector('meta[name="description"]');
-    if (!metaDesc) {
-      metaDesc = document.createElement("meta");
-      metaDesc.name = "description";
-      document.head.appendChild(metaDesc);
+    // 平台徽标
+    const platformsBadges = $("appPlatformsBadges");
+    if (platformsBadges) {
+      const uniquePlatforms = Array.from(new Set(publishedReleases.map(r => r.platform || "windows")));
+      platformsBadges.innerHTML = uniquePlatforms.map(p => {
+        const info = PLATFORM_MAP[p] || PLATFORM_MAP.other;
+        return `
+          <span class="sc-badge">
+            <i data-lucide="${info.icon}" style="width: 12px; height: 12px;"></i>
+            <span>${info.label}</span>
+          </span>
+        `;
+      }).join("");
     }
-    metaDesc.content = desc;
 
-    // 截图列表
-    currentScreenshots = Array.isArray(software.screenshots)
-      ? software.screenshots.filter(Boolean)
-      : (typeof software.screenshots === "string" ? software.screenshots.split(/\r?\n/).map(s => s.trim()).filter(Boolean) : []);
+    // 3. 智能主下载按钮识别
+    const clientOS = detectClientOS();
+    let recommendedPackage = latestPackages.find(p => p.platform === clientOS) || latestPackages[0] || latest;
 
-    const iconHtml = software.iconUrl
-      ? `<img src="${esc(software.iconUrl)}" alt="${esc(software.name)}" class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border border-white/[0.12] shadow-2xl shrink-0" />`
-      : `<div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-tr from-accent-indigo via-accent-cyan to-accent-violet p-[2px] shadow-2xl shrink-0"><div class="w-full h-full bg-[#07090e] rounded-2xl flex items-center justify-center text-white text-2xl font-bold">${esc((software.name || "软")[0])}</div></div>`;
-
-    const platforms = Array.from(new Set(publishedReleases.map(r => r.platform || "other")));
-    const platformPills = platforms.map(p => {
-      const pItem = PLATFORMS[p] || PLATFORMS.other;
-      return `<span class="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/[0.1] text-slate-300">
-        <i data-lucide="${pItem.icon}" class="w-3.5 h-3.5"></i>
-        <span>${pItem.label}</span>
-      </span>`;
-    }).join("");
-
-    // 特性亮点
-    const highlights = Array.isArray(software.highlights) ? software.highlights.filter(h => h && h.title) : [];
-
-    root.innerHTML = `
-      <!-- 1. 软件核心 Hero -->
-      <section class="glass-card rounded-3xl p-6 sm:p-10 mb-8 border border-white/[0.1] shadow-2xl relative overflow-hidden">
-        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6 min-w-0 flex-1">
-            ${iconHtml}
-            <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-2 mb-2">
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/[0.06] text-slate-400 border border-white/[0.08]">${esc(category?.name || "通用软件")}</span>
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20">${esc(software.priceLabel || "免费")}</span>
-                ${software.featured ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30">✦ 官方主推</span>` : ""}
-              </div>
-              <h1 id="hero-title" class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">${esc(software.name)}</h1>
-              <p id="hero-tagline" class="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">${esc(software.tagline || "极具高级感与生产力体验的官方应用。")}</p>
-
-              <div class="flex flex-wrap items-center gap-2 mt-4">
-                ${platformPills}
-              </div>
-            </div>
-          </div>
-
-          <!-- 右侧主下载按钮组 -->
-          <div class="flex flex-col items-stretch sm:items-end gap-3 w-full sm:w-auto shrink-0 pt-4 md:pt-0 border-t md:border-t-0 border-white/[0.08]">
-            ${latest ? `
-              <a href="/download/${encodeURIComponent(latest.id)}" class="btn-shimmer h-[52px] min-w-[220px] px-8 rounded-xl bg-gradient-to-r from-accent-cyan to-[#06B6D4] text-[#04101A] font-bold text-sm flex items-center justify-center gap-2.5 shadow-[0_0_35px_rgba(0,242,254,0.4)] hover:-translate-y-0.5 transition-transform">
-                <i data-lucide="download" class="w-4 h-4"></i>
-                <span>立即下载 v${esc(latest.version)}</span>
-              </a>
-              <span class="text-xs text-slate-400 font-mono text-center sm:text-right">
-                ${esc(latest.label || (PLATFORMS[latest.platform] || PLATFORMS.other).label)} · ${esc(latest.size || formatBytes(latest.fileSize))}
-              </span>
-            ` : `
-              <div class="h-[52px] min-w-[220px] px-8 rounded-xl bg-white/[0.04] text-slate-500 font-bold text-sm flex items-center justify-center border border-white/[0.08] cursor-not-allowed">
-                版本正在准备中
-              </div>
-            `}
-
-            ${software.landingUrl ? `
-              <a href="${esc(software.landingUrl)}" class="h-[42px] px-5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.14] text-accent-cyan font-semibold text-xs flex items-center justify-center gap-2 transition-all">
-                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-                <span>访问 3D 专属落地页</span>
-                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-              </a>
-            ` : ""}
-          </div>
-        </div>
-
-        <!-- 详细规格栏 -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-white/[0.08] text-xs">
-          <div>
-            <span class="text-slate-500 block mb-1">开发者 / 团队</span>
-            <span class="text-slate-200 font-medium">${esc(software.developer || "天才猫官方团队")}</span>
-          </div>
-          <div>
-            <span class="text-slate-500 block mb-1">系统要求</span>
-            <span class="text-slate-200 font-medium">${esc(software.requirements || "Windows 10 / 11 64位 或 macOS")}</span>
-          </div>
-          <div>
-            <span class="text-slate-500 block mb-1">官方网站</span>
-            ${software.website ? `<a href="${esc(software.website)}" target="_blank" rel="noreferrer" class="text-accent-cyan hover:underline flex items-center gap-1">${esc(software.website.replace(/^https?:\/\//, '').slice(0, 22))} <i data-lucide="external-link" class="w-3 h-3"></i></a>` : `<span class="text-slate-400">nsyoo.com</span>`}
-          </div>
-          <div>
-            <span class="text-slate-500 block mb-1">更新时间</span>
-            <span class="text-slate-200 font-mono">${formatDate(latest?.createdAt || software.updatedAt)}</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- 2. 截图画廊 (Screenshots Rail) -->
-      ${currentScreenshots.length > 0 ? `
-        <section class="mb-10">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-bold text-white flex items-center gap-2">
-              <i data-lucide="image" class="w-5 h-5 text-accent-cyan"></i>
-              <span>软件截图预览</span>
-            </h2>
-            <span class="text-xs text-slate-500">点击查看高清大图（支持键盘左右切换）</span>
-          </div>
-          <div class="gallery-rail">
-            ${currentScreenshots.map((src, idx) => `
-              <div class="shrink-0 w-72 sm:w-80 aspect-[16/10] rounded-2xl overflow-hidden glass-card border border-white/[0.1] hover:border-accent-cyan/50 transition-all cursor-pointer group shadow-lg" data-shot-idx="${idx}">
-                <img src="${esc(src)}" alt="截图 ${idx+1}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-              </div>
-            `).join("")}
-          </div>
-        </section>
-      ` : ""}
-
-      <!-- 3. 两栏主体：简介 + 亮点 & 要求 -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10 items-start">
-        <!-- 左侧：简介 (Markdown) -->
-        <section class="lg:col-span-7 glass-card rounded-3xl p-6 sm:p-8 border border-white/[0.1] shadow-xl">
-          <h2 class="text-lg font-bold text-white mb-4 pb-3 border-b border-white/[0.08] flex items-center gap-2">
-            <i data-lucide="file-text" class="w-5 h-5 text-accent-cyan"></i>
-            <span>软件介绍</span>
-          </h2>
-          <div class="prose-dark">
-            ${markdownToHtml(software.description || "暂无详细介绍。")}
-          </div>
-        </section>
-
-        <!-- 右侧：亮点与系统规格 -->
-        <section class="lg:col-span-5 flex flex-col gap-6">
-          ${highlights.length > 0 ? `
-            <div class="glass-card rounded-3xl p-6 sm:p-8 border border-white/[0.1] shadow-xl">
-              <h2 class="text-lg font-bold text-white mb-4 pb-3 border-b border-white/[0.08] flex items-center gap-2">
-                <i data-lucide="zap" class="w-5 h-5 text-[#e8a33d]"></i>
-                <span>特性亮点</span>
-              </h2>
-              <div class="space-y-4">
-                ${highlights.map(h => `
-                  <div class="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                    <h4 class="text-sm font-bold text-white mb-1 flex items-center gap-2">
-                      <span class="w-1.5 h-1.5 rounded-full bg-accent-cyan"></span>
-                      <span>${esc(h.title)}</span>
-                    </h4>
-                    <p class="text-xs text-slate-300 leading-relaxed">${esc(h.text)}</p>
-                  </div>
-                `).join("")}
-              </div>
-            </div>
-          ` : ""}
-
-          <!-- 同版本全平台下载矩阵 -->
-          ${sameVersionPackages.length > 1 ? `
-            <div class="glass-card rounded-3xl p-6 border border-white/[0.1] shadow-xl">
-              <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                <i data-lucide="boxes" class="w-4 h-4 text-accent-cyan"></i>
-                <span>当前版本多平台安装包</span>
-              </h3>
-              <div class="space-y-2.5">
-                ${sameVersionPackages.map(pkg => {
-                  const pItem = PLATFORMS[pkg.platform] || PLATFORMS.other;
-                  return `
-                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs">
-                      <div class="flex items-center gap-2.5">
-                        <i data-lucide="${pItem.icon}" class="w-4 h-4 text-slate-300"></i>
-                        <div>
-                          <div class="font-semibold text-white">${esc(pkg.label || pItem.label)}</div>
-                          <div class="text-[11px] text-slate-400 font-mono">${esc(pkg.fileName || '安装包')} · ${esc(pkg.size || formatBytes(pkg.fileSize))}</div>
-                        </div>
-                      </div>
-                      <a href="/download/${encodeURIComponent(pkg.id)}" class="px-3.5 py-1.5 rounded-lg bg-accent-cyan/15 hover:bg-accent-cyan/25 text-accent-cyan border border-accent-cyan/30 font-semibold transition-all">
-                        下载
-                      </a>
-                    </div>
-                  `;
-                }).join("")}
-              </div>
-            </div>
-          ` : ""}
-        </section>
-      </div>
-
-      <!-- 4. 历史版本与更新日志折叠面板 (Accordion) -->
-      <section class="glass-card rounded-3xl p-6 sm:p-8 border border-white/[0.1] shadow-xl mb-10">
-        <h2 class="text-lg font-bold text-white mb-6 pb-3 border-b border-white/[0.08] flex items-center gap-2">
-          <i data-lucide="history" class="w-5 h-5 text-accent-cyan"></i>
-          <span>历史版本与更新说明</span>
-        </h2>
-
-        ${publishedReleases.length === 0 ? `
-          <div class="py-8 text-center text-xs text-slate-500">暂无版本记录</div>
-        ` : `
-          <div class="space-y-3">
-            ${publishedReleases.map((rel, rIdx) => {
-              const changelogLines = String(rel.changelog || "").split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-              const pItem = PLATFORMS[rel.platform] || PLATFORMS.other;
-              return `
-                <div class="rounded-2xl border border-white/[0.08] bg-white/[0.02] overflow-hidden">
-                  <button type="button" class="release-accordion-btn w-full px-5 py-4 flex items-center justify-between text-left hover:bg-white/[0.04] transition-colors" data-rel-idx="${rIdx}">
-                    <div class="flex items-center gap-3">
-                      <span class="font-bold text-sm text-white font-mono">v${esc(rel.version)}</span>
-                      <span class="text-xs px-2 py-0.5 rounded-full bg-white/[0.06] text-slate-400 border border-white/[0.08]">${esc(rel.label || pItem.label)}</span>
-                      ${rel.isLatest ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30">最新</span>` : ""}
-                      <span class="text-xs text-slate-500 font-mono hidden sm:inline">${formatDate(rel.createdAt)}</span>
-                    </div>
-                    <div class="flex items-center gap-4">
-                      <span class="text-xs text-slate-400 font-mono">${esc(rel.size || formatBytes(rel.fileSize))}</span>
-                      <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform ${rIdx === 0 ? 'rotate-180' : ''}"></i>
-                    </div>
-                  </button>
-
-                  <div class="release-accordion-content ${rIdx === 0 ? '' : 'hidden'} px-5 pb-5 pt-1 border-t border-white/[0.04]">
-                    <div class="text-xs text-slate-300 space-y-1.5 py-3">
-                      ${changelogLines.length > 0 ? changelogLines.map(line => `<div class="flex items-start gap-2"><span class="text-accent-cyan">•</span><span>${esc(line)}</span></div>`).join("") : `<div class="text-slate-500">常规性能优化与体验改进。</div>`}
-                    </div>
-                    <div class="flex items-center justify-between pt-3 border-t border-white/[0.04] text-xs">
-                      <span class="text-slate-500 font-mono">文件：${esc(rel.fileName || "setup.exe")}</span>
-                      <a href="/download/${encodeURIComponent(rel.id)}" class="px-4 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.14] text-white font-medium flex items-center gap-1.5 transition-all">
-                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                        <span>下载此版本</span>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              `;
-            }).join("")}
-          </div>
-        `}
-      </section>
-
-      <!-- 5. 相关文章 (Articles, max 3) -->
-      ${articles.length > 0 ? `
-        <section class="mb-10">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-bold text-white flex items-center gap-2">
-              <i data-lucide="book-open" class="w-5 h-5 text-accent-cyan"></i>
-              <span>相关使用教程与说明</span>
-            </h2>
-            <a href="/articles.html" class="text-xs text-slate-400 hover:text-white transition-colors">查看全部文章 →</a>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            ${articles.slice(0, 3).map(art => `
-              <a href="/article.html?slug=${encodeURIComponent(art.slug || art.id)}" class="glass-card glass-card-hover rounded-2xl p-5 flex flex-col justify-between group transition-all">
-                <div>
-                  ${art.coverUrl ? `<div class="aspect-[16/9] rounded-xl overflow-hidden mb-3 bg-white/[0.04]"><img src="${esc(art.coverUrl)}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform" /></div>` : ""}
-                  <h4 class="text-sm font-bold text-white group-hover:text-accent-cyan transition-colors mb-2 line-clamp-2">${esc(art.title)}</h4>
-                  <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-3">${esc(art.summary || "")}</p>
-                </div>
-                <div class="text-[11px] text-slate-500 font-mono pt-3 border-t border-white/[0.06] flex items-center justify-between">
-                  <span>${esc(art.category || "教程")}</span>
-                  <span>阅读全文 →</span>
-                </div>
-              </a>
-            `).join("")}
-          </div>
-        </section>
-      ` : ""}
-    `;
-
-    setupInteractions();
-    safeIcons();
-  }
-
-  function renderMissing() {
-    const root = $("softwareDetailRoot");
-    if (!root) return;
-    root.innerHTML = `
-      <div class="glass-card rounded-3xl p-16 text-center max-w-lg mx-auto">
-        <div class="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-slate-400 mx-auto mb-4">
-          <i data-lucide="package-search" class="w-8 h-8 text-accent-cyan"></i>
-        </div>
-        <h2 class="text-xl font-bold text-white mb-2">未找到该软件</h2>
-        <p class="text-xs text-slate-400 mb-6">该软件可能已下架或标识有误，请前往软件中心查看更多软件。</p>
-        <a href="/download.html" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-accent-cyan/20 text-accent-cyan border border-accent-cyan/30 text-xs font-semibold hover:bg-accent-cyan/30 transition-all">
-          <i data-lucide="arrow-left" class="w-4 h-4"></i>
-          <span>返回软件中心</span>
-        </a>
-      </div>
-    `;
-    safeIcons();
-  }
-
-  // 绑定交互：折叠面板与灯箱
-  function setupInteractions() {
-    // 1. 折叠面板
-    document.querySelectorAll(".release-accordion-btn").forEach(btn => {
-      btn.onclick = () => {
-        const content = btn.nextElementSibling;
-        const icon = btn.querySelector("i[data-lucide='chevron-down']");
-        const isOpen = !content.classList.contains("hidden");
-        if (isOpen) {
-          content.classList.add("hidden");
-          if (icon) icon.classList.remove("rotate-180");
-        } else {
-          content.classList.remove("hidden");
-          if (icon) icon.classList.add("rotate-180");
+    const primaryBtn = $("primaryDownloadBtn");
+    const primaryLabel = $("primaryDownloadLabel");
+    if (primaryBtn) {
+      if (recommendedPackage) {
+        primaryBtn.href = `/download/${encodeURIComponent(software.id)}?platform=${encodeURIComponent(recommendedPackage.platform || "windows")}`;
+        const platLabel = (PLATFORM_MAP[recommendedPackage.platform] || PLATFORM_MAP.other).label;
+        if (primaryLabel) {
+          primaryLabel.textContent = `下载 ${platLabel} (v${recommendedPackage.version})`;
         }
-      };
-    });
+      } else {
+        primaryBtn.href = `/download/${encodeURIComponent(software.id)}`;
+        if (primaryLabel) primaryLabel.textContent = "立即下载最新版";
+      }
+    }
 
-    // 2. 截图画廊灯箱点击
-    document.querySelectorAll("[data-shot-idx]").forEach(card => {
-      card.onclick = () => {
-        const idx = Number(card.dataset.shotIdx);
-        openLightbox(idx);
-      };
-    });
+    // 其它版本下拉菜单
+    const otherWrap = $("otherPackagesWrap");
+    const otherDropdown = $("otherPackagesDropdown");
+    if (otherWrap && otherDropdown) {
+      if (latestPackages.length > 1) {
+        otherWrap.style.display = "block";
+        otherDropdown.innerHTML = latestPackages.map(pkg => {
+          const pInfo = PLATFORM_MAP[pkg.platform] || PLATFORM_MAP.other;
+          const pkgSize = pkg.size ? formatBytes(pkg.size) : "";
+          const dlLink = `/download/${encodeURIComponent(software.id)}?platform=${encodeURIComponent(pkg.platform || "")}`;
+          return `
+            <a href="${dlLink}" class="sc-rank__item" style="padding: 8px 12px; text-decoration: none;">
+              <i data-lucide="${pInfo.icon}" style="width: 16px; height: 16px; color: var(--sc-cyan);"></i>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 13px; font-weight: 600; color: #fff;">${pInfo.label}</div>
+                <div style="font-size: 11px; color: var(--sc-text-dim);">${pkg.arch || "通用"} ${pkgSize ? "· " + pkgSize : ""}</div>
+              </div>
+              <i data-lucide="download" style="width: 14px; height: 14px; color: var(--sc-text-muted);"></i>
+            </a>
+          `;
+        }).join("");
+      } else {
+        otherWrap.style.display = "none";
+      }
+    }
+
+    // 4. 元信息排
+    const metaVer = $("metaVersion");
+    const metaSize = $("metaSize");
+    const metaDate = $("metaDate");
+    const metaDev = $("metaDeveloper");
+    const metaDl = $("metaDownloads");
+    const checksumBtn = $("metaChecksumBtn");
+    const checksumDiv = $("metaChecksumDivider");
+    const checksumText = $("metaChecksumText");
+
+    if (metaVer) metaVer.textContent = latest ? `v${latest.version}` : "v1.0.0";
+    if (metaSize) metaSize.textContent = latest && latest.size ? formatBytes(latest.size) : "纯净无捆绑";
+    if (metaDate) metaDate.textContent = formatDate(latest ? latest.createdAt : software.updatedAt);
+    if (metaDev) metaDev.textContent = software.developer || "官方团队";
+
+    const totalDownloads = (software.releases || []).reduce((sum, r) => sum + (Number(r.downloadCount) || 0), 0);
+    if (metaDl) metaDl.textContent = `${totalDownloads.toLocaleString()} 次下载`;
+
+    if (checksumBtn && checksumText) {
+      const sha = latest && (latest.sha256 || latest.checksum);
+      if (sha) {
+        checksumBtn.style.display = "inline-flex";
+        if (checksumDiv) checksumDiv.style.display = "inline";
+        checksumText.textContent = `SHA256: ${sha.slice(0, 8)}...${sha.slice(-6)}`;
+        checksumBtn.onclick = () => {
+          navigator.clipboard.writeText(sha).then(() => {
+            showToast("SHA256 校验码已复制到剪贴板");
+          });
+        };
+      } else {
+        checksumBtn.style.display = "none";
+        if (checksumDiv) checksumDiv.style.display = "none";
+      }
+    }
+
+    // 5. 截图画廊
+    currentScreenshots = software.screenshots || [];
+    const gallerySection = $("gallerySection");
+    const galleryTrack = $("galleryTrack");
+    if (gallerySection && galleryTrack) {
+      if (currentScreenshots.length) {
+        gallerySection.style.display = "block";
+        galleryTrack.innerHTML = currentScreenshots.map((imgUrl, idx) => `
+          <div class="sc-gallery-thumb" data-screenshot-index="${idx}">
+            <img src="${esc(imgUrl)}" alt="截图 ${idx + 1}" loading="lazy" />
+          </div>
+        `).join("");
+      } else {
+        gallerySection.style.display = "none";
+      }
+    }
+
+    // 6. 详细介绍 Markdown
+    const descSection = $("descSection");
+    const descContent = $("descContent");
+    if (descSection && descContent) {
+      if (software.description) {
+        descSection.style.display = "block";
+        descContent.innerHTML = renderMarkdown(software.description);
+      } else {
+        descSection.style.display = "none";
+      }
+    }
+
+    // 7. 特性亮点 (2-3 列玻璃卡)
+    const featuresSection = $("featuresSection");
+    const featuresGrid = $("featuresGrid");
+    const highlights = software.highlights || [];
+    if (featuresSection && featuresGrid) {
+      if (highlights.length) {
+        featuresSection.style.display = "block";
+        featuresGrid.innerHTML = highlights.map(h => `
+          <div class="sc-feature-card sc-glass sc-glass--hover sc-spotlight">
+            <div class="sc-feature-card__icon">
+              <i data-lucide="${h.icon || "sparkles"}" style="width: 22px; height: 22px;"></i>
+            </div>
+            <h3 class="sc-feature-card__title">${esc(h.title || "卓越特性")}</h3>
+            <p class="sc-feature-card__desc">${esc(h.description || "")}</p>
+          </div>
+        `).join("");
+      } else {
+        featuresSection.style.display = "none";
+      }
+    }
+
+    // 8. 各平台安装包卡片矩阵
+    const packagesSection = $("packagesSection");
+    const packagesGrid = $("packagesGrid");
+    if (packagesSection && packagesGrid) {
+      if (latestPackages.length) {
+        packagesSection.style.display = "block";
+        packagesGrid.innerHTML = latestPackages.map(pkg => {
+          const pInfo = PLATFORM_MAP[pkg.platform] || PLATFORM_MAP.other;
+          const pkgSize = pkg.size ? formatBytes(pkg.size) : "官方标准";
+          const archText = pkg.arch ? `${pkg.arch.toUpperCase()} 架构` : "x64 通用架构";
+          const dlUrl = `/download/${encodeURIComponent(software.id)}?platform=${encodeURIComponent(pkg.platform || "")}`;
+          const sha = pkg.sha256 || pkg.checksum || "";
+
+          return `
+            <div class="sc-package-card sc-glass sc-glass--hover sc-spotlight">
+              <div>
+                <div class="sc-package-card__header">
+                  <div class="sc-package-card__title">
+                    <i data-lucide="${pInfo.icon}" style="width: 20px; height: 20px; color: var(--sc-cyan);"></i>
+                    <span>${pInfo.label}</span>
+                  </div>
+                  <span class="sc-badge sc-badge--cyan" style="font-size: 11px;">v${esc(pkg.version)}</span>
+                </div>
+                <div class="sc-package-card__meta">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>体系架构</span>
+                    <span style="color: #fff;">${esc(archText)}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>文件大小</span>
+                    <span style="color: #fff;">${pkgSize}</span>
+                  </div>
+                  ${sha ? `
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px; margin-top: 4px;">
+                      <span>安全校验</span>
+                      <button type="button" class="sc-btn-sha" data-sha="${esc(sha)}" style="color: var(--sc-cyan); cursor: pointer; display: flex; align-items: center; gap: 4px;" title="复制 SHA256">
+                        <span>${sha.slice(0, 6)}...${sha.slice(-4)}</span>
+                        <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
+                      </button>
+                    </div>
+                  ` : ""}
+                </div>
+              </div>
+              <a href="${dlUrl}" class="sc-btn sc-btn--primary sc-btn-shimmer" style="width: 100%;">
+                <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+                <span>高速下载安装包</span>
+              </a>
+            </div>
+          `;
+        }).join("");
+      } else {
+        packagesSection.style.display = "none";
+      }
+    }
+
+    // 9. 历史版本更新折叠面板
+    const historySection = $("historySection");
+    const historyAccordion = $("historyAccordion");
+    if (historySection && historyAccordion) {
+      // 按版本分组已发布历史
+      const versionGroups = {};
+      publishedReleases.forEach(r => {
+        if (!versionGroups[r.version]) {
+          versionGroups[r.version] = [];
+        }
+        versionGroups[r.version].push(r);
+      });
+
+      const versions = Object.keys(versionGroups);
+      if (versions.length) {
+        historySection.style.display = "block";
+        historyAccordion.innerHTML = versions.map((ver, idx) => {
+          const pkgs = versionGroups[ver];
+          const firstPkg = pkgs[0];
+          const dateStr = formatDate(firstPkg.createdAt);
+          const notes = firstPkg.changelog || "常规性能优化与已知问题修复。";
+          const isOpen = idx === 0 ? "sc-accordion__item--open" : "";
+
+          return `
+            <div class="sc-accordion__item sc-glass ${isOpen}">
+              <div class="sc-accordion__header">
+                <div class="sc-accordion__title">
+                  <span class="sc-badge--dot ${idx === 0 ? "sc-badge--dot-pulse" : ""}" style="color: ${idx === 0 ? "var(--sc-cyan)" : "var(--sc-text-dim)"};"></span>
+                  <span>v${esc(ver)} 正式版发布</span>
+                  <span style="font-size: 12px; color: var(--sc-text-dim); font-family: var(--sc-font-mono); font-weight: normal;">${dateStr}</span>
+                </div>
+                <i data-lucide="chevron-down" class="sc-accordion__icon" style="width: 18px; height: 18px; color: var(--sc-text-muted);"></i>
+              </div>
+              <div class="sc-accordion__body">
+                <div style="margin-bottom: 14px;">${esc(notes)}</div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                  ${pkgs.map(p => {
+                    const pInfo = PLATFORM_MAP[p.platform] || PLATFORM_MAP.other;
+                    const pLink = `/download/${encodeURIComponent(software.id)}?platform=${encodeURIComponent(p.platform || "")}`;
+                    return `
+                      <a href="${pLink}" class="sc-btn sc-btn--ghost sc-btn--xs">
+                        <i data-lucide="${pInfo.icon}" style="width: 12px; height: 12px;"></i>
+                        <span>下载 ${pInfo.label}</span>
+                      </a>
+                    `;
+                  }).join("")}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("");
+      } else {
+        historySection.style.display = "none";
+      }
+    }
+
+    // 10. 同分类推荐软件 (4 个卡片)
+    const recSection = $("recommendSection");
+    const recGrid = $("recommendGrid");
+    if (recSection && recGrid && catalog && catalog.software) {
+      const others = (catalog.software || [])
+        .filter(s => s.id !== software.id && (s.status || "active") === "active")
+        .sort((a, b) => {
+          if (a.category === software.category && b.category !== software.category) return -1;
+          if (a.category !== software.category && b.category === software.category) return 1;
+          return 0;
+        })
+        .slice(0, 4);
+
+      if (others.length) {
+        recSection.style.display = "block";
+        recGrid.innerHTML = others.map(s => {
+          const coverUrl = s.coverImage || (s.screenshots && s.screenshots[0]) || "";
+          const iconUrl = s.icon || "/logo.png";
+          const detailUrl = `/software.html?id=${encodeURIComponent(s.id)}`;
+          const dlUrl = `/download/${encodeURIComponent(s.id)}`;
+
+          return `
+            <article class="sc-card sc-glass sc-glass--hover sc-spotlight">
+              <div class="sc-card__cover-wrap">
+                ${coverUrl ? `
+                  <img src="${esc(coverUrl)}" alt="${esc(s.name)}" class="sc-card__cover" loading="lazy" />
+                ` : `
+                  <div class="sc-card__cover-fallback">
+                    <img src="${esc(iconUrl)}" alt="${esc(s.name)}" class="sc-card__cover-fallback-icon" />
+                  </div>
+                `}
+                <img src="${esc(iconUrl)}" alt="${esc(s.name)}" class="sc-card__icon-floating" loading="lazy" />
+              </div>
+              <div class="sc-card__body">
+                <div class="sc-card__header">
+                  <h3 class="sc-card__name">${esc(s.name)}</h3>
+                  <span class="sc-badge sc-badge--cyan" style="font-size: 11px;">${esc(s.category || "应用")}</span>
+                </div>
+                <p class="sc-card__tagline">${esc(s.tagline || "")}</p>
+                <div class="sc-card__actions" style="margin-top: 14px;">
+                  <a href="${dlUrl}" class="sc-btn sc-btn--primary sc-btn--xs sc-btn-shimmer">立即下载</a>
+                  <a href="${detailUrl}" class="sc-btn sc-btn--ghost sc-btn--xs">详情</a>
+                </div>
+              </div>
+            </article>
+          `;
+        }).join("");
+      } else {
+        recSection.style.display = "none";
+      }
+    }
+
+    safeIcons();
   }
 
-  // 灯箱控制
-  function openLightbox(idx) {
+  // 灯箱展示
+  function openLightbox(index) {
     if (!currentScreenshots.length) return;
-    currentLightboxIdx = (idx + currentScreenshots.length) % currentScreenshots.length;
+    lightboxIndex = (index + currentScreenshots.length) % currentScreenshots.length;
     const modal = $("lightboxModal");
     const img = $("lightboxImg");
-    const counter = $("lightboxIndex");
-    if (!modal || !img) return;
-
-    img.src = currentScreenshots[currentLightboxIdx];
-    if (counter) counter.textContent = `${currentLightboxIdx + 1} / ${currentScreenshots.length}`;
-    modal.classList.remove("hidden");
+    if (modal && img) {
+      img.src = currentScreenshots[lightboxIndex];
+      modal.classList.add("sc-lightbox--open");
+    }
   }
 
   function closeLightbox() {
     const modal = $("lightboxModal");
-    if (modal) modal.classList.add("hidden");
+    if (modal) modal.classList.remove("sc-lightbox--open");
   }
 
-  function setupLightboxHandlers() {
-    const closeBtn = $("lightboxClose");
-    const prevBtn = $("lightboxPrev");
-    const nextBtn = $("lightboxNext");
-    const modal = $("lightboxModal");
+  // 绑定交互事件
+  function bindEvents() {
+    // 聚光灯
+    document.addEventListener("mousemove", e => {
+      const target = e.target.closest(".sc-spotlight");
+      if (target) {
+        const rect = target.getBoundingClientRect();
+        target.style.setProperty("--mouse-x", `${e.clientX - rect.left}px`);
+        target.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
+      }
+    });
 
-    if (closeBtn) closeBtn.onclick = closeLightbox;
-    if (prevBtn) prevBtn.onclick = () => openLightbox(currentLightboxIdx - 1);
-    if (nextBtn) nextBtn.onclick = () => openLightbox(currentLightboxIdx + 1);
+    // 其它版本下拉菜单展开与关闭
+    const otherBtn = $("otherPackagesBtn");
+    const otherDropdown = $("otherPackagesDropdown");
+    if (otherBtn && otherDropdown) {
+      otherBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        const isShow = otherDropdown.style.display === "block";
+        otherDropdown.style.display = isShow ? "none" : "block";
+      });
 
-    if (modal) {
-      modal.onclick = e => {
-        if (e.target === modal) closeLightbox();
-      };
+      document.addEventListener("click", () => {
+        otherDropdown.style.display = "none";
+      });
     }
 
+    // 历史折叠面板点击
+    const accordion = $("historyAccordion");
+    if (accordion) {
+      accordion.addEventListener("click", e => {
+        const header = e.target.closest(".sc-accordion__header");
+        if (header) {
+          const item = header.closest(".sc-accordion__item");
+          if (item) {
+            item.classList.toggle("sc-accordion__item--open");
+          }
+        }
+      });
+    }
+
+    // 截图画廊点击打开灯箱
+    const galleryTrack = $("galleryTrack");
+    if (galleryTrack) {
+      galleryTrack.addEventListener("click", e => {
+        const thumb = e.target.closest(".sc-gallery-thumb");
+        if (thumb) {
+          const idx = parseInt(thumb.getAttribute("data-screenshot-index"), 10);
+          if (!isNaN(idx)) openLightbox(idx);
+        }
+      });
+    }
+
+    // 灯箱切换
+    const lbClose = $("lightboxClose");
+    const lbPrev = $("lightboxPrev");
+    const lbNext = $("lightboxNext");
+    const lbModal = $("lightboxModal");
+
+    if (lbClose) lbClose.addEventListener("click", closeLightbox);
+    if (lbPrev) lbPrev.addEventListener("click", () => openLightbox(lightboxIndex - 1));
+    if (lbNext) lbNext.addEventListener("click", () => openLightbox(lightboxIndex + 1));
+    if (lbModal) {
+      lbModal.addEventListener("click", e => {
+        if (e.target === lbModal) closeLightbox();
+      });
+    }
+
+    // 键盘支持
     window.addEventListener("keydown", e => {
-      const modal = $("lightboxModal");
-      if (!modal || modal.classList.contains("hidden")) return;
+      if (!lbModal || !lbModal.classList.contains("sc-lightbox--open")) return;
       if (e.key === "Escape") closeLightbox();
-      else if (e.key === "ArrowLeft") openLightbox(currentLightboxIdx - 1);
-      else if (e.key === "ArrowRight") openLightbox(currentLightboxIdx + 1);
+      if (e.key === "ArrowLeft") openLightbox(lightboxIndex - 1);
+      if (e.key === "ArrowRight") openLightbox(lightboxIndex + 1);
+    });
+
+    // 复制各平台 SHA 校验码
+    document.addEventListener("click", e => {
+      const copyBtn = e.target.closest(".sc-btn-sha");
+      if (copyBtn) {
+        const sha = copyBtn.getAttribute("data-sha");
+        if (sha) {
+          navigator.clipboard.writeText(sha).then(() => {
+            showToast("SHA256 校验码已复制到剪贴板");
+          });
+        }
+      }
     });
   }
 
-  // 主加载流程
-  async function loadSoftware() {
-    setupLightboxHandlers();
+  // 初始化入口
+  async function init() {
+    bindEvents();
 
-    const params = new URLSearchParams(location.search);
-    const isPreview = params.get("preview") === "1";
-    const slug = params.get("slug") || params.get("app");
-
-    // 模式 A：Studio 实时无缝预览模式
-    if (isPreview) {
-      // 监听 Studio 发来的 postMessage
-      window.addEventListener("message", event => {
-        if (event.origin !== location.origin) return;
-        if (event.data && event.data.type === "studio-preview") {
-          const sw = event.data.software;
-          const cat = event.data.category || { id: sw?.categoryId, name: "预览分类" };
-          const arts = event.data.articles || [];
-          if (sw) renderSoftware(sw, cat, arts);
+    // Studio 实时预览模式
+    if (isPreviewMode) {
+      window.addEventListener("message", e => {
+        if (e.data && e.data.type === "studio-preview" && e.data.software) {
+          renderSoftware(e.data.software);
         }
       });
 
-      // 告知父窗口已就绪
-      try {
-        window.parent?.postMessage({ type: "preview-ready" }, location.origin);
-      } catch {}
-
-      // 如果有 slug 也可尝试先读一次
-      if (!slug) return;
-    }
-
-    if (!slug) {
-      renderMissing();
-      return;
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: "studio-preview-ready" }, "*");
+      }
     }
 
     try {
       const res = await fetch("/api/catalog", { cache: "no-store" });
-      if (!res.ok) throw new Error("加载失败");
-      const catalog = await res.json();
-
-      const software = (catalog.software || []).find(item => item.slug === slug || item.id === slug);
-      if (!software) {
-        renderMissing();
-        return;
-      }
-
-      const category = (catalog.categories || []).find(item => item.id === software.categoryId);
-      const articles = (catalog.articles || []).filter(item => (item.softwareIds || []).includes(software.id));
-
-      renderSoftware(software, category, articles);
+      if (!res.ok) throw new Error("加载软件目录失败");
+      catalog = await res.json();
     } catch (err) {
-      renderMissing();
+      console.error("加载 catalog 异常:", err);
+      if (!isPreviewMode) {
+        const skeleton = $("detailSkeleton");
+        if (skeleton) {
+          skeleton.innerHTML = `
+            <div class="sc-empty sc-glass">
+              <h3 class="sc-empty__title">无法加载软件详情</h3>
+              <p class="sc-empty__desc">请返回软件中心重新选择应用</p>
+              <a href="/download.html" class="sc-btn sc-btn--primary sc-btn--sm">返回软件中心</a>
+            </div>
+          `;
+        }
+      }
+      return;
+    }
+
+    // 匹配软件
+    const list = catalog.software || [];
+    let matched = null;
+
+    if (targetId) {
+      matched = list.find(s => String(s.id) === String(targetId));
+    }
+    if (!matched && targetSlug) {
+      matched = list.find(s => s.slug === targetSlug);
+    }
+    if (!matched && list.length) {
+      matched = list[0];
+    }
+
+    if (matched) {
+      renderSoftware(matched);
+    } else if (!isPreviewMode) {
+      const skeleton = $("detailSkeleton");
+      if (skeleton) {
+        skeleton.innerHTML = `
+          <div class="sc-empty sc-glass">
+            <h3 class="sc-empty__title">未找到指定软件</h3>
+            <p class="sc-empty__desc">该软件可能已下架或链接有误</p>
+            <a href="/download.html" class="sc-btn sc-btn--primary sc-btn--sm">浏览全部软件</a>
+          </div>
+        `;
+      }
     }
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", loadSoftware);
+    document.addEventListener("DOMContentLoaded", init);
   } else {
-    loadSoftware();
+    init();
   }
 })();
