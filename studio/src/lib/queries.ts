@@ -85,7 +85,12 @@ export function useLanding() {
     queryKey: ['landing'],
     queryFn: async () => {
       const res = await api.post('/api/admin/landing', { action: 'get' })
-      return res.data || { homeLanding: 'portal', pages: [], content: {} }
+      return {
+        homeLanding: res.homeLanding || res.data?.homeLanding || 'portal',
+        pages: res.pages || res.data?.pages || [],
+        content: res.content || res.data?.content || {},
+        updatedAt: res.updatedAt || res.data?.updatedAt || 0,
+      }
     },
   })
 }

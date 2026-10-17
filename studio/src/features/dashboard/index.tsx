@@ -33,12 +33,16 @@ export function Dashboard() {
   const totalDownloads = releasesList.reduce((acc, r) => acc + (r.downloadCount || 0), 0)
   const publishedReleases = releasesList.filter((r) => r.status === 'published')
   const recentReleases = [...releasesList]
-    .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+    .sort((a, b) => {
+      const timeA = typeof a.createdAt === 'number' ? a.createdAt : new Date(a.createdAt || 0).getTime()
+      const timeB = typeof b.createdAt === 'number' ? b.createdAt : new Date(b.createdAt || 0).getTime()
+      return timeB - timeA
+    })
     .slice(0, 5)
 
   const activeLandingId = landing?.homeLanding || 'portal'
   const activeLandingTitle =
-    landing?.pages.find((p) => p.id === activeLandingId)?.title || activeLandingId
+    landing?.pages?.find((p) => p.id === activeLandingId)?.title || activeLandingId
 
   return (
     <div className='flex flex-1 flex-col gap-4 p-4 pt-0 md:gap-8 md:p-8'>
