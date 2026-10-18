@@ -1,59 +1,254 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>文章 - 天才猫软件中心</title>
-    <meta name="description" content="天才猫软件介绍、教程和更新说明。" />
-    <link rel="icon" type="image/png" href="/logo.png?v=20260509" />
-    <link rel="apple-touch-icon" href="/logo.png?v=20260509" />
-    <link rel="stylesheet" href="/styles.css?v=20260510-premium-detail" />
-    <link rel="stylesheet" href="/site-theme.css?v=20260518-home-unified-pages" />
-    <link rel="stylesheet" href="/css/articles.css?v=20261017-v4" />
-    <script src="/vendor/lucide.min.js?v=20261017-v4" defer></script>
-  </head>
-  <body class="articles-page" data-landing-page="articles">
-    <header class="topbar">
-      <a class="brand" href="/"><img src="/logo.png" alt="" /><span>天才猫</span></a>
-      <nav aria-label="主导航" data-nav>
-        <a href="/">首页</a><a href="/download.html">软件下载</a><a href="/photo-wall.html">照片墙</a><a href="/gallery.html">图片画廊</a><a href="/music.html">音乐频道</a><a href="/articles.html">文章教程</a><a href="/license.html">授权购买</a>
-      </nav>
-    </header>
-    <main>
-      <section class="page-hero article-hero">
-        <p class="eyebrow">Articles</p>
-        <h1 data-landing="heroTitle">软件介绍、教程与运营方法。</h1>
-        <p data-landing="heroSubtitle">把产品能力、使用步骤和真实业务场景整理成可阅读、可转发的内容。</p>
-      </section>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>白卷 WHITE FOLIO — 用眼睛读的杂志 · 天才猫文章专栏</title>
+  <meta name="description" content="十五位撰稿人，十五个现场。从霓虹雨夜到云海日出——白卷把远方折成可以翻阅的形状。天才猫官方深度特稿、产品使用手册与技术专栏。" />
+  <link rel="icon" type="image/png" href="/logo.png?v=20260509" />
+  <link rel="apple-touch-icon" href="/logo.png?v=20260509" />
+  <link rel="stylesheet" href="/css/articles.css?v=20261018-v4" />
+  <link rel="stylesheet" href="/css/articles-folio.css?v=20261018-folio" />
+</head>
+<body>
 
-      <!-- 顶部分类导航条 (按 article-taxonomy 动态渲染) -->
-      <section class="page-section" style="padding-top: 0; padding-bottom: 0;">
-        <div class="articles-nav-wrap" id="articlesNavWrap"></div>
-      </section>
+<!-- 顶栏导航 -->
+<nav class="folio-nav">
+  <div class="nav-in">
+    <div class="logo" id="brandLogo">白卷<i>VOL.1</i></div>
+    <div class="site-switch">
+      <a href="/" title="返回天才猫主站">主站</a>
+      <a href="/download.html" title="软件中心">软件下载</a>
+      <a href="/music.html" title="音乐频道">音乐频道</a>
+      <a href="/gallery.html" title="视觉画廊">画廊</a>
+    </div>
+    <div class="nav-links" id="navCats"></div>
+    <div class="nav-right">
+      <div class="searchbox">
+        <span>⌕</span>
+        <input id="q" placeholder="搜索文章…" autocomplete="off" />
+      </div>
+      <div class="bmk-count" id="bmkNav" title="我的书签">书签<b id="bmkN">0</b></div>
+      <button type="button" class="btn-sub" onclick="document.getElementById('nl').scrollIntoView({behavior:'smooth'})">订阅</button>
+    </div>
+  </div>
+</nav>
 
-      <section class="article-list page-section" aria-label="文章列表">
-        <div class="article-list__head">
-          <div>
-            <p class="eyebrow">Library</p>
-            <h2 id="currentCategoryTitle">最新文章</h2>
+<!-- HERO 首屏巨幕 -->
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow" id="heroEyebrow"><span class="dot"></span>本期特稿 · FEATURED</div>
+        <h1 id="heroH1">用眼睛<br>读<span class="hl" id="heroHl">世界</span></h1>
+        <p class="lede" id="heroLede">十五位撰稿人，十五个现场。从霓虹雨夜到云海日出——白卷把远方折成可以翻阅的形状。</p>
+        <div class="hero-cta">
+          <button type="button" class="btn btn-p" id="heroRead">开始阅读 →</button>
+          <button type="button" class="btn btn-g" id="heroBtnSecondary">浏览全部</button>
+        </div>
+        <div class="hero-stats" id="heroStats">
+          <div><b>15</b><span>深度特稿</span></div>
+          <div><b>06</b><span>驻站作者</span></div>
+          <div><b>32万</b><span>本月读者</span></div>
+        </div>
+      </div>
+      <div class="hero-media">
+        <div class="hero-vcard" id="heroVcard">
+          <div id="heroMediaContainer" style="position: absolute; inset: 0; width: 100%; height: 100%;">
+            <video id="heroVideo" src="https://muse.ai/files/1331075203424773/1432998841610842/xq500iv9v5g5t769vpxqq7gw/noir.mp4" autoplay muted loop playsinline></video>
           </div>
-          <p id="articleListMeta">正在读取文章...</p>
+          <div class="hv-float" id="heroFloatCard">
+            <span class="tag" id="heroFloatTag">城市</span>
+            <div>
+              <b id="heroFloatTitle">霓虹雨夜</b>
+              <span id="heroFloatSub">Neon Noir · 陈默</span>
+            </div>
+            <span class="reads" id="heroFloatReads">▶ 12.8万</span>
+          </div>
         </div>
-        <div class="article-controls" role="search" id="articleControls">
-          <label>搜索文章<input id="articleSearch" type="search" placeholder="输入标题、摘要、分类或标签" autocomplete="off" /></label>
-          <label>分类<select id="articleCategoryFilter"><option value="all">全部分类</option></select></label>
-          <label>标签<select id="articleTagFilter"><option value="all">全部标签</option></select></label>
-          <button class="ghost" type="button" id="clearArticleFilters">清空</button>
-        </div>
+        <div class="hero-badge" id="heroBadge">本期<br>特稿</div>
+      </div>
+    </div>
+  </div>
+</header>
 
-        <!-- 动态多排版容器 (支持 grid / list / docs) -->
-        <div id="articleViewContainer">
-          <div class="article-grid" id="articleGrid"></div>
-        </div>
-      </section>
-    </main>
-    <footer><span>天才猫软件中心</span><span>Articles</span></footer>
-    <script src="/articles.js?v=20261017-v4" type="module"></script>
-    <script src="/js/landing-bind.js?v=20261017"></script>
-  </body>
+<!-- 粘性分类切换栏 -->
+<div class="tabs">
+  <div class="tabs-in" id="tabs"></div>
+</div>
+
+<!-- 1. 编辑精选 BENTO PICKS -->
+<section class="sec" id="sec-picks">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <h2 id="bentoSecTitle">编辑精选<small id="bentoSecSub">EDITORS' PICKS</small></h2>
+      <span class="more" data-goto="sec-grid">全部文章 →</span>
+    </div>
+    <div class="bento" id="bento"></div>
+  </div>
+</section>
+
+<!-- 2. 电影滑轨 CINEMA -->
+<section class="sec" id="sec-film">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <h2 id="cinemaSecTitle">影像特稿<small id="cinemaSecSub">FILM STORIES</small></h2>
+      <span class="more" data-goto="sec-grid">全部文章 →</span>
+    </div>
+    <div class="cinema rv" id="cinema">
+      <div class="film-slides-wrap" id="filmSlidesWrap" style="position: absolute; inset: 0;"></div>
+      <div class="film-controls">
+        <button type="button" data-film="-1" aria-label="上一个">←</button>
+        <button type="button" data-film="1" aria-label="下一个">→</button>
+      </div>
+      <div class="film-progress" id="filmProg"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. 全部文章 杂志索引行 / 卡片 -->
+<section class="sec" id="sec-grid">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <h2>全部文章<small id="gridCount">15 篇</small></h2>
+      <span class="more" id="clearFilter" style="display: none;">清除筛选 ✕</span>
+    </div>
+    <div id="grid"></div>
+  </div>
+</section>
+
+<!-- 4. 24 小时快讯 THE WIRE -->
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <h2 id="wireSecTitle">24 小时<small id="wireSecSub">THE WIRE</small></h2>
+    </div>
+    <div class="flash rv" id="flash"></div>
+  </div>
+</section>
+
+<!-- 5. 热榜 TRENDING 5 -->
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <h2 id="trendSecTitle">热榜<small id="trendSecSub">TRENDING</small></h2>
+    </div>
+    <div class="trend5" id="trend5"></div>
+  </div>
+</section>
+
+<!-- 6. 驻站作者 AUTHORS -->
+<section class="sec" id="sec-authors">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <h2 id="authorSecTitle">驻站作者<small id="authorSecSub">AUTHORS</small></h2>
+    </div>
+    <div class="team-show rv">
+      <div class="team-portrait" id="teamPortrait" style="--member:#d97857">
+        <span class="tp-char" id="teamChar">陈</span>
+      </div>
+      <div class="team-info" id="teamInfo"></div>
+      <div class="team-avatars" id="teamAvatars"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. 知识网络 KNOWLEDGE GRAPH -->
+<section class="sec" id="sec-graph">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <h2 id="graphSecTitle">知识网络<small id="graphSecSub">KNOWLEDGE GRAPH</small></h2>
+    </div>
+    <div class="cyberhero-shell rv">
+      <div class="cyberhero-copy">
+        <small id="graphEyebrow">知识网络 / KNOWLEDGE GRAPH</small>
+        <h3 id="graphHeadline">每一篇特稿，<br>都是网络上的一个节点。</h3>
+        <p id="graphDesc">十五个现场，十大主题。从任意一篇出发，沿着这条粉色的线，走到下一篇——阅读在这里有了方向。</p>
+        <button type="button" class="btn btn-p" data-goto="sec-grid">开始探索 →</button>
+      </div>
+      <div class="cyber-pipeline">
+        <svg class="cyber-arc" viewBox="0 0 700 420" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M30 330C120 70 290 70 390 215S570 390 650 110"/>
+        </svg>
+        <i class="cyber-pulse" id="cyberPulse"></i>
+        <button type="button" class="cyber-node active" style="left:12%;top:77%" data-topic="旅行">旅</button>
+        <button type="button" class="cyber-node" style="left:28%;top:34%" data-topic="自然">自</button>
+        <button type="button" class="cyber-node" style="left:49%;top:47%" data-topic="文化">文</button>
+        <button type="button" class="cyber-node" style="left:70%;top:70%" data-topic="科学">科</button>
+        <button type="button" class="cyber-node" style="left:87%;top:22%" data-topic="城市">城</button>
+      </div>
+    </div>
+    <div class="graph-tags rv" id="graphTags"></div>
+  </div>
+</section>
+
+<!-- 8. 每周一封订阅 NEWSLETTER -->
+<section>
+  <div class="wrap">
+    <div class="nl rv" id="nl">
+      <div class="blob b1"></div>
+      <div class="blob b2"></div>
+      <h2 id="nlTitle">每周一封，<br>把世界折好寄给你。</h2>
+      <p id="nlSubtitle">订阅白卷周刊 · 每周五早上 8 点 · 5 分钟读完</p>
+      <div class="nl-form">
+        <input id="nlMail" placeholder="你的邮箱地址" type="email" />
+        <button type="button" id="nlBtn">订阅</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9. 页脚 FOOTER -->
+<footer class="folio-foot">
+  <div class="wrap">
+    <div class="foot-grid" id="footGrid">
+      <div class="foot-brand">
+        <div class="logo" id="footLogo">白卷<i>VOL.1</i></div>
+        <p id="footBrandDesc">用眼睛读的杂志。十五位撰稿人，十五个现场，每周五更新。</p>
+      </div>
+      <div>
+        <h5>栏目</h5>
+        <a data-cat="旅行">旅行</a>
+        <a data-cat="自然">自然</a>
+        <a data-cat="文化">文化</a>
+        <a data-cat="科学">科学</a>
+      </div>
+      <div>
+        <h5>关于</h5>
+        <a href="/">关于天才猫</a>
+        <a href="/download.html">软件下载</a>
+        <a href="/music.html">音乐频道</a>
+        <a href="/license.html">授权服务</a>
+      </div>
+      <div>
+        <h5>关注</h5>
+        <a href="https://weixin.qq.com" target="_blank" rel="noopener">微信公众号</a>
+        <a href="https://xiaohongshu.com" target="_blank" rel="noopener">小红书</a>
+        <a href="https://bilibili.com" target="_blank" rel="noopener">Bilibili</a>
+        <a href="/api/catalog" target="_blank">RSS 订阅</a>
+      </div>
+    </div>
+    <div class="copy" id="footCopy">© 2026 白卷 WHITE FOLIO · 天才猫文章专栏</div>
+  </div>
+</footer>
+
+<!-- 10. 沉浸式侧滑阅读器 DRAWER -->
+<div class="reader" id="reader" aria-modal="true" role="dialog">
+  <div class="reader-bar">
+    <div class="reader-bar-in">
+      <button type="button" class="rback" id="rBack" aria-label="关闭阅读器">←</button>
+      <div class="rprog"><i id="rProg"></i></div>
+      <span class="rtitle" id="rBarTitle"></span>
+      <a id="rFullPageBtn" class="more" style="margin-left: auto; font-size: 12px; color: var(--muted);" target="_blank">独立全屏 ↗</a>
+    </div>
+  </div>
+  <div class="reader-body" id="readerBody"></div>
+</div>
+
+<!-- 消息提示 TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- 核心脚本 -->
+<script src="/articles.js?v=20261018-folio" type="module"></script>
+</body>
 </html>

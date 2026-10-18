@@ -118,6 +118,188 @@ export const DEFAULTS = {
       ],
       copyright: "© 2026 白夜 WHITE NIGHT · 天才猫音乐频道"
     }
+  },
+  "articles-portal": {
+    brand: {
+      logo: "白卷",
+      issue: "VOL.1"
+    },
+    hero: {
+      eyebrow: "本期特稿 · FEATURED",
+      title: "用眼睛\n读",
+      highlight: "世界",
+      lede: "十五位撰稿人，十五个现场。从霓虹雨夜到云海日出——白卷把远方折成可以翻阅的形状。",
+      ctaPrimaryText: "开始阅读 →",
+      ctaPrimaryHref: "#sec-picks",
+      ctaSecondaryText: "浏览全部",
+      ctaSecondaryHref: "#sec-grid",
+      mediaType: "video",
+      mediaUrl: "https://muse.ai/files/1331075203424773/1432998841610842/xq500iv9v5g5t769vpxqq7gw/noir.mp4",
+      badgeText: "本期\n特稿",
+      floatCard: {
+        tag: "城市",
+        title: "霓虹雨夜",
+        subtitle: "Neon Noir · 陈默",
+        reads: "▶ 12.8万"
+      },
+      stats: [
+        { value: "15", label: "深度特稿" },
+        { value: "06", label: "驻站作者" },
+        { value: "32万", label: "本月读者" }
+      ]
+    },
+    bento: {
+      title: "编辑精选",
+      subtitle: "EDITORS' PICKS",
+      picks: [
+        {
+          tag: "城市",
+          title: "霓虹雨夜",
+          author: "陈默",
+          reads: "12.8万",
+          mediaType: "video",
+          mediaUrl: "https://muse.ai/files/1331075203424773/1432998841610842/xq500iv9v5g5t769vpxqq7gw/noir.mp4",
+          articleIndex: 0
+        },
+        {
+          tag: "自然",
+          title: "火山口",
+          author: "顾晓",
+          reads: "15.2万",
+          color1: "#ff5c38",
+          color2: "#ff9a5c",
+          articleIndex: 3
+        },
+        {
+          tag: "文化",
+          title: "樱落时分",
+          author: "林晚",
+          reads: "18.9万",
+          color1: "#e86a9a",
+          color2: "#ffd3e0",
+          articleIndex: 7
+        },
+        {
+          tag: "文化",
+          title: "龙",
+          author: "陈默",
+          reads: "10.2万",
+          color1: "#1fae62",
+          color2: "#a9f0c9",
+          articleIndex: 12
+        }
+      ]
+    },
+    cinema: {
+      title: "影像特稿",
+      subtitle: "FILM STORIES",
+      slides: [
+        {
+          videoUrl: "https://muse.ai/files/1331075203424773/1432998841610842/xq500iv9v5g5t769vpxqq7gw/noir.mp4",
+          watermark: "NEON",
+          tag: "城市 · 特稿",
+          title: "霓虹雨夜",
+          desc: "雨把城市洗成一块巨大的霓虹底片。我们在凌晨三点的便利店门口，读懂了不夜城的语法。",
+          articleIndex: 0
+        },
+        {
+          videoUrl: "https://muse.ai/files/1331075203424773/1496429802541049/32ptj5b41589vx3gqksl88my/volcano.mp4",
+          watermark: "CRATER",
+          tag: "自然 · 特稿",
+          title: "火山口",
+          desc: "站在火山口边缘往下看，看到的是大地的心脏——一颗跳动了四十亿年的心脏。",
+          articleIndex: 3
+        },
+        {
+          videoUrl: "https://muse.ai/files/1331075203424773/4033096033492611/kxyw991u5ma9zpmr4mryf34f/cloudsea.mp4",
+          watermark: "SUNRISE",
+          tag: "旅行 · 特稿",
+          title: "云海日出",
+          desc: "凌晨四点登顶，在云海之上等一场日出。当第一缕金光刺破云层，值得所有的夜行。",
+          articleIndex: 11
+        }
+      ]
+    },
+    theWire: {
+      title: "24 小时",
+      subtitle: "THE WIRE",
+      items: [
+        { title: "霓虹雨夜入选本月最佳特稿", tag: "城市", time: "2 小时前", articleIndex: 0 },
+        { title: "樱落时分》印刷版加印第三次", tag: "文化", time: "5 小时前", articleIndex: 7 },
+        { title: "云海日出摄影展周末开展", tag: "旅行", time: "8 小时前", articleIndex: 11 },
+        { title: "火山口科考队发回最新影像", tag: "自然", time: "12 小时前", articleIndex: 3 },
+        { title: "虚空》获年度哲学图书提名", tag: "哲学", time: "1 天前", articleIndex: 13 }
+      ]
+    },
+    trending: {
+      title: "热榜",
+      subtitle: "TRENDING",
+      items: [
+        { rank: "01", title: "樱落时分", tag: "文化", reads: "18.9万", color1: "#e86a9a", articleIndex: 7 },
+        { rank: "02", title: "火山口", tag: "自然", reads: "15.2万", color1: "#ff5c38", articleIndex: 3 },
+        { rank: "03", title: "霓虹雨夜", tag: "城市", reads: "12.8万", color1: "#3b5bff", articleIndex: 0 },
+        { rank: "04", title: "云海日出", tag: "旅行", reads: "3.8万", color1: "#e8a83d", articleIndex: 11 },
+        { rank: "05", title: "龙", tag: "文化", reads: "10.2万", color1: "#1fae62", articleIndex: 12 }
+      ]
+    },
+    authors: {
+      title: "驻站作者",
+      subtitle: "AUTHORS",
+      items: [
+        { name: "陈默", role: "特稿记者", color: "#d97857", bio: "把远方折成可以翻阅的形状，常年行走在城市与荒野之间。", count: "3 篇特稿" },
+        { name: "林晚", role: "自然撰稿", color: "#5da87a", bio: "相信每一片叶子都有名字，山野是她永远的编辑部。", count: "2 篇特稿" },
+        { name: "沈括", role: "科学编辑", color: "#527fd4", bio: "把论文翻译成人话，让宇宙变得可以触摸。", count: "3 篇特稿" },
+        { name: "顾晓", role: "文化评论", color: "#a263a7", bio: "在传统与潮流之间摆渡，打捞时间的碎片。", count: "3 篇特稿" },
+        { name: "江离", role: "旅行作家", color: "#e8a33d", bio: "一年有两百天在路上，剩下的一百天在写路上的事。", count: "2 篇特稿" },
+        { name: "陆深", role: "专栏作者", color: "#7a4ff0", bio: "关心\"无\"与\"有\"之间的一切，哲学是他的望远镜。", count: "2 篇特稿" }
+      ]
+    },
+    knowledgeGraph: {
+      title: "知识网络",
+      subtitle: "KNOWLEDGE GRAPH",
+      eyebrow: "知识网络 / KNOWLEDGE GRAPH",
+      headline: "每一篇特稿，都是网络上的一个节点。",
+      desc: "十五个现场，十大主题。从任意一篇出发，沿着这条粉色的线，走到下一篇——阅读在这里有了方向。"
+    },
+    newsletter: {
+      title: "每周一封，把世界折好寄给你。",
+      subtitle: "订阅白卷周刊 · 每周五早上 8 点 · 5 分钟读完",
+      placeholder: "你的邮箱地址",
+      buttonText: "订阅"
+    },
+    footer: {
+      brandDesc: "用眼睛读的杂志。十五位撰稿人，十五个现场，每周五更新。",
+      columns: [
+        {
+          title: "栏目",
+          links: [
+            { label: "旅行", href: "#sec-grid" },
+            { label: "自然", href: "#sec-grid" },
+            { label: "文化", href: "#sec-grid" },
+            { label: "科学", href: "#sec-grid" }
+          ]
+        },
+        {
+          title: "关于",
+          links: [
+            { label: "关于白卷", href: "#" },
+            { label: "加入我们", href: "#" },
+            { label: "联系方式", href: "#" },
+            { label: "隐私政策", href: "#" }
+          ]
+        },
+        {
+          title: "关注",
+          links: [
+            { label: "微信公众号", href: "#" },
+            { label: "小红书", href: "#" },
+            { label: "Bilibili", href: "#" },
+            { label: "RSS 订阅", href: "#" }
+          ]
+        }
+      ],
+      copyright: "© 2026 白卷 WHITE FOLIO · 演示站"
+    }
   }
 };
 
@@ -407,5 +589,166 @@ export const VALIDATORS = {
     };
 
     return { hero, marquee, manifesto, albums, genres, tours, about, footer };
+  },
+  "articles-portal": function validateArticlesPortal(raw) {
+    const data = raw && typeof raw === "object" ? raw : {};
+    const d = DEFAULTS["articles-portal"];
+
+    const brandRaw = data.brand && typeof data.brand === "object" ? data.brand : {};
+    const brand = {
+      logo: String(brandRaw.logo || d.brand.logo).trim().slice(0, 50),
+      issue: String(brandRaw.issue || d.brand.issue).trim().slice(0, 50)
+    };
+
+    const heroRaw = data.hero && typeof data.hero === "object" ? data.hero : {};
+    const floatRaw = heroRaw.floatCard && typeof heroRaw.floatCard === "object" ? heroRaw.floatCard : {};
+    const hero = {
+      eyebrow: String(heroRaw.eyebrow || d.hero.eyebrow).trim().slice(0, 100),
+      title: String(heroRaw.title || d.hero.title).trim().slice(0, 100),
+      highlight: String(heroRaw.highlight || d.hero.highlight).trim().slice(0, 100),
+      lede: String(heroRaw.lede || d.hero.lede).trim().slice(0, 500),
+      ctaPrimaryText: String(heroRaw.ctaPrimaryText || d.hero.ctaPrimaryText).trim().slice(0, 50),
+      ctaPrimaryHref: String(heroRaw.ctaPrimaryHref || d.hero.ctaPrimaryHref).trim().slice(0, 200),
+      ctaSecondaryText: String(heroRaw.ctaSecondaryText || d.hero.ctaSecondaryText).trim().slice(0, 50),
+      ctaSecondaryHref: String(heroRaw.ctaSecondaryHref || d.hero.ctaSecondaryHref).trim().slice(0, 200),
+      mediaType: heroRaw.mediaType === "image" ? "image" : "video",
+      mediaUrl: String(heroRaw.mediaUrl || d.hero.mediaUrl).trim().slice(0, 500),
+      badgeText: String(heroRaw.badgeText || d.hero.badgeText).trim().slice(0, 50),
+      floatCard: {
+        tag: String(floatRaw.tag || d.hero.floatCard.tag).trim().slice(0, 50),
+        title: String(floatRaw.title || d.hero.floatCard.title).trim().slice(0, 100),
+        subtitle: String(floatRaw.subtitle || d.hero.floatCard.subtitle).trim().slice(0, 100),
+        reads: String(floatRaw.reads || d.hero.floatCard.reads).trim().slice(0, 50)
+      },
+      stats: Array.isArray(heroRaw.stats)
+        ? heroRaw.stats.slice(0, 5).map(s => ({
+            value: String(s?.value || "").trim().slice(0, 50),
+            label: String(s?.label || "").trim().slice(0, 50)
+          }))
+        : d.hero.stats
+    };
+
+    const bentoRaw = data.bento && typeof data.bento === "object" ? data.bento : {};
+    const bento = {
+      title: String(bentoRaw.title || d.bento.title).trim().slice(0, 100),
+      subtitle: String(bentoRaw.subtitle || d.bento.subtitle).trim().slice(0, 100),
+      picks: Array.isArray(bentoRaw.picks)
+        ? bentoRaw.picks.slice(0, 4).map((p, i) => {
+            if (!p || typeof p !== "object") return null;
+            const defPick = d.bento.picks[i] || {};
+            return {
+              tag: String(p.tag || defPick.tag || "").trim().slice(0, 50),
+              title: String(p.title || defPick.title || "").trim().slice(0, 100),
+              author: String(p.author || defPick.author || "").trim().slice(0, 50),
+              reads: String(p.reads || defPick.reads || "").trim().slice(0, 50),
+              mediaType: p.mediaType === "image" ? "image" : (p.mediaType === "video" ? "video" : undefined),
+              mediaUrl: p.mediaUrl ? String(p.mediaUrl).trim().slice(0, 500) : undefined,
+              color1: p.color1 ? String(p.color1).trim().slice(0, 30) : undefined,
+              color2: p.color2 ? String(p.color2).trim().slice(0, 30) : undefined,
+              articleIndex: typeof p.articleIndex === "number" ? p.articleIndex : (defPick.articleIndex ?? 0)
+            };
+          }).filter(Boolean)
+        : d.bento.picks
+    };
+
+    const cinemaRaw = data.cinema && typeof data.cinema === "object" ? data.cinema : {};
+    const cinema = {
+      title: String(cinemaRaw.title || d.cinema.title).trim().slice(0, 100),
+      subtitle: String(cinemaRaw.subtitle || d.cinema.subtitle).trim().slice(0, 100),
+      slides: Array.isArray(cinemaRaw.slides)
+        ? cinemaRaw.slides.slice(0, 10).map((s, i) => {
+            if (!s || typeof s !== "object") return null;
+            return {
+              videoUrl: String(s.videoUrl || "").trim().slice(0, 500),
+              watermark: String(s.watermark || "").trim().slice(0, 50),
+              tag: String(s.tag || "").trim().slice(0, 50),
+              title: String(s.title || "").trim().slice(0, 100),
+              desc: String(s.desc || "").trim().slice(0, 500),
+              articleIndex: typeof s.articleIndex === "number" ? s.articleIndex : 0
+            };
+          }).filter(Boolean)
+        : d.cinema.slides
+    };
+
+    const wireRaw = data.theWire && typeof data.theWire === "object" ? data.theWire : {};
+    const theWire = {
+      title: String(wireRaw.title || d.theWire.title).trim().slice(0, 100),
+      subtitle: String(wireRaw.subtitle || d.theWire.subtitle).trim().slice(0, 100),
+      items: Array.isArray(wireRaw.items)
+        ? wireRaw.items.slice(0, 20).map(it => ({
+            title: String(it?.title || "").trim().slice(0, 200),
+            tag: String(it?.tag || "").trim().slice(0, 50),
+            time: String(it?.time || "").trim().slice(0, 50),
+            articleIndex: typeof it?.articleIndex === "number" ? it.articleIndex : 0
+          }))
+        : d.theWire.items
+    };
+
+    const trendRaw = data.trending && typeof data.trending === "object" ? data.trending : {};
+    const trending = {
+      title: String(trendRaw.title || d.trending.title).trim().slice(0, 100),
+      subtitle: String(trendRaw.subtitle || d.trending.subtitle).trim().slice(0, 100),
+      items: Array.isArray(trendRaw.items)
+        ? trendRaw.items.slice(0, 10).map((it, i) => ({
+            rank: String(it?.rank || `0${i + 1}`).trim().slice(0, 10),
+            title: String(it?.title || "").trim().slice(0, 150),
+            tag: String(it?.tag || "").trim().slice(0, 50),
+            reads: String(it?.reads || "").trim().slice(0, 50),
+            color1: String(it?.color1 || "#3b5bff").trim().slice(0, 30),
+            articleIndex: typeof it?.articleIndex === "number" ? it.articleIndex : 0
+          }))
+        : d.trending.items
+    };
+
+    const authorsRaw = data.authors && typeof data.authors === "object" ? data.authors : {};
+    const authors = {
+      title: String(authorsRaw.title || d.authors.title).trim().slice(0, 100),
+      subtitle: String(authorsRaw.subtitle || d.authors.subtitle).trim().slice(0, 100),
+      items: Array.isArray(authorsRaw.items)
+        ? authorsRaw.items.slice(0, 20).map(a => ({
+            name: String(a?.name || "").trim().slice(0, 50),
+            role: String(a?.role || "").trim().slice(0, 50),
+            color: String(a?.color || "#d97857").trim().slice(0, 30),
+            bio: String(a?.bio || "").trim().slice(0, 300),
+            count: String(a?.count || "").trim().slice(0, 50)
+          }))
+        : d.authors.items
+    };
+
+    const graphRaw = data.knowledgeGraph && typeof data.knowledgeGraph === "object" ? data.knowledgeGraph : {};
+    const knowledgeGraph = {
+      title: String(graphRaw.title || d.knowledgeGraph.title).trim().slice(0, 100),
+      subtitle: String(graphRaw.subtitle || d.knowledgeGraph.subtitle).trim().slice(0, 100),
+      eyebrow: String(graphRaw.eyebrow || d.knowledgeGraph.eyebrow).trim().slice(0, 100),
+      headline: String(graphRaw.headline || d.knowledgeGraph.headline).trim().slice(0, 150),
+      desc: String(graphRaw.desc || d.knowledgeGraph.desc).trim().slice(0, 500)
+    };
+
+    const nlRaw = data.newsletter && typeof data.newsletter === "object" ? data.newsletter : {};
+    const newsletter = {
+      title: String(nlRaw.title || d.newsletter.title).trim().slice(0, 100),
+      subtitle: String(nlRaw.subtitle || d.newsletter.subtitle).trim().slice(0, 200),
+      placeholder: String(nlRaw.placeholder || d.newsletter.placeholder).trim().slice(0, 100),
+      buttonText: String(nlRaw.buttonText || d.newsletter.buttonText).trim().slice(0, 50)
+    };
+
+    const footerRaw = data.footer && typeof data.footer === "object" ? data.footer : {};
+    const footer = {
+      brandDesc: String(footerRaw.brandDesc || d.footer.brandDesc).trim().slice(0, 300),
+      columns: Array.isArray(footerRaw.columns)
+        ? footerRaw.columns.slice(0, 6).map(c => ({
+            title: String(c?.title || "").trim().slice(0, 50),
+            links: Array.isArray(c?.links)
+              ? c.links.slice(0, 10).map(l => ({
+                  label: String(l?.label || "").trim().slice(0, 50),
+                  href: String(l?.href || "#").trim().slice(0, 200)
+                }))
+              : []
+          }))
+        : d.footer.columns,
+      copyright: String(footerRaw.copyright || d.footer.copyright).trim().slice(0, 200)
+    };
+
+    return { brand, hero, bento, cinema, theWire, trending, authors, knowledgeGraph, newsletter, footer };
   }
 };
