@@ -240,6 +240,13 @@ export function ArticleWorkbench({
     onClose()
   }
 
+  // 在浏览器新标签页中打开真实前台网页预览
+  function handleOpenExternalPreview() {
+    const slugOrId = encodeURIComponent(slug.trim() || article?.slug || article?.id || 'preview')
+    const previewFlag = status === 'draft' ? '&preview=1' : ''
+    window.open(`/article.html?slug=${slugOrId}${previewFlag}`, '_blank')
+  }
+
   return (
     <div className='fixed inset-0 z-50 bg-background text-foreground flex flex-col overflow-hidden animate-in fade-in duration-200'>
       {/* 1. 顶栏导航与操作控制 */}
@@ -254,6 +261,7 @@ export function ArticleWorkbench({
         onSave={handleSave}
         onViewModeChange={setViewMode}
         onToggleProperties={() => setPropertiesOpen((prev) => !prev)}
+        onOpenExternalPreview={handleOpenExternalPreview}
       />
 
       {/* 2. 主体创作排版区 */}
@@ -278,8 +286,8 @@ export function ArticleWorkbench({
           />
         </div>
 
-        {/* 右侧：微信公众号手机端真实仿真预览 */}
-        {viewMode === 'split-phone' && (
+        {/* 右侧：微信手机端真实仿真 或 桌面端仿真预览 */}
+        {viewMode !== 'focus' && (
           <WorkbenchPhonePreview
             title={title}
             summary={summary}
@@ -287,6 +295,8 @@ export function ArticleWorkbench({
             category={category}
             coverUrl={coverUrl}
             tags={tags}
+            slug={slug}
+            viewMode={viewMode}
           />
         )}
       </div>

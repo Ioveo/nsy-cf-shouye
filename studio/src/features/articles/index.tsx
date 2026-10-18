@@ -66,7 +66,9 @@ export function ArticlesFeature() {
   }
 
   function handlePreview(art: any) {
-    window.open(`/article.html?id=${art.id}`, '_blank')
+    const slugOrId = encodeURIComponent(art.slug || art.id)
+    const previewFlag = art.status === 'draft' ? '&preview=1' : ''
+    window.open(`/article.html?slug=${slugOrId}${previewFlag}`, '_blank')
   }
 
   return (

@@ -6,6 +6,8 @@ import {
   Heart,
   Eye,
   Smartphone,
+  Monitor,
+  Globe,
 } from 'lucide-react'
 
 interface WorkbenchPhonePreviewProps {
@@ -15,6 +17,8 @@ interface WorkbenchPhonePreviewProps {
   category: string
   coverUrl: string
   tags: string
+  slug?: string
+  viewMode?: 'split-phone' | 'split-desktop'
   onClose?: () => void
 }
 
@@ -25,6 +29,8 @@ export function WorkbenchPhonePreview({
   category,
   coverUrl,
   tags,
+  slug,
+  viewMode = 'split-phone',
 }: WorkbenchPhonePreviewProps) {
   // 简易渲染正文 Markdown 与 HTML，支持公众号卡片
   const renderedHtml = useMemo(() => {
@@ -58,15 +64,109 @@ export function WorkbenchPhonePreview({
       .filter(Boolean)
   }, [tags])
 
+  const isDesktop = viewMode === 'split-desktop'
+
   return (
-    <aside className='w-full lg:w-[410px] shrink-0 border-l border-border bg-muted/20 flex flex-col items-center justify-start p-4 sm:p-6 overflow-y-auto select-none'>
+    <aside
+      className={`shrink-0 border-l border-border bg-muted/20 flex flex-col items-center justify-start p-4 sm:p-6 overflow-y-auto select-none transition-all ${
+        isDesktop ? 'w-full lg:w-[600px] xl:w-[700px]' : 'w-full lg:w-[410px]'
+      }`}
+    >
       <div className='flex items-center gap-1.5 text-xs text-muted-foreground font-medium mb-3'>
-        <Smartphone className='size-3.5 text-primary' />
-        <span>微信公众号手机真实仿真预览</span>
+        {isDesktop ? (
+          <>
+            <Monitor className='size-3.5 text-primary' />
+            <span>桌面宽屏官网真实仿真预览</span>
+          </>
+        ) : (
+          <>
+            <Smartphone className='size-3.5 text-primary' />
+            <span>微信公众号手机真实仿真预览</span>
+          </>
+        )}
       </div>
 
-      {/* iPhone 15 仿真手机外框 */}
-      <div className='w-[360px] h-[720px] rounded-[48px] border-[10px] border-zinc-900 bg-background shadow-2xl overflow-hidden flex flex-col relative ring-1 ring-border/50'>
+      {isDesktop ? (
+        /* 桌面端浏览器外框 */
+        <div className='w-full max-w-2xl h-[720px] rounded-xl border border-border/80 bg-background shadow-2xl overflow-hidden flex flex-col relative ring-1 ring-border/50'>
+          {/* 浏览器顶栏与地址栏 */}
+          <div className='h-10 border-b border-border/50 bg-muted/40 px-3 flex items-center justify-between shrink-0'>
+            <div className='flex items-center gap-1.5'>
+              <div className='w-2.5 h-2.5 rounded-full bg-rose-500/80' />
+              <div className='w-2.5 h-2.5 rounded-full bg-amber-500/80' />
+              <div className='w-2.5 h-2.5 rounded-full bg-emerald-500/80' />
+            </div>
+            <div className='flex-1 mx-4 px-3 py-1 rounded-md bg-background border border-border/60 text-[11px] text-muted-foreground font-mono flex items-center gap-1.5 truncate'>
+              <Globe className='size-3 shrink-0 text-primary' />
+              <span className='truncate'>https://www.nsyoo.com/article.html?slug={slug || 'article-preview'}</span>
+            </div>
+            <div className='text-[10px] text-muted-foreground font-semibold px-1.5 py-0.5 rounded bg-muted'>
+              DESKTOP
+            </div>
+          </div>
+
+          {/* 桌面端内容视窗 */}
+          <div className='flex-1 overflow-y-auto p-6 sm:p-8 phone-scroll'>
+            {/* 分类徽章 */}
+            <div className='mb-3'>
+              <span className='text-[11px] font-semibold text-primary px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20'>
+                {category || '上手教程'}
+              </span>
+            </div>
+
+            {/* 文章主标题 */}
+            <h1 className='text-2xl sm:text-3xl font-extrabold leading-tight tracking-tight text-foreground'>
+              {title.trim() ? title : '新文章标题预览'}
+            </h1>
+
+            {/* 桌面端作者与元数据 */}
+            <div className='mt-3 mb-6 flex items-center gap-2.5 text-xs text-muted-foreground flex-wrap pb-4 border-b border-border/40'>
+              <span className='font-semibold text-foreground'>天才猫团队</span>
+              <span>·</span>
+              <span>官方专栏</span>
+              <span>·</span>
+              <span>阅读约 3 分钟</span>
+            </div>
+
+            {/* 封面大图 */}
+            {coverUrl && (
+              <div className='mb-6 rounded-xl overflow-hidden border border-border/60 shadow-md'>
+                <img src={coverUrl} alt='封面' className='w-full max-h-72 object-cover' />
+              </div>
+            )}
+
+            {/* 导读金句 */}
+            {summary && (
+              <div className='mb-6 p-4 rounded-xl bg-primary/10 border-l-4 border-primary text-sm leading-relaxed text-foreground/90 shadow-sm'>
+                <p className='font-semibold text-xs text-primary mb-1 tracking-wide uppercase'>摘要导读</p>
+                {summary}
+              </div>
+            )}
+
+            {/* 正文渲染内容 */}
+            <div
+              className='phone-article-body text-sm leading-relaxed space-y-4'
+              dangerouslySetInnerHTML={{ __html: renderedHtml }}
+            />
+
+            {/* 标签 */}
+            {tagList.length > 0 && (
+              <div className='mt-8 pt-4 border-t border-border/40 flex items-center gap-2 flex-wrap'>
+                {tagList.map((tag) => (
+                  <span
+                    key={tag}
+                    className='text-xs px-2.5 py-1 rounded-full bg-muted/60 text-muted-foreground border border-border/40'
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* iPhone 15 仿真手机外框 */
+        <div className='w-[360px] h-[720px] rounded-[48px] border-[10px] border-zinc-900 bg-background shadow-2xl overflow-hidden flex flex-col relative ring-1 ring-border/50'>
         {/* 顶部灵动岛 */}
         <div className='h-7 bg-zinc-950 flex items-center justify-center shrink-0 relative'>
           <div className='w-24 h-4 bg-black rounded-full' />
@@ -158,6 +258,7 @@ export function WorkbenchPhonePreview({
           </div>
         </div>
       </div>
+      )}
     </aside>
   )
 }

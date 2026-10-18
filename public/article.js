@@ -4,7 +4,7 @@ initReadingTools();
 async function loadArticle() {
   const params = new URLSearchParams(location.search);
   const isPreview = params.get("preview") === "1";
-  const slug = params.get("slug");
+  const slug = params.get("slug") || params.get("id");
   const root = document.getElementById("articleDetail");
 
   if (isPreview) {
@@ -23,7 +23,10 @@ async function loadArticle() {
     root.innerHTML = "<section class='page-hero'><h1>文章不存在。</h1></section>";
     return;
   }
-  const response = await fetch(`/api/article/${encodeURIComponent(slug)}`, { cache: "no-store" });
+  const apiUrl = isPreview
+    ? `/api/article/${encodeURIComponent(slug)}?preview=1`
+    : `/api/article/${encodeURIComponent(slug)}`;
+  const response = await fetch(apiUrl, { cache: "no-store" });
   if (!response.ok) {
     root.innerHTML = "<section class='page-hero'><h1>文章不存在。</h1></section>";
     return;

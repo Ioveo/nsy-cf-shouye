@@ -7,6 +7,7 @@ import {
   Save,
   Loader2,
   CheckCircle2,
+  ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { WorkbenchViewMode } from './types'
@@ -22,6 +23,7 @@ interface WorkbenchHeaderProps {
   onSave: () => void
   onViewModeChange: (mode: WorkbenchViewMode) => void
   onToggleProperties: () => void
+  onOpenExternalPreview?: () => void
 }
 
 export function WorkbenchHeader({
@@ -35,6 +37,7 @@ export function WorkbenchHeader({
   onSave,
   onViewModeChange,
   onToggleProperties,
+  onOpenExternalPreview,
 }: WorkbenchHeaderProps) {
   return (
     <header className='h-14 border-b border-border bg-background/95 backdrop-blur-md px-4 flex items-center justify-between shrink-0 select-none'>
@@ -126,6 +129,20 @@ export function WorkbenchHeader({
           <SlidersHorizontal className='size-3.5' />
           <span className='hidden sm:inline'>文章属性</span>
         </Button>
+
+        {onOpenExternalPreview && (
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={onOpenExternalPreview}
+            className='h-8 px-2.5 text-xs gap-1.5'
+            title='在浏览器新标签页中打开前台真实网页预览'
+          >
+            <ExternalLink className='size-3.5 text-primary' />
+            <span className='hidden sm:inline'>前台预览</span>
+          </Button>
+        )}
 
         <Button
           type='button'
