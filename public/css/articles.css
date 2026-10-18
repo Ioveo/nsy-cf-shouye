@@ -1400,4 +1400,234 @@
   }
 }
 
+/* ========================================================
+   .article-viewer: 专属文章富文本前后台渲染容器
+   确保可视化富文本 (Word/微信/WangEditor) 元素排版完全同步
+   彻底免疫全局 CSS Reset 破坏 (表格边框、引用高亮、列表圆点、标题层级)
+   ======================================================== */
+
+.article-viewer {
+  font-size: 16px;
+  line-height: 1.85;
+  color: #e2e8f0;
+  word-break: break-word;
+  letter-spacing: 0.01em;
+}
+
+/* 1. 段落排版 */
+.article-viewer p {
+  margin: 18px 0;
+  line-height: 1.85;
+  color: #cbd5e1;
+}
+
+/* 2. 标题层级体系 */
+.article-viewer h1 {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.35;
+  margin: 36px 0 18px;
+  color: #f8fafc;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 12px;
+}
+
+.article-viewer h2 {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 32px 0 16px;
+  color: #f8fafc;
+  position: relative;
+  padding-left: 14px;
+}
+
+.article-viewer h2::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  border-radius: 99px;
+  background: linear-gradient(180deg, #e5a93c 0%, #d97706 100%);
+}
+
+.article-viewer h3 {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.45;
+  margin: 26px 0 14px;
+  color: #38bdf8;
+}
+
+.article-viewer h4,
+.article-viewer h5 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 20px 0 10px;
+  color: #cbd5e1;
+}
+
+/* 3. 引用块 (Blockquote)：优雅灰底金边 */
+.article-viewer blockquote {
+  margin: 22px 0;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 4px solid #e5a93c;
+  border-radius: 0 12px 12px 0;
+  color: #cbd5e1;
+  font-style: normal;
+}
+
+.article-viewer blockquote p {
+  margin: 6px 0;
+  color: #cbd5e1;
+}
+
+/* 4. 可视化表格 (Table)：清晰边框与隔行换色，抵御任何 CSS Reset */
+.article-viewer table {
+  width: 100% !important;
+  max-width: 100% !important;
+  border-collapse: collapse !important;
+  margin: 24px 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  table-layout: auto !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+}
+
+.article-viewer th {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #f8fafc !important;
+  font-weight: 700 !important;
+  text-align: left !important;
+  padding: 12px 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  font-size: 14px !important;
+}
+
+.article-viewer td {
+  padding: 12px 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #cbd5e1 !important;
+  font-size: 13.5px !important;
+  line-height: 1.6 !important;
+  vertical-align: middle !important;
+}
+
+.article-viewer tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.025) !important;
+}
+
+.article-viewer tr:hover td {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* 5. 列表体系：强制恢复圆点与数字，抵御 Tailwind Reset */
+.article-viewer ul {
+  list-style-type: disc !important;
+  margin: 18px 0 18px 24px !important;
+  padding-left: 10px !important;
+}
+
+.article-viewer ol {
+  list-style-type: decimal !important;
+  margin: 18px 0 18px 24px !important;
+  padding-left: 10px !important;
+}
+
+.article-viewer li {
+  margin: 8px 0 !important;
+  line-height: 1.75 !important;
+  color: #cbd5e1 !important;
+  display: list-item !important;
+}
+
+.article-viewer li::marker {
+  color: #e5a93c !important;
+}
+
+/* 6. 图片与图文混排 */
+.article-viewer img {
+  max-width: 100% !important;
+  border-radius: 12px !important;
+  margin: 14px auto !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.28) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+}
+
+.article-viewer img:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.38) !important;
+}
+
+/* 7. 超链接与行内代码 */
+.article-viewer a {
+  color: #38bdf8 !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+  transition: color 0.15s ease !important;
+}
+
+.article-viewer a:hover {
+  color: #7dd3fc !important;
+}
+
+.article-viewer code:not(pre code) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #fef08a !important;
+  padding: 2px 7px !important;
+  border-radius: 4px !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 0.88em !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.article-viewer pre {
+  background: #090d16 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 14px !important;
+  padding: 18px 20px !important;
+  overflow-x: auto !important;
+  margin: 22px 0 !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+.article-viewer pre code {
+  color: #f1f5f9 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 13.5px !important;
+  line-height: 1.6 !important;
+}
+
+/* 8. 分割线与标记 */
+.article-viewer hr {
+  border: none !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  margin: 36px 0 !important;
+}
+
+.article-viewer mark,
+.article-viewer .article-mark {
+  background: rgba(251, 191, 36, 0.22) !important;
+  color: #fef08a !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+}
+
+/* 9. 视频与媒体嵌入 */
+.article-viewer video {
+  max-width: 100% !important;
+  border-radius: 14px !important;
+  margin: 20px 0 !important;
+  background: #000000 !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35) !important;
+}
+
+
 

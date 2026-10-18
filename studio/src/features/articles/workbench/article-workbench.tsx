@@ -8,6 +8,7 @@ import { WorkbenchCanvas } from './workbench-canvas'
 import { WorkbenchProperties } from './workbench-properties'
 import { WorkbenchPhonePreview } from './workbench-phone-preview'
 import type { WorkbenchViewMode } from './types'
+import type { VisualEditorHandle } from './visual-editor'
 
 interface ArticleWorkbenchProps {
   article: any | null
@@ -37,12 +38,14 @@ export function ArticleWorkbench({
   const [seoTitle, setSeoTitle] = useState(article?.seoTitle || '')
   const [seoDescription, setSeoDescription] = useState(article?.seoDescription || '')
 
+  const [editorMode, setEditorMode] = useState<'visual' | 'source'>('visual')
   const [viewMode, setViewMode] = useState<WorkbenchViewMode>('split-phone')
   const [propertiesOpen, setPropertiesOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const visualEditorRef = useRef<VisualEditorHandle>(null)
 
   // 恢复上次自动暂存草稿 (新建模式下)
   useEffect(() => {
@@ -137,8 +140,14 @@ export function ArticleWorkbench({
     }, 50)
   }
 
-  // 直接在光标处插入内容
+  // 直接在光标处插入内容（自适应可视化富文本与源码模式）
   function handleInsertText(text: string) {
+    if (editorMode === 'visual') {
+      if (visualEditorRef.current) {
+        visualEditorRef.current.insertHtml(text)
+        return
+      }
+    }
     const ta = textareaRef.current
     if (!ta) {
       setContent((prev) => prev + text)
@@ -269,13 +278,17 @@ export function ArticleWorkbench({
         {/* 左侧/中栏：排版工具条 + 创作画布 */}
         <div className='flex-1 flex flex-col min-w-0 overflow-hidden'>
           <WorkbenchToolbar
+            editorMode={editorMode}
+            onEditorModeChange={setEditorMode}
             onInsertWrap={handleInsertWrap}
             onInsertHeading={handleInsertHeading}
             onInsertText={handleInsertText}
           />
 
           <WorkbenchCanvas
-            ref={textareaRef}
+            editorMode={editorMode}
+            visualEditorRef={visualEditorRef}
+            sourceTextareaRef={textareaRef}
             title={title}
             summary={summary}
             content={content}

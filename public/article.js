@@ -51,7 +51,7 @@ function renderArticle(article, software) {
   const tags = (article.tags || []).map(tag => `<span>${escapeHtml(tag)}</span>`).join("");
   const rendered = enhanceArticleContent(renderContent(article.content));
   const bottomWidget = renderArticleBottomWidget(software);
-  root.innerHTML = `<section class="article-cover article-cover--pro">${article.coverUrl ? `<img src="${escapeAttr(article.coverUrl)}" alt="">` : ""}<div><p class="eyebrow">${escapeHtml(article.category || "Article")}</p><h1>${escapeHtml(article.title)}</h1><p>${escapeHtml(article.summary || "")}</p><div class="article-meta"><span>${formatDate(article.publishedAt || article.createdAt)}</span><span>${countWords(article.content)} 字阅读</span>${tags}</div></div></section><section class="article-body article-body--pro"><article>${rendered.html}${bottomWidget}</article>${renderAside(rendered.headings, software)}</section>`;
+  root.innerHTML = `<section class="article-cover article-cover--pro">${article.coverUrl ? `<img src="${escapeAttr(article.coverUrl)}" alt="">` : ""}<div><p class="eyebrow">${escapeHtml(article.category || "Article")}</p><h1>${escapeHtml(article.title)}</h1><p>${escapeHtml(article.summary || "")}</p><div class="article-meta"><span>${formatDate(article.publishedAt || article.createdAt)}</span><span>${countWords(article.content)} 字阅读</span>${tags}</div></div></section><section class="article-body article-body--pro"><article class="article-viewer">${rendered.html}${bottomWidget}</article>${renderAside(rendered.headings, software)}</section>`;
   bindArticleImages();
   bindArticleAudio();
 }
@@ -370,25 +370,26 @@ function sanitizeArticleHtml(html) {
   template.innerHTML = String(html || "");
   const allowedTags = new Set([
     "A", "P", "BR", "STRONG", "B", "EM", "I", "U", "S", "DEL", "MARK", "HR",
-    "UL", "OL", "LI", "BLOCKQUOTE", "H1", "H2", "H3", "H4", "IMG", "FIGURE", "FIGCAPTION",
-    "AUDIO", "SOURCE", "TABLE", "THEAD", "TBODY", "TR", "TH", "TD", "PRE", "CODE",
+    "UL", "OL", "LI", "BLOCKQUOTE", "H1", "H2", "H3", "H4", "H5", "IMG", "FIGURE", "FIGCAPTION",
+    "AUDIO", "VIDEO", "SOURCE", "TABLE", "THEAD", "TBODY", "TR", "TH", "TD", "PRE", "CODE",
     "DIV", "SPAN", "SECTION", "BUTTON"
   ]);
   const allowedAttrs = {
     A: new Set(["href", "target", "rel", "class"]),
-    IMG: new Set(["src", "alt", "loading", "class", "style"]),
+    IMG: new Set(["src", "alt", "loading", "class", "style", "width", "height", "data-href"]),
     AUDIO: new Set(["src", "controls", "preload", "class"]),
+    VIDEO: new Set(["src", "controls", "preload", "width", "height", "class", "style", "poster", "autoplay", "loop"]),
     SOURCE: new Set(["src", "type"]),
     FIGURE: new Set(["class", "style"]),
     FIGCAPTION: new Set(["class", "style"]),
     CODE: new Set(["class"]),
     PRE: new Set(["class"]),
-    TABLE: new Set(["class"]),
-    THEAD: new Set(["class"]),
-    TBODY: new Set(["class"]),
-    TR: new Set(["class"]),
-    TH: new Set(["class"]),
-    TD: new Set(["class"]),
+    TABLE: new Set(["class", "style", "width", "border", "cellpadding", "cellspacing"]),
+    THEAD: new Set(["class", "style"]),
+    TBODY: new Set(["class", "style"]),
+    TR: new Set(["class", "style"]),
+    TH: new Set(["class", "style", "colspan", "rowspan", "colSpan", "rowSpan", "width"]),
+    TD: new Set(["class", "style", "colspan", "rowspan", "colSpan", "rowSpan", "width"]),
     DIV: new Set(["class", "style"]),
     SPAN: new Set(["class", "style"]),
     SECTION: new Set(["class", "style"]),
@@ -401,9 +402,10 @@ function sanitizeArticleHtml(html) {
     H2: new Set(["class", "style"]),
     H3: new Set(["class", "style"]),
     H4: new Set(["class", "style"]),
-    UL: new Set(["class"]),
-    OL: new Set(["class"]),
-    LI: new Set(["class"])
+    H5: new Set(["class", "style"]),
+    UL: new Set(["class", "style"]),
+    OL: new Set(["class", "style"]),
+    LI: new Set(["class", "style"])
   };
   const cleanNode = node => {
     if (node.nodeType === Node.COMMENT_NODE) { node.remove(); return; }
@@ -419,7 +421,7 @@ function sanitizeArticleHtml(html) {
       node.setAttribute("rel", "noopener");
       if (/^https?:\/\//.test(href)) node.setAttribute("target", "_blank");
     }
-    if ((node.tagName === "IMG" || node.tagName === "AUDIO" || node.tagName === "SOURCE") && !/^(https?:\/\/|\/)/.test(node.getAttribute("src") || "")) node.removeAttribute("src");
+    if ((node.tagName === "IMG" || node.tagName === "AUDIO" || node.tagName === "VIDEO" || node.tagName === "SOURCE") && !/^(https?:\/\/|\/)/.test(node.getAttribute("src") || "")) node.removeAttribute("src");
     for (const child of Array.from(node.childNodes)) cleanNode(child);
   };
   for (const child of Array.from(template.content.childNodes)) cleanNode(child);

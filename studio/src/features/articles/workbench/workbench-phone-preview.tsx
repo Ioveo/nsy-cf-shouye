@@ -152,7 +152,7 @@ export function WorkbenchPhonePreview({
 
             {/* 正文渲染内容 */}
             <div
-              className='phone-article-body text-sm leading-relaxed space-y-4'
+              className='phone-article-body article-viewer text-sm leading-relaxed space-y-4'
               dangerouslySetInnerHTML={{ __html: renderedHtml }}
             />
 
@@ -228,7 +228,7 @@ export function WorkbenchPhonePreview({
 
           {/* 正文渲染内容 */}
           <div
-            className='phone-article-body text-xs sm:text-[13px] leading-relaxed space-y-3'
+            className='phone-article-body article-viewer text-xs sm:text-[13px] leading-relaxed space-y-3'
             dangerouslySetInnerHTML={{ __html: renderedHtml }}
           />
 
