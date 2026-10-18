@@ -159,6 +159,21 @@ export interface PromotionsConfig {
   items: PromotionItem[]
 }
 
+export interface ArticleCategory {
+  slug: string
+  name: string
+  description?: string
+  icon?: string
+  color?: string
+  layout: 'grid' | 'list' | 'docs'
+  order: number
+  showInNav: boolean
+}
+
+export interface ArticleTaxonomyConfig {
+  categories: ArticleCategory[]
+}
+
 export function useConfig<T>(name: string) {
   return useQuery<T>({
     queryKey: ['config', name],

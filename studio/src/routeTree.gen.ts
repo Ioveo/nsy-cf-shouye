@@ -19,6 +19,7 @@ import { Route as errors503RouteImport } from './routes/(errors)/503'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAssetsIndexRouteImport } from './routes/_authenticated/assets/index'
 import { Route as AuthenticatedContentIndexRouteImport } from './routes/_authenticated/content/index'
+import { Route as AuthenticatedContentArticleCategoriesRouteImport } from './routes/_authenticated/content/article-categories'
 import { Route as AuthenticatedContentArticlesRouteImport } from './routes/_authenticated/content/articles'
 import { Route as AuthenticatedContentGalleryRouteImport } from './routes/_authenticated/content/gallery'
 import { Route as AuthenticatedContentMusicRouteImport } from './routes/_authenticated/content/music'
@@ -85,6 +86,12 @@ const AuthenticatedContentIndexRoute =
   AuthenticatedContentIndexRouteImport.update({
     id: '/content/',
     path: '/content/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedContentArticleCategoriesRoute =
+  AuthenticatedContentArticleCategoriesRouteImport.update({
+    id: '/content/article-categories',
+    path: '/content/article-categories',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedContentArticlesRoute =
@@ -191,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/404': typeof errors404Route
   '/500': typeof errors500Route
   '/503': typeof errors503Route
+  '/content/article-categories': typeof AuthenticatedContentArticleCategoriesRoute
   '/content/articles': typeof AuthenticatedContentArticlesRoute
   '/content/gallery': typeof AuthenticatedContentGalleryRoute
   '/content/music': typeof AuthenticatedContentMusicRoute
@@ -218,6 +226,7 @@ export interface FileRoutesByTo {
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/': typeof AuthenticatedIndexRoute
+  '/content/article-categories': typeof AuthenticatedContentArticleCategoriesRoute
   '/content/articles': typeof AuthenticatedContentArticlesRoute
   '/content/gallery': typeof AuthenticatedContentGalleryRoute
   '/content/music': typeof AuthenticatedContentMusicRoute
@@ -247,6 +256,7 @@ export interface FileRoutesById {
   '/(errors)/500': typeof errors500Route
   '/(errors)/503': typeof errors503Route
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/content/article-categories': typeof AuthenticatedContentArticleCategoriesRoute
   '/_authenticated/content/articles': typeof AuthenticatedContentArticlesRoute
   '/_authenticated/content/gallery': typeof AuthenticatedContentGalleryRoute
   '/_authenticated/content/music': typeof AuthenticatedContentMusicRoute
@@ -276,6 +286,7 @@ export interface FileRouteTypes {
     | '/404'
     | '/500'
     | '/503'
+    | '/content/article-categories'
     | '/content/articles'
     | '/content/gallery'
     | '/content/music'
@@ -303,6 +314,7 @@ export interface FileRouteTypes {
     | '/500'
     | '/503'
     | '/'
+    | '/content/article-categories'
     | '/content/articles'
     | '/content/gallery'
     | '/content/music'
@@ -331,6 +343,7 @@ export interface FileRouteTypes {
     | '/(errors)/500'
     | '/(errors)/503'
     | '/_authenticated/'
+    | '/_authenticated/content/article-categories'
     | '/_authenticated/content/articles'
     | '/_authenticated/content/gallery'
     | '/_authenticated/content/music'
@@ -431,6 +444,13 @@ declare module '@tanstack/react-router' {
       path: '/content'
       fullPath: '/content/'
       preLoaderRoute: typeof AuthenticatedContentIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/content/article-categories': {
+      id: '/_authenticated/content/article-categories'
+      path: '/content/article-categories'
+      fullPath: '/content/article-categories'
+      preLoaderRoute: typeof AuthenticatedContentArticleCategoriesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/content/articles': {
@@ -550,6 +570,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedContentArticleCategoriesRoute: typeof AuthenticatedContentArticleCategoriesRoute
   AuthenticatedContentArticlesRoute: typeof AuthenticatedContentArticlesRoute
   AuthenticatedContentGalleryRoute: typeof AuthenticatedContentGalleryRoute
   AuthenticatedContentMusicRoute: typeof AuthenticatedContentMusicRoute
@@ -572,6 +593,8 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedContentArticleCategoriesRoute:
+    AuthenticatedContentArticleCategoriesRoute,
   AuthenticatedContentArticlesRoute: AuthenticatedContentArticlesRoute,
   AuthenticatedContentGalleryRoute: AuthenticatedContentGalleryRoute,
   AuthenticatedContentMusicRoute: AuthenticatedContentMusicRoute,
