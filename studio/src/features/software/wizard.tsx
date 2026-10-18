@@ -7,6 +7,7 @@ import {
   Loader2,
   Check,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react'
 import { useCatalog, useLanding } from '@/lib/queries'
 // @ts-ignore
@@ -126,6 +127,26 @@ export function SoftwareWizard() {
             <Eye className='size-3.5 text-primary' />
             实时预览
           </Button>
+          {existingSoftware && (
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              asChild
+              className='gap-1.5'
+            >
+              <Link
+                to='/site/promotions'
+                search={{
+                  createEntity: 'software',
+                  id: existingSoftware.id || existingSoftware.slug,
+                }}
+              >
+                <Sparkles className='size-3.5 text-primary' />
+                加入推广位
+              </Link>
+            </Button>
+          )}
           <Button
             type='button'
             variant='outline'

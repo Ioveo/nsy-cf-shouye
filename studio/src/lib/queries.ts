@@ -101,3 +101,71 @@ export function useLanding() {
     },
   })
 }
+
+export interface SoftwareCenterConfig {
+  accent: 'cyan' | 'gold' | 'violet'
+  hero: {
+    mode: 'featured' | 'promotions'
+    showSearch: boolean
+    autoplaySeconds: number
+  }
+  stats: {
+    show: boolean
+    items: string[]
+    hideBelow: number
+  }
+  newArrivals: {
+    show: boolean
+    days: number
+    max: number
+  }
+  ranking: {
+    show: boolean
+    tabs: string[]
+    size: number
+  }
+  density: 'comfortable' | 'compact' | 'list'
+  pageSize: number
+  announcement: {
+    show: boolean
+    text: string
+    href: string
+    tone: 'info' | 'warning' | 'success'
+  }
+}
+
+export interface PromotionItem {
+  id: string
+  placements: string[]
+  entity: {
+    type: 'software' | 'article' | 'playlist' | 'custom'
+    id: string
+  }
+  override: {
+    title: string
+    subtitle: string
+    image: string
+    ctaText: string
+    ctaHref: string
+  }
+  badge: string
+  startAt: number
+  endAt: number
+  status: 'active' | 'paused'
+  order: number
+}
+
+export interface PromotionsConfig {
+  items: PromotionItem[]
+}
+
+export function useConfig<T>(name: string) {
+  return useQuery<T>({
+    queryKey: ['config', name],
+    queryFn: async () => {
+      const res = await api.post('/api/admin/config', { action: 'get', name })
+      return res.config as T
+    },
+  })
+}
+

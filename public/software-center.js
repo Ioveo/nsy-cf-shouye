@@ -25,6 +25,21 @@
     other: { id: "other", label: "其他", icon: "file-down" }
   };
 
+  // 软件中心前台配置与推广位默认状态
+  const DEFAULT_SC_CONFIG = {
+    accent: "cyan",
+    hero: { mode: "featured", showSearch: true, autoplaySeconds: 6 },
+    stats: { show: true, items: ["software", "downloads", "monthlyUpdates", "platforms"], hideBelow: 0 },
+    newArrivals: { show: true, days: 30, max: 8 },
+    ranking: { show: true, tabs: ["downloads", "updated"], size: 10 },
+    density: "comfortable",
+    pageSize: 12,
+    announcement: { show: false, text: "", href: "", tone: "info" }
+  };
+
+  let scConfig = { ...DEFAULT_SC_CONFIG };
+  let promotionsConfig = { items: [] };
+
   // 全局数据状态
   let catalog = null;
   let allSoftware = [];
@@ -43,6 +58,41 @@
   let carouselIndex = 0;
   let carouselTimer = null;
   let isCarouselHovered = false;
+  let currentHeroSlidesCount = 0;
+
+  function renderAnnouncement() {
+    const container = $("scAnnouncement");
+    if (!container) return;
+
+    const ann = scConfig.announcement;
+    if (!ann || !ann.show || !ann.text) {
+      container.innerHTML = "";
+      return;
+    }
+
+    const tone = ["warning", "success"].includes(ann.tone) ? ann.tone : "info";
+    const icon = tone === "warning" ? "alert-triangle" : (tone === "success" ? "check-circle" : "sparkles");
+    const textHtml = `
+      <span class="sc-announcement__icon"><i data-lucide="${icon}" style="width: 14px; height: 14px;"></i></span>
+      <span class="sc-announcement__text">${esc(ann.text)}</span>
+    `;
+
+    if (ann.href) {
+      container.innerHTML = `
+        <a href="${esc(ann.href)}" class="sc-announcement sc-announcement--${tone}">
+          ${textHtml}
+          <i data-lucide="arrow-right" class="sc-announcement__arrow" style="width: 14px; height: 14px;"></i>
+        </a>
+      `;
+    } else {
+      container.innerHTML = `
+        <div class="sc-announcement sc-announcement--${tone}">
+          ${textHtml}
+        </div>
+      `;
+    }
+    safeIcons();
+  }
 
   function safeIcons() {
     try {
@@ -154,7 +204,64 @@
     const controls = $("heroControls");
     if (!track) return;
 
-    if (!featuredSoftware.length) {
+    let slidesData = [];
+    const isPromoMode = scConfig.hero?.mode === "promotions";
+
+    if (isPromoMode && window.NsyPromotions?.resolvePromotions) {
+      const promos = window.NsyPromotions.resolvePromotions({
+        promotionsConfig,
+        catalog,
+        placement: "software"
+      });
+      if (promos.length > 0) {
+        slidesData = promos.map(p => ({
+          isPromo: true,
+          badge: p.badge || "限时推荐",
+          title: p.title,
+          tagline: p.subtitle,
+          desc: p.subtitle || "点击查看详情与下载体验",
+          coverUrl: p.image,
+          iconUrl: p.image,
+          primaryUrl: p.ctaHref,
+          primaryText: p.ctaText || "立即查看",
+          secondaryUrl: p.secondaryHref || "",
+          badgeLabel: p.badge || "官方精选",
+          metaText1: "精选推荐",
+          metaText2: "全站推广位",
+          metaText3: "官方认证"
+        }));
+      }
+    }
+
+    // 回退到主推软件 (若非推广模式或没有有效推广)
+    if (!slidesData.length) {
+      slidesData = featuredSoftware.map(s => {
+        const latestVer = s.latest ? `v${esc(s.latest.version)}` : "v1.0.0";
+        const catLabel = esc(s.category || "应用工具");
+        const sizeText = s.latest && s.latest.size ? formatBytes(s.latest.size) : "纯净版";
+        const dateText = formatDate(s.updatedAt);
+        return {
+          isPromo: false,
+          badge: `${catLabel} · ${latestVer} 现已发布`,
+          title: s.name,
+          tagline: s.tagline || "新一代效率桌面与数字化创作引擎",
+          desc: s.description || "全平台高性能底层架构，极致流畅体验，即装即用零冗余。",
+          coverUrl: s.coverUrl || s.coverImage || (s.screenshots && s.screenshots[0]) || "",
+          iconUrl: s.iconUrl || s.icon || "/logo.png",
+          primaryUrl: `/download/${encodeURIComponent(s.id)}`,
+          primaryText: `立即下载 ${esc(s.name)}`,
+          secondaryUrl: `/software.html?id=${encodeURIComponent(s.id)}`,
+          badgeLabel: `${esc(s.slug || s.name)} · 官方发布版`,
+          metaText1: sizeText,
+          metaText2: `${s.downloads.toLocaleString()} 次下载`,
+          metaText3: `更新于 ${dateText}`
+        };
+      });
+    }
+
+    currentHeroSlidesCount = slidesData.length;
+
+    if (!slidesData.length) {
       track.innerHTML = `
         <div class="sc-hero__slide sc-hero__slide--active">
           <div class="sc-hero__info">
@@ -167,51 +274,49 @@
       return;
     }
 
-    track.innerHTML = featuredSoftware.map((s, idx) => {
+    if (carouselIndex >= currentHeroSlidesCount) {
+      carouselIndex = 0;
+    }
+
+    track.innerHTML = slidesData.map((slide, idx) => {
       const activeCls = idx === carouselIndex ? "sc-hero__slide--active" : "";
-      const latestVer = s.latest ? `v${esc(s.latest.version)}` : "v1.0.0";
-      const catLabel = esc(s.category || "应用工具");
-      const coverUrl = s.coverUrl || s.coverImage || (s.screenshots && s.screenshots[0]) || "";
-      const iconUrl = s.iconUrl || s.icon || "/logo.png";
-      const sizeText = s.latest && s.latest.size ? formatBytes(s.latest.size) : "纯净版";
-      const dateText = formatDate(s.updatedAt);
-      const primaryDlUrl = `/download/${encodeURIComponent(s.id)}`;
-      const detailUrl = `/software.html?id=${encodeURIComponent(s.id)}`;
 
       return `
         <div class="sc-hero__slide ${activeCls}" data-slide-index="${idx}">
           <div class="sc-hero__info">
             <div class="sc-badge sc-badge--cyan" style="margin-bottom: 14px;">
               <span class="sc-badge--dot sc-badge--dot-pulse"></span>
-              <span>${catLabel} · ${latestVer} 现已发布</span>
+              <span>${esc(slide.badge)}</span>
             </div>
-            <h1 class="sc-hero__title">${esc(s.name)}</h1>
-            <div class="sc-hero__tagline">${esc(s.tagline || "新一代效率桌面与数字化创作引擎")}</div>
-            <p class="sc-hero__desc">${esc(s.description || "全平台高性能底层架构，极致流畅体验，即装即用零冗余。")}</p>
+            <h1 class="sc-hero__title">${esc(slide.title)}</h1>
+            <div class="sc-hero__tagline">${esc(slide.tagline)}</div>
+            <p class="sc-hero__desc">${esc(slide.desc)}</p>
             <div class="sc-hero__cta-group">
-              <a href="${primaryDlUrl}" class="sc-btn sc-btn--primary sc-btn-shimmer">
+              <a href="${esc(slide.primaryUrl)}" class="sc-btn sc-btn--primary sc-btn-shimmer">
                 <i data-lucide="download" style="width: 18px; height: 18px;"></i>
-                <span>立即下载 ${esc(s.name)}</span>
+                <span>${esc(slide.primaryText)}</span>
               </a>
-              <a href="${detailUrl}" class="sc-btn sc-btn--ghost">
-                <i data-lucide="info" style="width: 16px; height: 16px;"></i>
-                <span>了解详情</span>
-              </a>
+              ${slide.secondaryUrl ? `
+                <a href="${esc(slide.secondaryUrl)}" class="sc-btn sc-btn--ghost">
+                  <i data-lucide="info" style="width: 16px; height: 16px;"></i>
+                  <span>了解详情</span>
+                </a>
+              ` : ""}
             </div>
             <div class="sc-hero__meta">
               <span class="sc-hero__meta-item">
                 <i data-lucide="check-circle" style="width: 14px; height: 14px; color: var(--sc-emerald);"></i>
-                <span>${sizeText}</span>
+                <span>${esc(slide.metaText1)}</span>
               </span>
               <span>·</span>
               <span class="sc-hero__meta-item">
                 <i data-lucide="download" style="width: 14px; height: 14px;"></i>
-                <span>${s.downloads.toLocaleString()} 次下载</span>
+                <span>${esc(slide.metaText2)}</span>
               </span>
               <span>·</span>
               <span class="sc-hero__meta-item">
                 <i data-lucide="calendar" style="width: 14px; height: 14px;"></i>
-                <span>更新于 ${dateText}</span>
+                <span>${esc(slide.metaText3)}</span>
               </span>
             </div>
           </div>
@@ -223,18 +328,18 @@
                   <span class="sc-mockup__dot sc-mockup__dot--yellow"></span>
                   <span class="sc-mockup__dot sc-mockup__dot--green"></span>
                 </div>
-                <span class="sc-mockup__badge">${esc(s.slug || s.name)} · 官方发布版</span>
+                <span class="sc-mockup__badge">${esc(slide.badgeLabel)}</span>
                 <div style="display: flex; gap: 6px; color: var(--sc-text-dim);">
                   <i data-lucide="sparkles" style="width: 13px; height: 13px;"></i>
                 </div>
               </div>
               <div class="sc-mockup__body">
-                ${coverUrl ? `
-                  <img src="${esc(coverUrl)}" alt="${esc(s.name)} 预览" class="sc-mockup__img" loading="lazy" />
+                ${slide.coverUrl ? `
+                  <img src="${esc(slide.coverUrl)}" alt="${esc(slide.title)} 预览" class="sc-mockup__img" loading="lazy" />
                 ` : `
                   <div class="sc-mockup__fallback">
-                    <img src="${esc(iconUrl)}" alt="${esc(s.name)}" class="sc-mockup__fallback-icon" />
-                    <span style="font-size: 13px; font-weight: 600; color: #ffffff;">${esc(s.name)}</span>
+                    <img src="${esc(slide.iconUrl)}" alt="${esc(slide.title)}" class="sc-mockup__fallback-icon" />
+                    <span style="font-size: 13px; font-weight: 600; color: #ffffff;">${esc(slide.title)}</span>
                   </div>
                 `}
               </div>
@@ -246,10 +351,10 @@
 
     // 轮播圆点与控制器显示
     if (controls) {
-      if (featuredSoftware.length > 1) {
+      if (currentHeroSlidesCount > 1) {
         controls.style.display = "flex";
         if (dotsContainer) {
-          dotsContainer.innerHTML = featuredSoftware.map((_, i) => `
+          dotsContainer.innerHTML = slidesData.map((_, i) => `
             <button type="button" class="sc-hero__dot ${i === carouselIndex ? "sc-hero__dot--active" : ""}" data-dot-index="${i}" aria-label="第 ${i + 1} 页"></button>
           `).join("");
         }
@@ -262,9 +367,8 @@
   }
 
   function setCarouselIndex(newIndex) {
-    if (!featuredSoftware.length) return;
-    const count = featuredSoftware.length;
-    carouselIndex = (newIndex + count) % count;
+    if (currentHeroSlidesCount <= 0) return;
+    carouselIndex = (newIndex + currentHeroSlidesCount) % currentHeroSlidesCount;
 
     const slides = document.querySelectorAll(".sc-hero__slide");
     slides.forEach((slide, i) => {
@@ -287,16 +391,17 @@
 
   function startCarouselTimer() {
     stopCarouselTimer();
-    if (featuredSoftware.length <= 1) return;
+    if (currentHeroSlidesCount <= 1) return;
     // 尊重 prefers-reduced-motion
     if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       return;
     }
+    const seconds = Math.max(2, Math.min(60, Number(scConfig.hero?.autoplaySeconds) || 6));
     carouselTimer = setInterval(() => {
       if (!isCarouselHovered) {
         setCarouselIndex(carouselIndex + 1);
       }
-    }, 6000);
+    }, seconds * 1000);
   }
 
   function stopCarouselTimer() {
@@ -308,21 +413,25 @@
 
   // 渲染统计数据
   function renderStats() {
+    const statsRow = $("statsRow");
+    if (!statsRow) return;
+
+    if (scConfig.stats && scConfig.stats.show === false) {
+      statsRow.style.display = "none";
+      return;
+    }
+
+    const hideBelow = Math.max(0, Number(scConfig.stats?.hideBelow) || 0);
+    const items = Array.isArray(scConfig.stats?.items) ? scConfig.stats.items : ["software", "downloads", "monthlyUpdates", "platforms"];
+
     const swCount = $("statSoftwareCount");
     const dlCount = $("statDownloadCount");
     const upCount = $("statUpdateCount");
     const pfCount = $("statPlatformCount");
 
-    if (swCount) swCount.textContent = allSoftware.length.toString();
-
+    const totalSw = allSoftware.length;
     const totalDownloads = allSoftware.reduce((sum, s) => sum + s.downloads, 0);
-    if (dlCount) {
-      dlCount.textContent = totalDownloads > 10000
-        ? (totalDownloads / 10000).toFixed(1) + " 万+"
-        : totalDownloads.toLocaleString();
-    }
 
-    // 本月更新数
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
@@ -331,12 +440,64 @@
       const d = new Date(s.updatedAt);
       return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
     }).length;
-    if (upCount) upCount.textContent = Math.max(1, thisMonthUpdates).toString();
 
-    // 支持平台数
     const uniquePlatforms = new Set();
     allSoftware.forEach(s => s.platforms.forEach(p => uniquePlatforms.add(p)));
-    if (pfCount) pfCount.textContent = Math.max(4, uniquePlatforms.size).toString();
+    const totalPlatforms = Math.max(4, uniquePlatforms.size);
+
+    let visibleCount = 0;
+
+    // 1. 软件总数卡片
+    const cardSw = swCount ? swCount.closest(".sc-stat-card") : null;
+    if (cardSw) {
+      if (items.includes("software") && totalSw >= hideBelow) {
+        cardSw.style.display = "";
+        swCount.textContent = totalSw.toString();
+        visibleCount++;
+      } else {
+        cardSw.style.display = "none";
+      }
+    }
+
+    // 2. 累计下载卡片
+    const cardDl = dlCount ? dlCount.closest(".sc-stat-card") : null;
+    if (cardDl) {
+      if (items.includes("downloads") && totalDownloads >= hideBelow) {
+        cardDl.style.display = "";
+        dlCount.textContent = totalDownloads > 10000
+          ? (totalDownloads / 10000).toFixed(1) + " 万+"
+          : totalDownloads.toLocaleString();
+        visibleCount++;
+      } else {
+        cardDl.style.display = "none";
+      }
+    }
+
+    // 3. 本月更新卡片
+    const cardUp = upCount ? upCount.closest(".sc-stat-card") : null;
+    if (cardUp) {
+      if (items.includes("monthlyUpdates") && thisMonthUpdates >= hideBelow) {
+        cardUp.style.display = "";
+        upCount.textContent = Math.max(1, thisMonthUpdates).toString();
+        visibleCount++;
+      } else {
+        cardUp.style.display = "none";
+      }
+    }
+
+    // 4. 平台架构卡片
+    const cardPf = pfCount ? pfCount.closest(".sc-stat-card") : null;
+    if (cardPf) {
+      if (items.includes("platforms") && totalPlatforms >= hideBelow) {
+        cardPf.style.display = "";
+        pfCount.textContent = totalPlatforms.toString();
+        visibleCount++;
+      } else {
+        cardPf.style.display = "none";
+      }
+    }
+
+    statsRow.style.display = visibleCount > 0 ? "" : "none";
   }
 
   // 渲染分类胶囊
@@ -517,9 +678,63 @@
       return;
     }
 
+    // 密度样式切换
+    grid.classList.remove("sc-grid--compact", "sc-grid--list");
+    if (scConfig.density === "compact") {
+      grid.classList.add("sc-grid--compact");
+    } else if (scConfig.density === "list") {
+      grid.classList.add("sc-grid--list");
+    }
+
     const visibleItems = filtered.slice(0, currentPageSize);
 
-    grid.innerHTML = visibleItems.map(s => {
+    if (scConfig.density === "list") {
+      grid.innerHTML = visibleItems.map(s => {
+        const iconUrl = s.iconUrl || s.icon || "/logo.png";
+        const verText = s.latest ? `v${esc(s.latest.version)}` : "v1.0.0";
+        const sizeText = s.latest && s.latest.size ? formatBytes(s.latest.size) : "";
+        const priceText = s.priceType === "paid" ? "付费正版" : (s.priceType === "freemium" ? "免费增值" : "官方免费");
+        const dlUrl = `/download/${encodeURIComponent(s.id)}`;
+        const detailUrl = `/software.html?id=${encodeURIComponent(s.id)}`;
+
+        const platformIconsHtml = (s.platforms || ["windows"]).map(p => {
+          const info = PLATFORM_MAP[p] || PLATFORM_MAP.other;
+          return `<i data-lucide="${info.icon}" class="sc-card__platform-icon" title="${info.label}" style="width: 14px; height: 14px;"></i>`;
+        }).join("");
+
+        return `
+          <article class="sc-list-row">
+            <div class="sc-list-row__left">
+              <img src="${esc(iconUrl)}" alt="${esc(s.name)}" class="sc-list-row__icon" loading="lazy" />
+              <div class="sc-list-row__info">
+                <div class="sc-list-row__title-wrap">
+                  <a href="${detailUrl}" class="sc-list-row__name">${esc(s.name)}</a>
+                  <span class="sc-badge ${s.priceType === "paid" ? "sc-badge--cyan" : "sc-badge--emerald"}" style="font-size: 11px;">
+                    ${priceText}
+                  </span>
+                </div>
+                <p class="sc-list-row__tagline">${esc(s.tagline || s.description || "官方正版桌面生产力工具")}</p>
+              </div>
+            </div>
+            <div class="sc-list-row__meta">
+              <div style="display: flex; gap: 6px; align-items: center;">${platformIconsHtml}</div>
+              <span>${verText}${sizeText ? " · " + sizeText : ""}</span>
+              <span><i data-lucide="download" style="width: 12px; height: 12px; display: inline-block; vertical-align: -1px;"></i> ${s.downloads.toLocaleString()}</span>
+            </div>
+            <div class="sc-list-row__actions">
+              <a href="${dlUrl}" class="sc-btn sc-btn--primary sc-btn--sm sc-btn-shimmer">
+                <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+                <span>下载</span>
+              </a>
+              <a href="${detailUrl}" class="sc-btn sc-btn--ghost sc-btn--sm">
+                <span>详情</span>
+              </a>
+            </div>
+          </article>
+        `;
+      }).join("");
+    } else {
+      grid.innerHTML = visibleItems.map(s => {
       const coverUrl = s.coverUrl || s.coverImage || (s.screenshots && s.screenshots[0]) || "";
       const iconUrl = s.iconUrl || s.icon || "/logo.png";
       const verText = s.latest ? `v${esc(s.latest.version)}` : "v1.0.0";
@@ -580,6 +795,7 @@
         </article>
       `;
     }).join("");
+  }
 
     if (loadMoreWrap) {
       if (filtered.length > currentPageSize) {
@@ -594,9 +810,38 @@
 
   // 渲染右侧排行榜
   function renderRankings() {
+    const rankCard = document.querySelector(".sc-rank");
+    if (!rankCard) return;
+
+    if (scConfig.ranking && scConfig.ranking.show === false) {
+      rankCard.style.display = "none";
+      return;
+    }
+    rankCard.style.display = "";
+
+    const allowedTabs = Array.isArray(scConfig.ranking?.tabs) ? scConfig.ranking.tabs : ["downloads", "updated"];
+    const rankTabDl = $("rankTabDownloads");
+    const rankTabUp = $("rankTabUpdates");
+    if (rankTabDl) rankTabDl.style.display = allowedTabs.includes("downloads") ? "" : "none";
+    if (rankTabUp) rankTabUp.style.display = allowedTabs.includes("updated") ? "" : "none";
+
+    if (!allowedTabs.includes(activeRankTab)) {
+      activeRankTab = allowedTabs[0] || "downloads";
+      if (rankTabDl && rankTabUp) {
+        if (activeRankTab === "downloads") {
+          rankTabDl.classList.add("sc-rank__tab--active");
+          rankTabUp.classList.remove("sc-rank__tab--active");
+        } else {
+          rankTabUp.classList.add("sc-rank__tab--active");
+          rankTabDl.classList.remove("sc-rank__tab--active");
+        }
+      }
+    }
+
     const listContainer = $("rankList");
     if (!listContainer) return;
 
+    const maxSize = Math.max(1, Number(scConfig.ranking?.size) || 10);
     let rankList = allSoftware.slice();
     if (activeRankTab === "downloads") {
       rankList.sort((a, b) => b.downloads - a.downloads);
@@ -604,9 +849,9 @@
       rankList.sort((a, b) => b.updatedAt - a.updatedAt);
     }
 
-    const top10 = rankList.slice(0, 10);
+    const topItems = rankList.slice(0, maxSize);
 
-    listContainer.innerHTML = top10.map((s, idx) => {
+    listContainer.innerHTML = topItems.map((s, idx) => {
       const rankNum = idx + 1;
       const numCls = rankNum <= 3 ? `sc-rank__num--top${rankNum}` : "";
       const iconUrl = s.iconUrl || s.icon || "/logo.png";
@@ -926,6 +1171,24 @@
     };
   }
 
+  const CONFIG_CACHE_KEY = "software_center_config_cache_v4";
+
+  function applyConfig(cfg) {
+    if (!cfg || typeof cfg !== "object") return;
+    scConfig = { ...DEFAULT_SC_CONFIG, ...cfg };
+    document.documentElement.setAttribute("data-accent", scConfig.accent || "cyan");
+    currentPageSize = Math.max(1, Number(scConfig.pageSize) || 12);
+
+    renderAnnouncement();
+    renderHero();
+    startCarouselTimer();
+    renderStats();
+    renderNewArrivals();
+    renderSoftwareGrid();
+    renderRankings();
+    safeIcons();
+  }
+
   function applyCatalog(data) {
     if (!data || !Array.isArray(data.software)) return;
     catalog = data;
@@ -944,24 +1207,21 @@
       featuredSoftware.sort((a, b) => (a.featuredOrder ?? 999) - (b.featuredOrder ?? 999));
     }
 
-    // 新品计算：firstReleasedAt 在 30 天内；不足 4 个时按 firstReleasedAt 倒序补足到 4–8 个
-    const thirtyDaysAgo = Date.now() - 30 * 24 * 3600 * 1000;
-    const recentReleased = allSoftware.filter(s => s.firstReleasedAt >= thirtyDaysAgo);
+    // 新品计算：按后台配置的天数与上限计算
+    const days = Math.max(1, Number(scConfig.newArrivals?.days) || 30);
+    const maxNew = Math.max(1, Number(scConfig.newArrivals?.max) || 8);
+    const timeThreshold = Date.now() - days * 24 * 3600 * 1000;
+    const recentReleased = allSoftware.filter(s => s.firstReleasedAt >= timeThreshold);
     if (recentReleased.length >= 4) {
-      newArrivals = recentReleased.sort((a, b) => b.firstReleasedAt - a.firstReleasedAt).slice(0, 8);
+      newArrivals = recentReleased.sort((a, b) => b.firstReleasedAt - a.firstReleasedAt).slice(0, maxNew);
     } else {
-      newArrivals = allSoftware.slice().sort((a, b) => b.firstReleasedAt - a.firstReleasedAt).slice(0, 6);
+      newArrivals = allSoftware.slice().sort((a, b) => b.firstReleasedAt - a.firstReleasedAt).slice(0, Math.min(allSoftware.length, maxNew));
     }
 
     // 渲染各区块
-    renderHero();
-    startCarouselTimer();
-    renderStats();
+    applyConfig(scConfig);
     renderCategories();
     updateSegmentActive();
-    renderNewArrivals();
-    renderSoftwareGrid();
-    renderRankings();
     renderRecentUpdates();
     bindEvents();
     safeIcons();
@@ -970,6 +1230,28 @@
   // 初始化入口 (优先同步秒开，消除任何等待与闪光停顿)
   async function init() {
     let hasRendered = false;
+
+    // 0. 读取本地配置缓存与主题初始化
+    try {
+      const cachedCfgRaw = localStorage.getItem(CONFIG_CACHE_KEY);
+      if (cachedCfgRaw) {
+        const cachedCfg = JSON.parse(cachedCfgRaw);
+        if (cachedCfg && typeof cachedCfg === "object") {
+          scConfig = { ...DEFAULT_SC_CONFIG, ...cachedCfg };
+        }
+      }
+    } catch (e) {}
+    document.documentElement.setAttribute("data-accent", scConfig.accent || "cyan");
+
+    // 监听 Studio 实时预览消息 (不保存即可在 iframe 中实时看效果)
+    if (urlParams.get("preview") === "1") {
+      window.addEventListener("message", (event) => {
+        if (event.origin !== window.location.origin) return;
+        if (event.data?.type === "studio-preview-config" && event.data?.config) {
+          applyConfig(event.data.config);
+        }
+      });
+    }
 
     // 1. 同步秒开：读取本地缓存（0 毫秒渲染，消除骨架屏闪烁与加载停顿）
     try {
@@ -991,21 +1273,45 @@
       hasRendered = true;
     }
 
-    // 3. 异步网络刷新：拉取最新数据（附加时间戳避免边缘缓存死锁，超时 6 秒兜底）
+    // 3. 异步网络刷新：并行请求 /api/catalog 与 /api/config/software-center 与 /api/config/promotions
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 6000);
-      const res = await fetch("/api/catalog?_t=" + Date.now(), { signal: controller.signal });
+      const [catRes, cfgRes, promoRes] = await Promise.allSettled([
+        fetch("/api/catalog?_t=" + Date.now(), { signal: controller.signal }),
+        fetch("/api/config/software-center?_t=" + Date.now(), { signal: controller.signal }),
+        fetch("/api/config/promotions?_t=" + Date.now(), { signal: controller.signal })
+      ]);
       clearTimeout(timeoutId);
-      if (res.ok) {
-        const remoteData = await res.json();
+
+      // 处理展示配置
+      if (cfgRes.status === "fulfilled" && cfgRes.value.ok) {
+        try {
+          const remoteCfg = await cfgRes.value.json();
+          scConfig = { ...DEFAULT_SC_CONFIG, ...remoteCfg };
+          localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify(remoteCfg));
+        } catch (e) {}
+      }
+
+      // 处理推广位配置
+      if (promoRes.status === "fulfilled" && promoRes.value.ok) {
+        try {
+          promotionsConfig = await promoRes.value.json();
+        } catch (e) {}
+      }
+
+      // 处理目录数据并重渲染
+      if (catRes.status === "fulfilled" && catRes.value.ok) {
+        const remoteData = await catRes.value.json();
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify(remoteData));
         } catch (e) {}
         applyCatalog(remoteData);
+      } else {
+        applyConfig(scConfig);
       }
     } catch (err) {
-      console.warn("网络拉取 catalog 失败/超时:", err);
+      console.warn("网络拉取 catalog/config 失败/超时:", err);
     }
   }
 
