@@ -38,7 +38,12 @@ const queryClient = new QueryClient({
       retry: (failureCount, error: any) => {
         if (failureCount >= 0 && import.meta.env.DEV) return false
         if (failureCount > 2 && import.meta.env.PROD) return false
-        if (error?.status === 401 || error?.response?.status === 401) return false
+        if (
+          error?.status === 401 ||
+          error?.status === 403 ||
+          error?.response?.status === 401 ||
+          error?.response?.status === 403
+        ) return false
         return true
       },
       refetchOnWindowFocus: false,
@@ -47,7 +52,12 @@ const queryClient = new QueryClient({
   },
   queryCache: new QueryCache({
     onError: (error: any) => {
-      if (error?.status === 401 || error?.response?.status === 401) {
+      if (
+        error?.status === 401 ||
+        error?.status === 403 ||
+        error?.response?.status === 401 ||
+        error?.response?.status === 403
+      ) {
         toast.error('登录会话已过期，请重新登录')
         useAuthStore.getState().clearToken()
         router.navigate({ to: '/sign-in' })

@@ -66,12 +66,12 @@ export async function request<T = any>(
 
   const response = await fetch(finalUrl, init)
 
-  if (response.status === 401) {
+  if (response.status === 401 || response.status === 403) {
     sessionStorage.removeItem(ADMIN_TOKEN_KEY)
     if (typeof window !== 'undefined' && !window.location.pathname.includes('/sign-in')) {
       window.location.href = '/studio/sign-in'
     }
-    throw new ApiError('登录已失效，请重新登录', 401)
+    throw new ApiError('登录已失效，请重新登录', response.status)
   }
 
   let data: any
