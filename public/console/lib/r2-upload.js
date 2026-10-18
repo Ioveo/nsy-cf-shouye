@@ -230,7 +230,7 @@ function sendUploadPart(blob, meta, onProgress) {
 // ---------- 业务封装：新后台只调用下面这几个 ----------
 
 // 发布新版本（file 任意大小；≤10MB 走单次上传，其余分片）
-export async function uploadReleaseFile(file, { softwareId, version, changelog = "", isLatest = true, storageId = "default" }) {
+export async function uploadReleaseFile(file, { softwareId, version, changelog = "", isLatest = true, storageId = "default", platform = "" }) {
   if (file.size > MAX_CHUNKED_SIZE) return { success: false, msg: `安装包不能超过 ${formatBytes(MAX_CHUNKED_SIZE)}` };
   if (file.size <= CHUNK_UPLOAD_THRESHOLD) {
     const form = new FormData();
@@ -240,15 +240,16 @@ export async function uploadReleaseFile(file, { softwareId, version, changelog =
     form.append("version", version);
     form.append("changelog", changelog);
     form.append("isLatest", isLatest ? "1" : "0");
+    if (platform) form.append("platform", platform);
     form.append("file", file);
     return uploadSmallFile("/api/admin/releases", form, { title: "正在发布版本", fileName: file.name });
   }
   return uploadFileInParts(file, {
     title: "正在发布版本",
     initUrl: "/api/admin/releases/presign",
-    initPayload: { softwareId, version, storageId },
+    initPayload: { softwareId, version, storageId, platform },
     completeUrl: "/api/admin/releases/complete-upload",
-    completePayload: { softwareId, version, changelog, isLatest },
+    completePayload: { softwareId, version, changelog, isLatest, platform },
     doneText: "上传完成，版本已发布"
   });
 }

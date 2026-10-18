@@ -159,6 +159,26 @@
     return "windows";
   }
 
+  // 统一生成规范的下载路由地址
+  function buildDownloadUrl(software, pkg) {
+    if (!software) return "#";
+    const slugOrId = encodeURIComponent(software.slug || software.id);
+    // 1. 如果包本身配置了显式直链 (如 fallback 模式)，优先使用
+    if (pkg && pkg.publicUrl && pkg.publicUrl.startsWith("/download/")) {
+      return pkg.publicUrl;
+    }
+    // 2. 如果有具体的 Release 包 ID (如 rel-mvdbh6u1-r7sb53)，精准指向该包
+    if (pkg && pkg.id) {
+      return `/download/${encodeURIComponent(pkg.id)}`;
+    }
+    // 3. 按软件最新版的平台分流下载
+    if (pkg && pkg.platform) {
+      return `/download/latest/${slugOrId}?platform=${encodeURIComponent(pkg.platform)}`;
+    }
+    // 4. 通用最新版兜底
+    return `/download/latest/${slugOrId}`;
+  }
+
   // 渲染软件详情
   function renderSoftware(software) {
     if (!software) return;
@@ -237,13 +257,13 @@
     const primaryLabel = $("primaryDownloadLabel");
     if (primaryBtn) {
       if (recommendedPackage) {
-        primaryBtn.href = `/download/${encodeURIComponent(software.id)}?platform=${encodeURIComponent(recommendedPackage.platform || "windows")}`;
+        primaryBtn.href = buildDownloadUrl(software, recommendedPackage);
         const platLabel = (PLATFORM_MAP[recommendedPackage.platform] || PLATFORM_MAP.other).label;
         if (primaryLabel) {
           primaryLabel.textContent = `下载 ${platLabel} (v${recommendedPackage.version})`;
         }
       } else {
-        primaryBtn.href = `/download/${encodeURIComponent(software.id)}`;
+        primaryBtn.href = buildDownloadUrl(software, null);
         if (primaryLabel) primaryLabel.textContent = "立即下载最新版";
       }
     }
@@ -257,7 +277,7 @@
         otherDropdown.innerHTML = latestPackages.map(pkg => {
           const pInfo = PLATFORM_MAP[pkg.platform] || PLATFORM_MAP.other;
           const pkgSize = pkg.size ? formatBytes(pkg.size) : "";
-          const dlLink = `/download/${encodeURIComponent(software.id)}?platform=${encodeURIComponent(pkg.platform || "")}`;
+          const dlLink = buildDownloadUrl(software, pkg);
           return `
             <a href="${dlLink}" class="sc-rank__item" style="padding: 8px 12px; text-decoration: none;">
               <i data-lucide="${pInfo.icon}" style="width: 16px; height: 16px; color: var(--sc-cyan);"></i>
@@ -369,7 +389,7 @@
           const pInfo = PLATFORM_MAP[pkg.platform] || PLATFORM_MAP.other;
           const pkgSize = pkg.size ? formatBytes(pkg.size) : "官方标准";
           const archText = pkg.arch ? `${pkg.arch.toUpperCase()} 架构` : "x64 通用架构";
-          const dlUrl = `/download/${encodeURIComponent(software.id)}?platform=${encodeURIComponent(pkg.platform || "")}`;
+          const dlUrl = buildDownloadUrl(software, pkg);
           const sha = pkg.sha256 || pkg.checksum || "";
 
           return `
@@ -452,7 +472,7 @@
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                   ${pkgs.map(p => {
                     const pInfo = PLATFORM_MAP[p.platform] || PLATFORM_MAP.other;
-                    const pLink = `/download/${encodeURIComponent(software.id)}?platform=${encodeURIComponent(p.platform || "")}`;
+                    const pLink = buildDownloadUrl(software, p);
                     return `
                       <a href="${pLink}" class="sc-btn sc-btn--ghost sc-btn--xs">
                         <i data-lucide="${pInfo.icon}" style="width: 12px; height: 12px;"></i>
@@ -488,8 +508,8 @@
         recGrid.innerHTML = others.map(s => {
           const coverUrl = s.coverUrl || s.coverImage || (s.screenshots && s.screenshots[0]) || "";
           const iconUrl = s.iconUrl || s.icon || "/logo.png";
-          const detailUrl = `/software.html?id=${encodeURIComponent(s.id)}`;
-          const dlUrl = `/download/${encodeURIComponent(s.id)}`;
+          const detailUrl = `/software.html?slug=${encodeURIComponent(s.slug || s.id)}`;
+          const dlUrl = buildDownloadUrl(s, null);
 
           return `
             <article class="sc-card sc-glass sc-glass--hover sc-spotlight">

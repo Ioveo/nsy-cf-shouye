@@ -320,7 +320,7 @@ function renderSoftwareWidget(soft) {
           <p class="article-software-widget__desc">${esc(soft.tagline || soft.description || "官方安全下载，极速安装体验。")}</p>
         </div>
       </div>
-      <a href="/download/${encodeURIComponent(soft.id)}" class="article-software-widget__btn">
+      <a href="/download/latest/${encodeURIComponent(soft.slug || soft.id)}" class="article-software-widget__btn">
         <i data-lucide="download" style="width: 16px; height: 16px;"></i><span>立即下载体验</span>
       </a>
     </div>

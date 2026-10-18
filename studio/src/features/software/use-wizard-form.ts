@@ -8,6 +8,7 @@ import { uploadReleaseFile, uploadAssetFile, formatBytes } from '@r2'
 import type { Software, Category, Release } from '@/lib/queries'
 import type { HighlightItem } from './wizard-step-basic'
 import type { PendingPackage } from './wizard-step-packages'
+import { parsePackageFileName } from './package-utils'
 
 export function useWizardForm(
   existingSoftware: Software | null | undefined,
@@ -102,26 +103,6 @@ export function useWizardForm(
     }
   }, [existingSoftware, categories])
 
-  function detectPlatform(fileName: string): string {
-    const lower = fileName.toLowerCase()
-    if (lower.includes('portable') || lower.includes('绿色') || lower.includes('免安装')) return 'portable'
-    if (lower.endsWith('.dmg') || lower.endsWith('.pkg')) return 'macos'
-    if (lower.endsWith('.appimage') || lower.endsWith('.deb') || lower.endsWith('.rpm') || lower.endsWith('.tar.gz')) return 'linux'
-    if (lower.endsWith('.apk')) return 'android'
-    if (lower.endsWith('.exe') || lower.endsWith('.msi')) return 'windows'
-    if (lower.endsWith('.zip') || lower.endsWith('.7z')) return 'portable'
-    return 'other'
-  }
-
-  function inferLabel(fileName: string, platform: string): string {
-    if (platform === 'portable') return '绿色便携版'
-    if (platform === 'windows') return 'Windows 安装版'
-    if (platform === 'macos') return 'macOS 版'
-    if (platform === 'linux') return 'Linux 版'
-    if (platform === 'android') return 'Android 版'
-    return fileName
-  }
-
   async function handleIconUpload(file: File) {
     setIsUploadingIcon(true)
     try {
@@ -190,18 +171,39 @@ export function useWizardForm(
   }
 
   function handleAddPackages(files: FileList | File[]) {
-    const items: PendingPackage[] = Array.from(files).map((f) => {
-      const plat = detectPlatform(f.name)
+    const list = Array.from(files)
+    if (list.length === 0) return
+
+    let detectedVer: string | null = null
+
+    const items: PendingPackage[] = list.map((f) => {
+      const parsed = parsePackageFileName(f.name)
+      if (!detectedVer && parsed.version) {
+        detectedVer = parsed.version
+      }
       return {
         id: Math.random().toString(36).substring(2, 9),
         file: f,
-        platform: plat,
-        label: inferLabel(f.name, plat),
-        arch: 'x64',
+        platform: parsed.platform,
+        label: parsed.label,
+        arch: parsed.arch,
         status: 'pending',
       }
     })
+
     setPendingPackages((prev) => [...prev, ...items])
+
+    if (detectedVer) {
+      if (!version || version === '1.0.0' || version.trim() === '') {
+        setVersion(detectedVer)
+        toast.info(`检测到文件名包含版本号 v${detectedVer}，已自动同步发布版本号`)
+      } else if (version !== detectedVer) {
+        toast.warning(
+          `检测到文件名包含版本号 v${detectedVer}，与当前输入的 v${version} 不一致，已为您保留当前输入。如需更新请在版本号输入框修改。`,
+          { duration: 6000 }
+        )
+      }
+    }
   }
 
   const isSlugDuplicate = softwareList.some(
@@ -295,6 +297,7 @@ export function useWizardForm(
             version: version.trim() || '1.0.0',
             changelog: changelog.trim(),
             isLatest: isLatestPkg,
+            platform: pkg.platform,
           })
 
           if (uploadRes.success) {

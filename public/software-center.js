@@ -184,6 +184,16 @@
     };
   }
 
+  // 统一生成规范的下载路由地址
+  function buildDownloadUrl(software, pkg) {
+    if (!software) return "#";
+    const slugOrId = encodeURIComponent(software.slug || software.id);
+    if (pkg && pkg.publicUrl && pkg.publicUrl.startsWith("/download/")) return pkg.publicUrl;
+    if (pkg && pkg.id) return `/download/${encodeURIComponent(pkg.id)}`;
+    if (pkg && pkg.platform) return `/download/latest/${slugOrId}?platform=${encodeURIComponent(pkg.platform)}`;
+    return `/download/latest/${slugOrId}`;
+  }
+
   // 同步 URL 参数（无刷新）
   function syncUrlParams() {
     const params = new URLSearchParams();
@@ -248,9 +258,9 @@
           desc: s.description || "全平台高性能底层架构，极致流畅体验，即装即用零冗余。",
           coverUrl: s.coverUrl || s.coverImage || (s.screenshots && s.screenshots[0]) || "",
           iconUrl: s.iconUrl || s.icon || "/logo.png",
-          primaryUrl: `/download/${encodeURIComponent(s.id)}`,
+          primaryUrl: buildDownloadUrl(s, s.latest),
           primaryText: `立即下载 ${esc(s.name)}`,
-          secondaryUrl: `/software.html?id=${encodeURIComponent(s.id)}`,
+          secondaryUrl: `/software.html?slug=${encodeURIComponent(s.slug || s.id)}`,
           badgeLabel: `${esc(s.slug || s.name)} · 官方发布版`,
           metaText1: sizeText,
           metaText2: `${s.downloads.toLocaleString()} 次下载`,
@@ -548,7 +558,7 @@
       const iconUrl = s.iconUrl || s.icon || "/logo.png";
       const verText = s.latest ? `v${esc(s.latest.version)}` : "v1.0.0";
       const dateText = formatDate(s.firstReleasedAt || s.updatedAt);
-      const dlUrl = `/download/${encodeURIComponent(s.id)}`;
+      const dlUrl = buildDownloadUrl(s, s.latest);
 
       return `
         <div class="sc-card--new sc-glass sc-glass--hover sc-spotlight">
@@ -694,8 +704,8 @@
         const verText = s.latest ? `v${esc(s.latest.version)}` : "v1.0.0";
         const sizeText = s.latest && s.latest.size ? formatBytes(s.latest.size) : "";
         const priceText = s.priceType === "paid" ? "付费正版" : (s.priceType === "freemium" ? "免费增值" : "官方免费");
-        const dlUrl = `/download/${encodeURIComponent(s.id)}`;
-        const detailUrl = `/software.html?id=${encodeURIComponent(s.id)}`;
+        const dlUrl = buildDownloadUrl(s, s.latest);
+        const detailUrl = `/software.html?slug=${encodeURIComponent(s.slug || s.id)}`;
 
         const platformIconsHtml = (s.platforms || ["windows"]).map(p => {
           const info = PLATFORM_MAP[p] || PLATFORM_MAP.other;
@@ -740,8 +750,8 @@
       const verText = s.latest ? `v${esc(s.latest.version)}` : "v1.0.0";
       const sizeText = s.latest && s.latest.size ? formatBytes(s.latest.size) : "";
       const priceText = s.priceType === "paid" ? "付费正版" : (s.priceType === "freemium" ? "免费增值" : "官方免费");
-      const dlUrl = `/download/${encodeURIComponent(s.id)}`;
-      const detailUrl = `/software.html?id=${encodeURIComponent(s.id)}`;
+      const dlUrl = buildDownloadUrl(s, s.latest);
+      const detailUrl = `/software.html?slug=${encodeURIComponent(s.slug || s.id)}`;
 
       // 平台图标组
       const platformIconsHtml = (s.platforms || ["windows"]).map(p => {
@@ -858,8 +868,8 @@
       const subInfo = activeRankTab === "downloads"
         ? `${s.downloads.toLocaleString()} 次下载`
         : `更新于 ${formatDate(s.updatedAt)}`;
-      const dlUrl = `/download/${encodeURIComponent(s.id)}`;
-      const detailUrl = `/software.html?id=${encodeURIComponent(s.id)}`;
+      const dlUrl = buildDownloadUrl(s, s.latest);
+      const detailUrl = `/software.html?slug=${encodeURIComponent(s.slug || s.id)}`;
 
       return `
         <div class="sc-rank__item">

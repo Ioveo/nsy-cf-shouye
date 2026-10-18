@@ -1,4 +1,4 @@
-import { findRelease, loadCatalog, slugify } from "../../../_lib/catalog.js";
+import { findRelease, inferPlatform, loadCatalog, slugify } from "../../../_lib/catalog.js";
 import { createMultipart, formatLimit, hasStorage, MAX_MULTIPART_SIZE, resolveUploadTarget } from "../../../_lib/multipart.js";
 import { json } from "../../../_lib/releases.js";
 import { requireAdmin } from "../_lib.js";
@@ -42,8 +42,18 @@ export async function onRequestPost({ request, env }) {
   const software = catalog.software.find(item => item.id === softwareId);
   if (!software) return json({ success: false, msg: "软件不存在" }, 404);
 
-  const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
-  const fileKey = `software/${software.slug}/${slugify(version)}/${Date.now()}-${safeName}`;
+  const ext = (fileName.split(".").pop() || "zip").toLowerCase();
+  const rawBase = fileName.slice(0, fileName.lastIndexOf(".")) || fileName;
+  const asciiBase = rawBase
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const hasMeaningfulAscii = /[a-zA-Z]{2,}/.test(asciiBase);
+  const platform = String(body.platform || inferPlatform(fileName));
+  const keyFileName = hasMeaningfulAscii
+    ? `${software.slug}-v${version}-${asciiBase}.${ext}`
+    : `${software.slug}-v${version}-${platform}.${ext}`;
+  const fileKey = `software/${software.slug}/${version}/${keyFileName}`;
 
   try {
     const target = await resolveUploadTarget(env, storageId, catalog);

@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 // @ts-ignore
 import { uploadReleaseFile } from '@r2'
 import type { Software } from '@/lib/queries'
+import { parsePackageFileName } from './package-utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -39,6 +40,18 @@ export function QuickUploadDialog({
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  function handleFileSelect(picked: File) {
+    setFile(picked)
+    const parsed = parsePackageFileName(picked.name)
+    if (parsed.version && (!version || version.trim() === '' || version === '1.0.0')) {
+      setVersion(parsed.version)
+      toast.info(`已自动识别版本号：v${parsed.version}`)
+    }
+    if (parsed.platform && parsed.platform !== 'other') {
+      setPlatform(parsed.platform)
+    }
+  }
+
   async function handleQuickUpload(e: React.FormEvent) {
     e.preventDefault()
     if (!swSlug) {
@@ -62,6 +75,7 @@ export function QuickUploadDialog({
         version: version.trim(),
         changelog: changelog.trim() || '版本发布',
         isLatest: true,
+        platform,
       })
 
       if (!uploadRes || !uploadRes.success) {
@@ -164,16 +178,27 @@ export function QuickUploadDialog({
               type='file'
               className='hidden'
               onChange={(e) => {
-                if (e.target.files?.[0]) setFile(e.target.files[0])
+                if (e.target.files?.[0]) handleFileSelect(e.target.files[0])
               }}
             />
             <div
               onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                if (e.dataTransfer.files?.[0]) {
+                  handleFileSelect(e.dataTransfer.files[0])
+                }
+              }}
               className='flex flex-col items-center justify-center gap-1.5 p-4 border border-dashed border-border/80 rounded-lg bg-muted/20 cursor-pointer hover:bg-muted/40 transition-colors'
             >
               <Upload className='size-5 text-muted-foreground' />
-              <span className='text-xs text-foreground font-medium'>
-                {file ? `${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)` : '点击选择安装包文件 (exe / dmg / AppImage / zip)'}
+              <span className='text-xs text-foreground font-medium text-center'>
+                {file ? `${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)` : '拖入或点击选择安装包文件 (exe / dmg / AppImage / zip)'}
               </span>
             </div>
           </div>
