@@ -11,6 +11,7 @@ import {
   ArrowDown,
   Loader2,
   Save,
+  Sparkles,
 } from 'lucide-react'
 import { useCatalog } from '@/hooks/use-catalog'
 import { api } from '@/lib/api'
@@ -100,7 +101,7 @@ export function CarouselFeature() {
         suggestion: suggestion.trim(),
         sortOrder: editingSlide?.sortOrder ?? carouselList.length,
       }
-      const res = await api.post('/api/admin/carousel', payload)
+      const res = await api.post('/api/admin/site-carousel', payload)
       if (res.success) {
         toast.success(editingSlide ? '轮播已更新' : '轮播已添加')
         setDrawerOpen(false)
@@ -124,8 +125,8 @@ export function CarouselFeature() {
     const orderB = itemB.sortOrder ?? targetIdx
 
     try {
-      await api.post('/api/admin/carousel', { ...itemA, sortOrder: orderB })
-      await api.post('/api/admin/carousel', { ...itemB, sortOrder: orderA })
+      await api.post('/api/admin/site-carousel', { ...itemA, sortOrder: orderB })
+      await api.post('/api/admin/site-carousel', { ...itemB, sortOrder: orderA })
       toast.success('轮播排序已更新')
       queryClient.invalidateQueries({ queryKey: ['catalog'] })
     } catch (e: any) {
@@ -136,7 +137,7 @@ export function CarouselFeature() {
   async function handleDelete(item: any) {
     if (!confirm(`确定要删除轮播项「${item.title || '此项'}」吗？`)) return
     try {
-      const res = await api.post('/api/admin/carousel', { action: 'delete', id: item.id })
+      const res = await api.post('/api/admin/site-carousel', { action: 'delete', id: item.id })
       if (res.success) {
         toast.success('轮播项已删除')
         queryClient.invalidateQueries({ queryKey: ['catalog'] })
@@ -145,6 +146,67 @@ export function CarouselFeature() {
       }
     } catch (err: any) {
       toast.error(`删除异常：${err.message}`)
+    }
+  }
+
+  const [isMigrating, setIsMigrating] = useState(false)
+
+  async function handleMigrateToPromotions() {
+    if (carouselList.length === 0) {
+      toast.info('当前没有旧版轮播图需要迁移')
+      return
+    }
+    if (!confirm(`确定将现有的 ${carouselList.length} 条首页轮播图迁移为统一推广位（portal）吗？\n迁移后旧数据将完整保留。`)) return
+
+    setIsMigrating(true)
+    try {
+      const promoRes = await api.post('/api/admin/config', { action: 'get', name: 'promotions' })
+      const existingItems: any[] = promoRes.config?.items || []
+
+      let addedCount = 0
+      const nextItems = [...existingItems]
+
+      carouselList.forEach((slide: any, idx: number) => {
+        const promoId = `promo_migrated_${slide.id || idx}`
+        const alreadyExists = nextItems.some((p: any) => p.id === promoId)
+        if (!alreadyExists) {
+          nextItems.push({
+            id: promoId,
+            placements: ['portal'],
+            entity: { type: 'custom', id: slide.id || `custom_${idx}` },
+            override: {
+              title: slide.title || '首页推荐',
+              subtitle: slide.description || '',
+              image: slide.imageUrl || '',
+              ctaText: '立即查看',
+              ctaHref: slide.suggestion || '/',
+            },
+            badge: '官方推荐',
+            startAt: 0,
+            endAt: 0,
+            status: slide.status === 'disabled' ? 'paused' : 'active',
+            order: (slide.sortOrder ?? idx) * 10,
+          })
+          addedCount++
+        }
+      })
+
+      if (addedCount === 0) {
+        toast.info('现有轮播图此前已全部迁移过，无需重复添加')
+        return
+      }
+
+      await api.post('/api/admin/config', {
+        action: 'save',
+        name: 'promotions',
+        data: { items: nextItems }
+      })
+      queryClient.invalidateQueries({ queryKey: ['config', 'promotions'] })
+      toast.success(`成功迁移 ${addedCount} 条轮播图到统一推广位（投放位置：portal）`)
+    } catch (err: any) {
+      toast.error(`迁移异常：${err.message}`)
+    } finally {
+      setIsMigrating(false)
     }
   }
 
@@ -165,6 +227,41 @@ export function CarouselFeature() {
           <Plus className='size-4' />
           <span>添加轮播大图</span>
         </Button>
+      </div>
+
+      {/* 迁移到统一推广位提示条 */}
+      <div className='p-4 rounded-xl border border-primary/30 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3'>
+        <div className='flex items-start gap-3'>
+          <Sparkles className='size-5 text-primary shrink-0 mt-0.5' />
+          <div className='space-y-1 text-xs'>
+            <div className='font-semibold text-sm text-foreground flex items-center gap-2'>
+              <span>首页轮播升级为「统一推广位」</span>
+              <span className='px-1.5 py-0.5 rounded text-[10px] bg-primary/20 text-primary font-mono'>v4 推荐</span>
+            </div>
+            <p className='text-muted-foreground'>
+              门户首页（portal）现已支持实时读取统一推广位。点击一键迁移，可将当前轮播图转为自定义推广位，原有数据保留不删。
+            </p>
+          </div>
+        </div>
+        <div className='flex items-center gap-2 shrink-0 self-end sm:self-center'>
+          <Button
+            size='sm'
+            variant='outline'
+            className='gap-1.5 text-xs'
+            onClick={() => window.location.href = '/studio/site/promotions'}
+          >
+            推广位管理
+          </Button>
+          <Button
+            size='sm'
+            className='gap-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground'
+            onClick={handleMigrateToPromotions}
+            disabled={isMigrating}
+          >
+            {isMigrating ? <Loader2 className='size-3.5 animate-spin' /> : <Sparkles className='size-3.5' />}
+            <span>一键迁移到推广位</span>
+          </Button>
+        </div>
       </div>
 
       {/* 骨架屏 / 轮播项列表 */}

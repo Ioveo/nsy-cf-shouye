@@ -1,17 +1,19 @@
 let currentCatalog = null;
+let currentPromotions = null;
 let activeMatrixCategory = "all";
 
 const CACHE_KEY = "software_center_catalog_cache_v3";
 
-function renderHomeViews(cat) {
+function renderHomeViews(cat, promotions = null) {
   applySiteText(cat.site || {});
   renderNavigation(cat);
   renderFlagship(cat);
   renderSoftwareMatrix(cat);
   renderHomeArticles(cat);
+  renderPortalCarousel(promotions || currentPromotions, cat);
 }
 
-// 主入口：加载后台 Catalog 数据并初始化各动态联动区域
+// 主入口：加载后台 Catalog 数据与推广位配置，并初始化各动态联动区域
 loadHomeData();
 
 async function loadHomeData() {
@@ -29,27 +31,38 @@ async function loadHomeData() {
     }
   } catch (e) {}
 
-  // 2. 异步网络刷新
+  // 2. 异步网络刷新 (并行加载 catalog 与 promotions 配置)
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
-    const response = await fetch("/api/catalog", { signal: controller.signal });
+
+    const [catRes, promoRes] = await Promise.all([
+      fetch("/api/catalog", { signal: controller.signal }).catch(() => null),
+      fetch("/api/config/promotions", { cache: "no-store" }).catch(() => null)
+    ]);
     clearTimeout(timeoutId);
-    if (response.ok) {
-      currentCatalog = await response.json();
+
+    if (promoRes && promoRes.ok) {
+      currentPromotions = await promoRes.json();
+    } else {
+      currentPromotions = { items: [] };
+    }
+
+    if (catRes && catRes.ok) {
+      currentCatalog = await catRes.json();
       try {
         localStorage.setItem(CACHE_KEY, JSON.stringify(currentCatalog));
       } catch (e) {}
-      renderHomeViews(currentCatalog);
+      renderHomeViews(currentCatalog, currentPromotions);
     } else if (!hasRendered) {
       currentCatalog = getFallbackCatalog();
-      renderHomeViews(currentCatalog);
+      renderHomeViews(currentCatalog, currentPromotions);
     }
   } catch (e) {
     if (!hasRendered) {
       console.warn("未能读取 /api/catalog，采用内置兜底配置:", e);
       currentCatalog = getFallbackCatalog();
-      renderHomeViews(currentCatalog);
+      renderHomeViews(currentCatalog, currentPromotions);
     }
   }
 
@@ -328,6 +341,136 @@ function initBackToTop() {
   }, { passive: true });
 }
 
+let portalCarouselTimer = null;
+let currentPortalSlideIdx = 0;
+
+function renderPortalCarousel(promotions, catalog) {
+  const carouselEl = document.getElementById("portalCarousel");
+  const trackEl = document.getElementById("portalCarouselTrack");
+  const prevBtn = document.getElementById("portalCarouselPrev");
+  const nextBtn = document.getElementById("portalCarouselNext");
+  const dotsEl = document.getElementById("portalCarouselDots");
+  const defaultImg = document.getElementById("defaultHeroImg");
+  if (!carouselEl || !trackEl) return;
+
+  // 1. 优先读取 placement="portal" 的统一推广位
+  let slides = [];
+  if (window.NsyPromotions?.resolvePromotions) {
+    slides = window.NsyPromotions.resolvePromotions(promotions, catalog, "portal");
+  }
+
+  // 2. 没有时回退到旧的 siteCarousel
+  if (!slides || slides.length === 0) {
+    const rawSiteCarousel = Array.isArray(catalog?.siteCarousel) ? catalog.siteCarousel : [];
+    const activeCarousel = rawSiteCarousel.filter(item => item && item.status !== "disabled");
+    slides = activeCarousel.map((item, idx) => ({
+      id: item.id || `carousel_${idx}`,
+      type: "custom",
+      title: item.title || "官方推荐",
+      subtitle: item.description || "",
+      image: item.imageUrl,
+      ctaText: "了解详情",
+      ctaHref: item.suggestion || "/download.html",
+      badge: "推荐",
+      order: item.sortOrder ?? idx
+    })).filter(s => Boolean(s.image));
+  }
+
+  // 3. 如果依然没有任何可用轮播，显示默认静态首屏图
+  if (!slides || slides.length === 0) {
+    carouselEl.hidden = true;
+    if (defaultImg) defaultImg.hidden = false;
+    if (portalCarouselTimer) clearInterval(portalCarouselTimer);
+    return;
+  }
+
+  // 隐藏静态底图，展示交互轮播
+  if (defaultImg) defaultImg.hidden = true;
+  carouselEl.hidden = false;
+
+  // 4. 渲染轮播幻灯片
+  trackEl.innerHTML = slides.map((slide, idx) => `
+    <div class="portal-carousel__slide ${idx === 0 ? "is-active" : ""}" data-slide-idx="${idx}">
+      <img src="${escapeAttr(slide.image)}" alt="${escapeAttr(slide.title)}" loading="${idx === 0 ? "eager" : "lazy"}" />
+      <div class="portal-carousel__overlay">
+        ${slide.badge ? `<span class="portal-carousel__badge">✦ ${escapeHtml(slide.badge)}</span>` : ""}
+        <h2 class="portal-carousel__title">${escapeHtml(slide.title)}</h2>
+        ${slide.subtitle ? `<p class="portal-carousel__subtitle">${escapeHtml(slide.subtitle)}</p>` : ""}
+        ${slide.ctaHref ? `<a class="portal-carousel__btn" href="${escapeAttr(slide.ctaHref)}"><span>${escapeHtml(slide.ctaText || "了解更多")}</span><i>→</i></a>` : ""}
+      </div>
+    </div>
+  `).join("");
+
+  // 5. 渲染圆点指示器
+  if (dotsEl) {
+    dotsEl.innerHTML = slides.map((_, idx) => `
+      <button type="button" class="portal-carousel__dot ${idx === 0 ? "is-active" : ""}" data-dot-idx="${idx}" aria-label="第 ${idx + 1} 张"></button>
+    `).join("");
+  }
+
+  currentPortalSlideIdx = 0;
+
+  function goToSlide(newIdx) {
+    if (newIdx < 0) newIdx = slides.length - 1;
+    if (newIdx >= slides.length) newIdx = 0;
+    currentPortalSlideIdx = newIdx;
+
+    trackEl.querySelectorAll(".portal-carousel__slide").forEach((el, idx) => {
+      el.classList.toggle("is-active", idx === currentPortalSlideIdx);
+    });
+
+    if (dotsEl) {
+      dotsEl.querySelectorAll(".portal-carousel__dot").forEach((el, idx) => {
+        el.classList.toggle("is-active", idx === currentPortalSlideIdx);
+      });
+    }
+  }
+
+  // 绑定左右箭头
+  if (prevBtn) {
+    prevBtn.onclick = () => {
+      goToSlide(currentPortalSlideIdx - 1);
+      resetTimer();
+    };
+  }
+  if (nextBtn) {
+    nextBtn.onclick = () => {
+      goToSlide(currentPortalSlideIdx + 1);
+      resetTimer();
+    };
+  }
+
+  // 绑定指示圆点
+  if (dotsEl) {
+    dotsEl.querySelectorAll(".portal-carousel__dot").forEach(dot => {
+      dot.onclick = () => {
+        const idx = Number(dot.getAttribute("data-dot-idx"));
+        goToSlide(idx);
+        resetTimer();
+      };
+    });
+  }
+
+  // 自动循环播放 (5秒)
+  function resetTimer() {
+    if (portalCarouselTimer) clearInterval(portalCarouselTimer);
+    if (slides.length > 1) {
+      portalCarouselTimer = setInterval(() => {
+        goToSlide(currentPortalSlideIdx + 1);
+      }, 5000);
+    }
+  }
+
+  carouselEl.onmouseenter = () => {
+    if (portalCarouselTimer) clearInterval(portalCarouselTimer);
+  };
+  carouselEl.onmouseleave = () => {
+    resetTimer();
+  };
+
+  resetTimer();
+}
+
 function formatDate(timestamp) {
   if (!timestamp) return "";
   const d = new Date(Number(timestamp));
@@ -338,6 +481,10 @@ function escapeHtml(str) {
   return String(str || "").replace(/[&<>"']/g, c => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
+}
+
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/`/g, "&#96;");
 }
 
 function getFallbackCatalog() {
