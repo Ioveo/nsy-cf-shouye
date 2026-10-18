@@ -9,6 +9,8 @@
     <link rel="apple-touch-icon" href="/logo.png?v=20260509" />
     <link rel="stylesheet" href="/styles.css?v=20260510-premium-detail" />
     <link rel="stylesheet" href="/site-theme.css?v=20260518-home-unified-pages" />
+    <link rel="stylesheet" href="/css/articles.css?v=20261017-v4" />
+    <script src="/vendor/lucide.min.js?v=20261017-v4" defer></script>
   </head>
   <body class="articles-page" data-landing-page="articles">
     <header class="topbar">
@@ -23,25 +25,35 @@
         <h1 data-landing="heroTitle">软件介绍、教程与运营方法。</h1>
         <p data-landing="heroSubtitle">把产品能力、使用步骤和真实业务场景整理成可阅读、可转发的内容。</p>
       </section>
+
+      <!-- 顶部分类导航条 (按 article-taxonomy 动态渲染) -->
+      <section class="page-section" style="padding-top: 0; padding-bottom: 0;">
+        <div class="articles-nav-wrap" id="articlesNavWrap"></div>
+      </section>
+
       <section class="article-list page-section" aria-label="文章列表">
         <div class="article-list__head">
           <div>
             <p class="eyebrow">Library</p>
-            <h2>最新文章</h2>
+            <h2 id="currentCategoryTitle">最新文章</h2>
           </div>
           <p id="articleListMeta">正在读取文章...</p>
         </div>
-        <div class="article-controls" role="search">
+        <div class="article-controls" role="search" id="articleControls">
           <label>搜索文章<input id="articleSearch" type="search" placeholder="输入标题、摘要、分类或标签" autocomplete="off" /></label>
           <label>分类<select id="articleCategoryFilter"><option value="all">全部分类</option></select></label>
           <label>标签<select id="articleTagFilter"><option value="all">全部标签</option></select></label>
           <button class="ghost" type="button" id="clearArticleFilters">清空</button>
         </div>
-        <div class="article-grid" id="articleGrid"></div>
+
+        <!-- 动态多排版容器 (支持 grid / list / docs) -->
+        <div id="articleViewContainer">
+          <div class="article-grid" id="articleGrid"></div>
+        </div>
       </section>
     </main>
     <footer><span>天才猫软件中心</span><span>Articles</span></footer>
-    <script src="/articles.js?v=20260518-home-unified-pages" type="module"></script>
+    <script src="/articles.js?v=20261017-v4" type="module"></script>
     <script src="/js/landing-bind.js?v=20261017"></script>
   </body>
 </html>

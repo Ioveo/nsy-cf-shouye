@@ -522,6 +522,63 @@
       }
     }
 
+    // 渲染关联文章列表（最多 6 篇，分“教程”和其他）
+    const artSection = $("articlesSection");
+    const artGrid = $("articlesGrid");
+    if (artSection && artGrid) {
+      const allArts = Array.isArray(catalog?.articles) ? catalog.articles : [];
+      const swId = software.id;
+      const swSlug = software.slug;
+
+      const related = allArts
+        .filter(a => a.status === "published" && Array.isArray(a.softwareIds) && (a.softwareIds.includes(swId) || (swSlug && a.softwareIds.includes(swSlug))))
+        .sort((a, b) => {
+          const isTutA = ["tutorial", "教程", "上手教程", "使用教程"].includes(a.category);
+          const isTutB = ["tutorial", "教程", "上手教程", "使用教程"].includes(b.category);
+          if (isTutA && !isTutB) return -1;
+          if (!isTutA && isTutB) return 1;
+          return (b.publishedAt || b.createdAt || 0) - (a.publishedAt || a.createdAt || 0);
+        })
+        .slice(0, 6);
+
+      if (related.length > 0) {
+        artSection.style.display = "block";
+        artGrid.innerHTML = related.map(art => {
+          const isTut = ["tutorial", "教程", "上手教程", "使用教程"].includes(art.category);
+          const badgeText = isTut ? "使用教程" : (art.category || "文章");
+          const dateText = formatDate(art.publishedAt || art.createdAt);
+          const coverUrl = art.coverUrl || "/preview-desktop-widgets.png";
+          const readUrl = `/article.html?slug=${encodeURIComponent(art.slug)}`;
+
+          return `
+            <article class="sc-card sc-glass sc-glass--hover sc-spotlight">
+              <div class="sc-card__cover-wrap">
+                <img src="${esc(coverUrl)}" alt="${esc(art.title)}" class="sc-card__cover" loading="lazy" />
+              </div>
+              <div class="sc-card__body">
+                <div class="sc-card__header">
+                  <h3 class="sc-card__name" style="font-size: 15px;">${esc(art.title)}</h3>
+                  <span class="sc-badge ${isTut ? 'sc-badge--cyan' : 'sc-badge--emerald'}" style="font-size: 11px;">
+                    ${esc(badgeText)}
+                  </span>
+                </div>
+                <p class="sc-card__tagline" style="-webkit-line-clamp: 2;">${esc(art.summary || "点击阅读完整介绍与使用细节。")}</p>
+                <div class="sc-card__actions" style="margin-top: 14px; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; color: var(--sc-text-muted);">${esc(dateText)}</span>
+                  <a href="${esc(readUrl)}" class="sc-btn sc-btn--ghost sc-btn--xs">
+                    <span>阅读文章</span>
+                    <i data-lucide="arrow-right" style="width: 12px; height: 12px;"></i>
+                  </a>
+                </div>
+              </div>
+            </article>
+          `;
+        }).join("");
+      } else {
+        artSection.style.display = "none";
+      }
+    }
+
     safeIcons();
   }
 

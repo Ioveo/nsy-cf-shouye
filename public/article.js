@@ -47,7 +47,8 @@ function renderArticle(article, software) {
   const root = document.getElementById("articleDetail");
   const tags = (article.tags || []).map(tag => `<span>${escapeHtml(tag)}</span>`).join("");
   const rendered = enhanceArticleContent(renderContent(article.content));
-  root.innerHTML = `<section class="article-cover article-cover--pro">${article.coverUrl ? `<img src="${escapeAttr(article.coverUrl)}" alt="">` : ""}<div><p class="eyebrow">${escapeHtml(article.category || "Article")}</p><h1>${escapeHtml(article.title)}</h1><p>${escapeHtml(article.summary || "")}</p><div class="article-meta"><span>${formatDate(article.publishedAt || article.createdAt)}</span><span>${countWords(article.content)} 字阅读</span>${tags}</div></div></section><section class="article-body article-body--pro"><article>${rendered.html}</article>${renderAside(rendered.headings, software)}</section>`;
+  const bottomWidget = renderArticleBottomWidget(software);
+  root.innerHTML = `<section class="article-cover article-cover--pro">${article.coverUrl ? `<img src="${escapeAttr(article.coverUrl)}" alt="">` : ""}<div><p class="eyebrow">${escapeHtml(article.category || "Article")}</p><h1>${escapeHtml(article.title)}</h1><p>${escapeHtml(article.summary || "")}</p><div class="article-meta"><span>${formatDate(article.publishedAt || article.createdAt)}</span><span>${countWords(article.content)} 字阅读</span>${tags}</div></div></section><section class="article-body article-body--pro"><article>${rendered.html}${bottomWidget}</article>${renderAside(rendered.headings, software)}</section>`;
   bindArticleImages();
 }
 
@@ -199,6 +200,39 @@ function renderToc(headings) {
 function renderRelated(software) {
   if (!software.length) return "";
   return `<div class="article-related__downloads"><p class="eyebrow">Download</p><h2>相关软件</h2>${software.map(item => `<a class="related-download" href="/download/latest/${encodeURIComponent(item.slug || item.id)}"><span class="related-download__icon">↓</span><span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.description || "下载最新版安装包")}</small></span><em>点击下载</em></a>`).join("")}</div>`;
+}
+
+function renderArticleBottomWidget(software) {
+  if (!software || !software.length) return "";
+  return software.map(item => {
+    const iconUrl = item.iconUrl || item.icon || "/logo.png";
+    const ver = item.latest?.version ? `v${escapeHtml(item.latest.version)}` : "官方最新版";
+    const dlUrl = `/download/latest/${encodeURIComponent(item.slug || item.id)}`;
+    const detailUrl = `/software.html?slug=${encodeURIComponent(item.slug || item.id)}`;
+
+    return `
+      <div class="article-software-widget">
+        <div class="article-software-widget__info">
+          <img src="${escapeAttr(iconUrl)}" alt="${escapeAttr(item.name)}" class="article-software-widget__icon" />
+          <div>
+            <h3 class="article-software-widget__name">
+              <span>${escapeHtml(item.name)}</span>
+              <span class="article-software-widget__version">${ver}</span>
+            </h3>
+            <p class="article-software-widget__desc">${escapeHtml(item.tagline || item.description || "官方正版安全下载，享受极致灵动桌面与高效体验。")}</p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <a href="${escapeAttr(dlUrl)}" class="article-software-widget__btn">
+            ↓ 立即下载
+          </a>
+          <a href="${escapeAttr(detailUrl)}" class="button button--ghost" style="font-size: 13px; text-decoration: none;">
+            了解详情
+          </a>
+        </div>
+      </div>
+    `;
+  }).join("");
 }
 
 function enhanceArticleContent(html) {

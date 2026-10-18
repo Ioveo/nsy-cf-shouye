@@ -24,7 +24,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import type { Software } from '@/lib/queries'
+import { useConfig, type ArticleTaxonomyConfig, type Software } from '@/lib/queries'
 import { ArticlePreviewDialog } from './article-preview-dialog'
 
 interface ArticleEditorDialogProps {
@@ -44,10 +44,13 @@ export function ArticleEditorDialog({
   onClose,
   onSaved,
 }: ArticleEditorDialogProps) {
+  const { data: taxonomyConfig } = useConfig<ArticleTaxonomyConfig>('article-taxonomy')
+  const categories = taxonomyConfig?.categories || []
+
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
   const [summary, setSummary] = useState('')
-  const [category, setCategory] = useState('产品教程')
+  const [category, setCategory] = useState('tutorial')
   const [tags, setTags] = useState('')
   const [coverUrl, setCoverUrl] = useState('')
   const [content, setContent] = useState('')
@@ -110,7 +113,7 @@ export function ArticleEditorDialog({
     setTitle('')
     setSlug('')
     setSummary('')
-    setCategory('产品教程')
+    setCategory(categories[0]?.slug || 'tutorial')
     setTags('')
     setCoverUrl('')
     setContent('')
@@ -312,12 +315,26 @@ export function ArticleEditorDialog({
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
               <div className='space-y-1.5'>
                 <Label className='text-xs'>所属分类</Label>
-                <Input
+                <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  placeholder='如：产品教程 / 版本发布 / 效率指南'
-                  className='h-8 text-xs'
-                />
+                  className='h-8 w-full rounded-md border border-input bg-background px-3 text-xs'
+                >
+                  {categories.map((c) => (
+                    <option key={c.slug} value={c.slug}>
+                      {c.name} ({c.slug})
+                    </option>
+                  ))}
+                  {/* 保留历史老分类（若尚未包含在分类表中） */}
+                  {category &&
+                    !categories.some(
+                      (c) => c.slug === category || c.name === category
+                    ) && (
+                      <option value={category}>
+                        {category} (历史分类)
+                      </option>
+                    )}
+                </select>
               </div>
               <div className='space-y-1.5'>
                 <Label className='text-xs'>文章标签 (逗号分隔)</Label>

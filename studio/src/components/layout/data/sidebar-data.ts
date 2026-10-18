@@ -13,6 +13,7 @@ import {
   Sliders,
   Compass,
   Sparkles,
+  FolderTree,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -62,6 +63,11 @@ export const sidebarData: SidebarData = {
           title: '文章管理',
           url: '/content/articles',
           icon: FileText,
+        },
+        {
+          title: '文章分类',
+          url: '/content/article-categories',
+          icon: FolderTree,
         },
         {
           title: '音乐频道',
