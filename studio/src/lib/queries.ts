@@ -174,6 +174,22 @@ export interface ArticleTaxonomyConfig {
   categories: ArticleCategory[]
 }
 
+export interface PlaylistItem {
+  id: string
+  title: string
+  description?: string
+  cover?: string
+  scene: 'live' | 'soundcheck' | 'night' | 'sales' | 'other'
+  trackIds: string[]
+  status: 'published' | 'draft'
+  order: number
+  featured?: boolean
+}
+
+export interface PlaylistsConfig {
+  items: PlaylistItem[]
+}
+
 export function useConfig<T>(name: string) {
   return useQuery<T>({
     queryKey: ['config', name],
