@@ -403,7 +403,10 @@ export function MusicHeroTab({
             前台在 Hero 下方滚动的无缝循环文本，以 ◆ 作为自然分割。
           </p>
           <div className='space-y-1.5'>
-            <Label className='text-xs'>跑马灯滚动文本</Label>
+            <div className='flex items-center justify-between'>
+              <Label className='text-xs'>跑马灯滚动文本</Label>
+              <span className='text-[10px] text-muted-foreground'>支持用 ◆ 分隔多个词段</span>
+            </div>
             <Input
               value={marquee.text}
               onChange={(e) => onChangeMarquee({ ...marquee, text: e.target.value })}
