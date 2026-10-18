@@ -228,3 +228,278 @@
   flex-shrink: 0;
 }
 
+/* 5. 高级图文与行业卡片仿真样式 */
+.phone-article-body .article-image-box {
+  margin: 14px 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.phone-article-body .article-image-box img {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+}
+.phone-article-body .article-image-caption {
+  padding: 6px 10px;
+  font-size: 10px;
+  color: #94a3b8;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.6);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.phone-article-body .article-feature-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+@media (min-width: 640px) {
+  .phone-article-body .article-feature-row--left-img {
+    flex-direction: row;
+    align-items: center;
+  }
+  .phone-article-body .article-feature-row--right-img {
+    flex-direction: row-reverse;
+    align-items: center;
+  }
+}
+.phone-article-body .article-feature-row__media {
+  flex: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.phone-article-body .article-feature-row__media img {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  display: block;
+}
+.phone-article-body .article-feature-row__content {
+  flex: 1.2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.phone-article-body .article-feature-row__tag {
+  align-self: flex-start;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+.phone-article-body .article-feature-row__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.3;
+}
+.phone-article-body .article-feature-row__desc {
+  margin: 0;
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+.phone-article-body .article-feature-row__list {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.phone-article-body .article-feature-row__list li {
+  font-size: 11px;
+  color: #cbd5e1;
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  line-height: 1.4;
+}
+
+.phone-article-body .article-img-grid {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+}
+.phone-article-body .article-img-grid--2cols {
+  grid-template-columns: repeat(2, 1fr);
+}
+.phone-article-body .article-img-grid--3cols {
+  grid-template-columns: repeat(3, 1fr);
+}
+.phone-article-body .article-img-card {
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.phone-article-body .article-img-card img {
+  width: 100%;
+  aspect-ratio: 16/10;
+  object-fit: cover;
+  display: block;
+}
+.phone-article-body .article-img-card__caption {
+  padding: 5px 6px;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #e2e8f0;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.4);
+  margin: 0;
+}
+
+.phone-article-body .article-industry-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 10px;
+  margin: 14px 0;
+}
+@media (min-width: 640px) {
+  .phone-article-body .article-industry-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.phone-article-body .article-industry-card {
+  padding: 12px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.phone-article-body .article-industry-card__icon {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+.phone-article-body .article-industry-card h4 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+.phone-article-body .article-industry-card p {
+  margin: 0;
+  font-size: 10.5px;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+
+.phone-article-body .article-specs-card {
+  margin: 14px 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px;
+}
+.phone-article-body .article-specs-card__header {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.phone-article-body .article-specs-card__grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 6px;
+}
+@media (min-width: 640px) {
+  .phone-article-body .article-specs-card__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.phone-article-body .article-specs-card__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  font-size: 10.5px;
+}
+.phone-article-body .article-specs-card__item span {
+  color: #94a3b8;
+}
+.phone-article-body .article-specs-card__item strong {
+  color: #38bdf8;
+}
+
+.phone-article-body .article-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0;
+}
+.phone-article-body .article-faq-item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.phone-article-body .article-faq-item__q {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-bottom: 4px;
+}
+.phone-article-body .article-faq-item__a {
+  font-size: 11px;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.phone-article-body .article-testimonial-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 10px;
+  margin: 14px 0;
+}
+.phone-article-body .article-testimonial-card {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.phone-article-body .article-testimonial-card__quote {
+  font-size: 11px;
+  color: #cbd5e1;
+  font-style: italic;
+  line-height: 1.45;
+}
+.phone-article-body .article-testimonial-card__author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #94a3b8;
+}
+.phone-article-body .article-testimonial-card__avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 10px;
+}
+
+

@@ -964,3 +964,440 @@
   }
 }
 
+/* ==========================================================================
+   5. 高级图文与行业排版系统 (图片左文右图 / 多图网格 / 行业解决方案 / FAQ)
+   ========================================================================== */
+
+/* 5.1 通用标准正文图片盒 (Markdown 图片增强) */
+.article-image-box {
+  margin: 28px 0;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.35);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.article-image-box:hover {
+  border-color: rgba(6, 182, 212, 0.3);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+.article-image-box img.article-img {
+  width: 100%;
+  max-height: 520px;
+  object-fit: cover;
+  display: block;
+  cursor: zoom-in;
+  transition: transform 0.4s ease;
+}
+
+.article-image-box:hover img.article-img {
+  transform: scale(1.012);
+}
+
+.article-image-caption {
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  text-align: center;
+  background: rgba(15, 23, 42, 0.7);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  letter-spacing: 0.02em;
+}
+
+/* 5.2 产品/软件功能图文混排行 (左图右文 & 右图左文) */
+.article-feature-row {
+  display: flex;
+  align-items: stretch;
+  gap: 28px;
+  margin: 32px 0;
+  padding: 24px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.28s ease;
+}
+
+.article-feature-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(56, 189, 248, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+}
+
+.article-feature-row--left-img {
+  flex-direction: row;
+}
+
+.article-feature-row--right-img {
+  flex-direction: row-reverse;
+}
+
+.article-feature-row__media {
+  flex: 1.1;
+  min-width: 260px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.article-feature-row__media img {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  max-height: 320px;
+  object-fit: cover;
+  display: block;
+  cursor: zoom-in;
+  transition: transform 0.35s ease;
+}
+
+.article-feature-row:hover .article-feature-row__media img {
+  transform: scale(1.02);
+}
+
+.article-feature-row__content {
+  flex: 1.2;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+
+.article-feature-row__tag {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  color: #38bdf8;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.article-feature-row__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #f8fafc;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.article-feature-row__desc {
+  margin: 0;
+  font-size: 13.5px;
+  color: #94a3b8;
+  line-height: 1.65;
+}
+
+.article-feature-row__list {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.article-feature-row__list li {
+  font-size: 13px;
+  color: #cbd5e1;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.5;
+}
+
+.article-feature-row__list li::before {
+  content: "✦";
+  color: #38bdf8;
+  font-size: 11px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+@media (max-width: 768px) {
+  .article-feature-row,
+  .article-feature-row--left-img,
+  .article-feature-row--right-img {
+    flex-direction: column !important;
+    gap: 18px;
+    padding: 18px;
+  }
+  .article-feature-row__media,
+  .article-feature-row__content {
+    min-width: 100%;
+  }
+}
+
+/* 5.3 多图画廊与对比网格 (2列 / 3列) */
+.article-img-grid {
+  display: grid;
+  gap: 16px;
+  margin: 28px 0;
+}
+
+.article-img-grid--2cols {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.article-img-grid--3cols {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.article-img-card {
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s ease;
+}
+
+.article-img-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(6, 182, 212, 0.35);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.38);
+}
+
+.article-img-card img {
+  width: 100%;
+  aspect-ratio: 16/10;
+  object-fit: cover;
+  display: block;
+  cursor: zoom-in;
+  transition: transform 0.35s ease;
+}
+
+.article-img-card:hover img {
+  transform: scale(1.02);
+}
+
+.article-img-card__caption {
+  padding: 10px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0;
+  text-align: center;
+  background: rgba(15, 23, 42, 0.5);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 640px) {
+  .article-img-grid--2cols,
+  .article-img-grid--3cols {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+/* 5.4 适用行业与应用场景方案卡 */
+.article-industry-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 28px 0;
+}
+
+.article-industry-card {
+  padding: 20px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  transition: all 0.25s ease;
+}
+
+.article-industry-card:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(245, 158, 11, 0.35);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.32);
+}
+
+.article-industry-card__icon {
+  font-size: 26px;
+  margin-bottom: 12px;
+  display: inline-block;
+}
+
+.article-industry-card h4 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.article-industry-card p {
+  margin: 0;
+  font-size: 12.5px;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .article-industry-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 5.5 软件技术与运行规格卡 */
+.article-specs-card {
+  margin: 28px 0;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 20px 22px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+}
+
+.article-specs-card__header {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.article-specs-card__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.article-specs-card__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 12.5px;
+}
+
+.article-specs-card__item span {
+  color: #94a3b8;
+}
+
+.article-specs-card__item strong {
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .article-specs-card__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 5.6 软件常见问题解答 FAQ */
+.article-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 28px 0;
+}
+
+.article-faq-item {
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease;
+}
+
+.article-faq-item:hover {
+  background: rgba(255, 255, 255, 0.045);
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.article-faq-item__q {
+  font-size: 14px;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.article-faq-item__a {
+  font-size: 13px;
+  color: #cbd5e1;
+  line-height: 1.65;
+}
+
+/* 5.7 行业背书与客户口碑卡片 */
+.article-testimonial-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin: 28px 0;
+}
+
+.article-testimonial-card {
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.article-testimonial-card__quote {
+  font-size: 13px;
+  color: #cbd5e1;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+.article-testimonial-card__author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.article-testimonial-card__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .article-testimonial-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+

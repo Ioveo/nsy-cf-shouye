@@ -34,10 +34,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu'
-import { WECHAT_TEMPLATES, type WechatTemplate } from './types'
 import { R2AssetPickerDialog } from './r2-asset-picker-dialog'
 import { EmbedSoftwareDialog } from './embed-software-dialog'
 import { EmbedMusicDialog } from './embed-music-dialog'
+import { TemplatePickerDropdown } from './template-picker-dropdown'
 
 interface WorkbenchToolbarProps {
   onInsertWrap: (prefix: string, suffix: string, defaultText: string) => void
@@ -88,10 +88,7 @@ export function WorkbenchToolbar({
     }
   }
 
-  function handleSelectTemplate(tpl: WechatTemplate) {
-    onInsertText(`\n\n${tpl.snippet}\n\n`)
-    toast.success(`已插入「${tpl.name}」公众号样式卡片`)
-  }
+
 
   function handleInsertR2Image(url: string, name?: string) {
     const title = name ? name.replace(/\.[^.]+$/, '') : '插图'
@@ -359,43 +356,8 @@ export function WorkbenchToolbar({
           </Button>
         </div>
 
-        {/* 8. 微信公众号经典排版样式库 (一键插入卡片) */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type='button'
-              variant='secondary'
-              size='sm'
-              className='h-7 px-2.5 text-xs gap-1.5 font-medium bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20'
-            >
-              <Sparkles className='size-3.5' />
-              <span className='hidden sm:inline'>公众号样式模板</span>
-              <span className='sm:hidden'>样式库</span>
-              <ChevronDown className='size-3 opacity-70' />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align='start' className='w-72'>
-            <DropdownMenuLabel className='text-xs font-semibold flex items-center justify-between'>
-              <span>微信公众号排版样式库</span>
-              <span className='text-[10px] text-muted-foreground font-normal'>点击一键插入</span>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {WECHAT_TEMPLATES.map((tpl) => (
-              <DropdownMenuItem
-                key={tpl.id}
-                onClick={() => handleSelectTemplate(tpl)}
-                className='flex flex-col items-start gap-0.5 py-2 cursor-pointer'
-              >
-                <div className='font-medium text-xs flex items-center gap-1.5 text-foreground'>
-                  <span>{tpl.name}</span>
-                </div>
-                <p className='text-[11px] text-muted-foreground leading-snug line-clamp-1'>
-                  {tpl.description}
-                </p>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* 8. 微信公众号与高级排版样式库 (支持分类、产品图文与自定义模板) */}
+        <TemplatePickerDropdown onInsertText={onInsertText} />
       </div>
 
       {/* R2 Image Picker Dialog */}

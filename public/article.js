@@ -318,8 +318,51 @@ function slugifyHeading(value) {
 function renderContent(content) {
   const value = String(content || "").trim();
   if (!value) return "<p>暂无正文。</p>";
-  if (/<[a-z][\s\S]*>/i.test(value)) return sanitizeArticleHtml(value);
-  return markdownToHtml(value);
+
+  // 1. 将 Markdown 图片语法统一转为标准的响应式 Figure/Img 结构，确保无论是纯文本还是 HTML 模板混排都能正确渲染
+  let html = value.replace(/!\[([^\]]*)\]\(((?:https?:\/\/|\/)[^\s)]+)\)/g, (match, alt, src) => {
+    const cleanAlt = escapeHtml(alt.trim());
+    const captionHtml = cleanAlt ? `<figcaption class="article-image-caption">${cleanAlt}</figcaption>` : "";
+    return `<figure class="article-image-box"><img src="${escapeAttr(src)}" alt="${cleanAlt}" loading="lazy" class="article-img" />${captionHtml}</figure>`;
+  });
+
+  // 2. 将 Markdown 链接语法转为 <a>
+  html = html.replace(/(?<!\!)\[([^\]]+)\]\(((?:https?:\/\/|\/)[^\s)]+)\)/g, (match, text, href) => {
+    return `<a href="${escapeAttr(href)}" target="_blank" rel="noopener">${escapeHtml(text)}</a>`;
+  });
+
+  // 3. 将 Markdown 粗体与行内代码转化
+  html = html.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+
+  // 4. 将独立行的标题与引用转化
+  html = html.replace(/^###\s+(.*$)/gim, '<h3>$1</h3>')
+             .replace(/^##\s+(.*$)/gim, '<h2>$1</h2>')
+             .replace(/^#\s+(.*$)/gim, '<h1>$1</h1>')
+             .replace(/^>\s+(.*$)/gim, '<blockquote>$1</blockquote>');
+
+  // 5. 判断是否含有常见块级 HTML 标签
+  const hasHtmlBlock = /<(?:div|p|section|blockquote|table|ul|ol|h[1-6]|figure|article|hr|pre)[\s>]/i.test(html);
+  if (!hasHtmlBlock) {
+    return sanitizeArticleHtml(markdownToHtml(value));
+  }
+
+  // 6. 混合排版：对未被 HTML 块级标签包裹的松散文字段落自动包裹 <p>
+  html = formatHybridParagraphs(html);
+
+  return sanitizeArticleHtml(html);
+}
+
+function formatHybridParagraphs(html) {
+  const chunks = html.split(/\n{2,}/);
+  return chunks.map(chunk => {
+    const trimmed = chunk.trim();
+    if (!trimmed) return "";
+    if (/^<(?:div|p|section|blockquote|table|ul|ol|h[1-6]|figure|article|hr|pre)[\s>]/i.test(trimmed)) {
+      return trimmed;
+    }
+    return `<p>${trimmed.replace(/\n/g, "<br>")}</p>`;
+  }).filter(Boolean).join("\n\n");
 }
 
 function sanitizeArticleHtml(html) {
@@ -333,11 +376,11 @@ function sanitizeArticleHtml(html) {
   ]);
   const allowedAttrs = {
     A: new Set(["href", "target", "rel", "class"]),
-    IMG: new Set(["src", "alt", "loading", "class"]),
+    IMG: new Set(["src", "alt", "loading", "class", "style"]),
     AUDIO: new Set(["src", "controls", "preload", "class"]),
     SOURCE: new Set(["src", "type"]),
-    FIGURE: new Set(["class"]),
-    FIGCAPTION: new Set(["class"]),
+    FIGURE: new Set(["class", "style"]),
+    FIGCAPTION: new Set(["class", "style"]),
     CODE: new Set(["class"]),
     PRE: new Set(["class"]),
     TABLE: new Set(["class"]),

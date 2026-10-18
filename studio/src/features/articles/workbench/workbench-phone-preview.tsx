@@ -32,7 +32,7 @@ export function WorkbenchPhonePreview({
   slug,
   viewMode = 'split-phone',
 }: WorkbenchPhonePreviewProps) {
-  // 简易渲染正文 Markdown 与 HTML，支持公众号卡片
+  // 简易渲染正文 Markdown 与 HTML，支持公众号卡片与高级图文
   const renderedHtml = useMemo(() => {
     const raw = content.trim()
     if (!raw) return '<p class="text-zinc-500 italic text-center py-8">正文内容空空如也，快在左侧开始排版创作吧...</p>'
@@ -47,14 +47,21 @@ export function WorkbenchPhonePreview({
       .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/gim, '<em>$1</em>')
       .replace(/~~(.*?)~~/gim, '<del>$1</del>')
-      // 图片
-      .replace(/!\[(.*?)\]\((.*?)\)/gim, '<img src="$2" alt="$1" class="phone-img" />')
+      // 图片: 转为带样式外框与标题的真实图像
+      .replace(/!\[([^\]]*)\]\((.*?)\)/gim, '<figure class="article-image-box"><img src="$2" alt="$1" class="phone-img" /><figcaption class="article-image-caption">$1</figcaption></figure>')
       // 引用
       .replace(/^\> (.*$)/gim, '<blockquote class="phone-quote">$1</blockquote>')
-      // 换行段落
-      .replace(/\n\n/gim, '</p><p class="phone-p">')
 
-    return `<p class="phone-p">${html}</p>`
+    // 混合排版：避免破坏已有的 HTML 块标签
+    const chunks = html.split(/\n{2,}/)
+    return chunks.map(chunk => {
+      const trimmed = chunk.trim()
+      if (!trimmed) return ''
+      if (/^<(?:div|p|section|blockquote|table|ul|ol|h[1-6]|figure|article|hr|pre)[\s>]/i.test(trimmed)) {
+        return trimmed
+      }
+      return `<p class="phone-p">${trimmed.replace(/\n/g, '<br>')}</p>`
+    }).filter(Boolean).join('\n')
   }, [content])
 
   const tagList = useMemo(() => {
