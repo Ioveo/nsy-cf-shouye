@@ -110,11 +110,7 @@ export const sidebarData: SidebarData = {
           url: '/landing',
           icon: LayoutTemplate,
         },
-        {
-          title: '首页轮播',
-          url: '/site/carousel',
-          icon: Sliders,
-        },
+        // 首页轮播已无损迁移升级为「推广位管理」，此旧菜单隐藏
         {
           title: '顶部导航',
           url: '/site/navigation',

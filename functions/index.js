@@ -55,7 +55,8 @@ async function handleLanding(context) {
 
     const headers = new Headers(response.headers);
     headers.set("Cache-Control", "no-cache");
-    return new Response(response.body, { status: 200, headers });
+    const body = request.method === "HEAD" ? null : response.body;
+    return new Response(body, { status: 200, headers });
   } catch {
     return context.next();
   }

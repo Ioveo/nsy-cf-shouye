@@ -18,8 +18,19 @@
    * @param {number} [options.now] 当前时间戳，默认为 Date.now()
    * @returns {Array<Object>} 已解析的展示项列表，找不到实体已自动过滤
    */
-  function resolvePromotions(options) {
-    const { promotionsConfig, catalog, placement, now = Date.now() } = options || {};
+  function resolvePromotions(arg1, arg2, arg3, arg4) {
+    let promotionsConfig, catalog, placement, now;
+    if (arg1 && typeof arg1 === "object" && (arg1.promotionsConfig !== undefined || (arg1.placement !== undefined && arg2 === undefined))) {
+      promotionsConfig = arg1.promotionsConfig;
+      catalog = arg1.catalog;
+      placement = arg1.placement;
+      now = arg1.now ?? Date.now();
+    } else {
+      promotionsConfig = arg1;
+      catalog = arg2;
+      placement = arg3;
+      now = arg4 ?? Date.now();
+    }
     const rawItems = Array.isArray(promotionsConfig?.items) ? promotionsConfig.items : [];
     if (!rawItems.length) return [];
 

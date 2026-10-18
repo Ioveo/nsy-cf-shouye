@@ -70,9 +70,15 @@
           </a>
         </div>
 
-        <!-- 真实大画幅界面展示 -->
-        <div class="hero-preview-frame">
-          <img src="/card-desktop-full.png" data-landing-src="heroImage" alt="天才猫桌面 2.0 全景界面展示" />
+        <!-- 真实大画幅界面展示 / 门户推荐巨幕轮播 -->
+        <div class="hero-preview-frame" id="heroPreviewFrame">
+          <div class="portal-carousel" id="portalCarousel" hidden>
+            <div class="portal-carousel__track" id="portalCarouselTrack"></div>
+            <button type="button" class="portal-carousel__arrow portal-carousel__arrow--prev" id="portalCarouselPrev" aria-label="上一张">‹</button>
+            <button type="button" class="portal-carousel__arrow portal-carousel__arrow--next" id="portalCarouselNext" aria-label="下一张">›</button>
+            <div class="portal-carousel__dots" id="portalCarouselDots"></div>
+          </div>
+          <img id="defaultHeroImg" src="/card-desktop-full.png" data-landing-src="heroImage" alt="天才猫桌面 2.0 全景界面展示" />
         </div>
       </section>
 
@@ -324,7 +330,8 @@
     </button>
 
     <!-- 动态数据交互引擎与落地页文案动态绑定 -->
-    <script src="/home.js?v=20261017-p4" type="module"></script>
+    <script src="/js/promotions.js?v=20261018"></script>
+    <script src="/home.js?v=20261018-v4" type="module"></script>
     <script src="/js/landing-bind.js?v=20261017"></script>
   </body>
 </html>
