@@ -355,6 +355,17 @@ export function SoftwareTable({
                             >
                               <ExternalLink className='mr-2 size-3.5' /> 复制外链
                             </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link
+                                to='/site/promotions'
+                                search={{
+                                  createEntity: 'software',
+                                  id: sw.id || sw.slug,
+                                }}
+                              >
+                                <Sparkles className='mr-2 size-3.5 text-primary' /> 加入推广位
+                              </Link>
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => onToggleStatus(sw)}>
                               <span className={isActive ? 'text-amber-400' : 'text-emerald-400'}>

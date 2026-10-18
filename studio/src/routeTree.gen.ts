@@ -29,6 +29,8 @@ import { Route as AuthenticatedLandingIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedReleasesIndexRouteImport } from './routes/_authenticated/releases/index'
 import { Route as AuthenticatedSiteCarouselRouteImport } from './routes/_authenticated/site/carousel'
 import { Route as AuthenticatedSiteNavigationRouteImport } from './routes/_authenticated/site/navigation'
+import { Route as AuthenticatedSitePromotionsRouteImport } from './routes/_authenticated/site/promotions'
+import { Route as AuthenticatedSiteSoftwareCenterRouteImport } from './routes/_authenticated/site/software-center'
 import { Route as AuthenticatedSoftwareIndexRouteImport } from './routes/_authenticated/software/index'
 import { Route as AuthenticatedSoftwareIdRouteImport } from './routes/_authenticated/software/$id'
 import { Route as AuthenticatedSoftwareNewRouteImport } from './routes/_authenticated/software/new'
@@ -145,6 +147,18 @@ const AuthenticatedSiteNavigationRoute =
     path: '/site/navigation',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSitePromotionsRoute =
+  AuthenticatedSitePromotionsRouteImport.update({
+    id: '/site/promotions',
+    path: '/site/promotions',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSiteSoftwareCenterRoute =
+  AuthenticatedSiteSoftwareCenterRouteImport.update({
+    id: '/site/software-center',
+    path: '/site/software-center',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSoftwareIndexRoute =
   AuthenticatedSoftwareIndexRouteImport.update({
     id: '/software/',
@@ -184,6 +198,8 @@ export interface FileRoutesByFullPath {
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/site/carousel': typeof AuthenticatedSiteCarouselRoute
   '/site/navigation': typeof AuthenticatedSiteNavigationRoute
+  '/site/promotions': typeof AuthenticatedSitePromotionsRoute
+  '/site/software-center': typeof AuthenticatedSiteSoftwareCenterRoute
   '/software/$id': typeof AuthenticatedSoftwareIdRoute
   '/software/new': typeof AuthenticatedSoftwareNewRoute
   '/assets/': typeof AuthenticatedAssetsIndexRoute
@@ -209,6 +225,8 @@ export interface FileRoutesByTo {
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/site/carousel': typeof AuthenticatedSiteCarouselRoute
   '/site/navigation': typeof AuthenticatedSiteNavigationRoute
+  '/site/promotions': typeof AuthenticatedSitePromotionsRoute
+  '/site/software-center': typeof AuthenticatedSiteSoftwareCenterRoute
   '/software/$id': typeof AuthenticatedSoftwareIdRoute
   '/software/new': typeof AuthenticatedSoftwareNewRoute
   '/assets': typeof AuthenticatedAssetsIndexRoute
@@ -236,6 +254,8 @@ export interface FileRoutesById {
   '/_authenticated/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/_authenticated/site/carousel': typeof AuthenticatedSiteCarouselRoute
   '/_authenticated/site/navigation': typeof AuthenticatedSiteNavigationRoute
+  '/_authenticated/site/promotions': typeof AuthenticatedSitePromotionsRoute
+  '/_authenticated/site/software-center': typeof AuthenticatedSiteSoftwareCenterRoute
   '/_authenticated/software/$id': typeof AuthenticatedSoftwareIdRoute
   '/_authenticated/software/new': typeof AuthenticatedSoftwareNewRoute
   '/_authenticated/assets/': typeof AuthenticatedAssetsIndexRoute
@@ -263,6 +283,8 @@ export interface FileRouteTypes {
     | '/errors/$error'
     | '/site/carousel'
     | '/site/navigation'
+    | '/site/promotions'
+    | '/site/software-center'
     | '/software/$id'
     | '/software/new'
     | '/assets/'
@@ -288,6 +310,8 @@ export interface FileRouteTypes {
     | '/errors/$error'
     | '/site/carousel'
     | '/site/navigation'
+    | '/site/promotions'
+    | '/site/software-center'
     | '/software/$id'
     | '/software/new'
     | '/assets'
@@ -314,6 +338,8 @@ export interface FileRouteTypes {
     | '/_authenticated/errors/$error'
     | '/_authenticated/site/carousel'
     | '/_authenticated/site/navigation'
+    | '/_authenticated/site/promotions'
+    | '/_authenticated/site/software-center'
     | '/_authenticated/software/$id'
     | '/_authenticated/software/new'
     | '/_authenticated/assets/'
@@ -477,6 +503,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSiteNavigationRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/site/promotions': {
+      id: '/_authenticated/site/promotions'
+      path: '/site/promotions'
+      fullPath: '/site/promotions'
+      preLoaderRoute: typeof AuthenticatedSitePromotionsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/site/software-center': {
+      id: '/_authenticated/site/software-center'
+      path: '/site/software-center'
+      fullPath: '/site/software-center'
+      preLoaderRoute: typeof AuthenticatedSiteSoftwareCenterRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/software/': {
       id: '/_authenticated/software/'
       path: '/software'
@@ -517,6 +557,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
   AuthenticatedSiteCarouselRoute: typeof AuthenticatedSiteCarouselRoute
   AuthenticatedSiteNavigationRoute: typeof AuthenticatedSiteNavigationRoute
+  AuthenticatedSitePromotionsRoute: typeof AuthenticatedSitePromotionsRoute
+  AuthenticatedSiteSoftwareCenterRoute: typeof AuthenticatedSiteSoftwareCenterRoute
   AuthenticatedSoftwareIdRoute: typeof AuthenticatedSoftwareIdRoute
   AuthenticatedSoftwareNewRoute: typeof AuthenticatedSoftwareNewRoute
   AuthenticatedAssetsIndexRoute: typeof AuthenticatedAssetsIndexRoute
@@ -537,6 +579,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
   AuthenticatedSiteCarouselRoute: AuthenticatedSiteCarouselRoute,
   AuthenticatedSiteNavigationRoute: AuthenticatedSiteNavigationRoute,
+  AuthenticatedSitePromotionsRoute: AuthenticatedSitePromotionsRoute,
+  AuthenticatedSiteSoftwareCenterRoute: AuthenticatedSiteSoftwareCenterRoute,
   AuthenticatedSoftwareIdRoute: AuthenticatedSoftwareIdRoute,
   AuthenticatedSoftwareNewRoute: AuthenticatedSoftwareNewRoute,
   AuthenticatedAssetsIndexRoute: AuthenticatedAssetsIndexRoute,

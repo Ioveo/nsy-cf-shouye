@@ -12,6 +12,7 @@ import {
   Image,
   Sliders,
   Compass,
+  Sparkles,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -82,6 +83,16 @@ export const sidebarData: SidebarData = {
     {
       title: '站点与展示',
       items: [
+        {
+          title: '软件中心配置',
+          url: '/site/software-center',
+          icon: Sliders,
+        },
+        {
+          title: '推广位管理',
+          url: '/site/promotions',
+          icon: Sparkles,
+        },
         {
           title: '落地页配置',
           url: '/landing',
