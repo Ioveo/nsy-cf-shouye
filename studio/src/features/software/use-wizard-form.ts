@@ -216,35 +216,34 @@ export function useWizardForm(
   const hasIcon = Boolean(iconUrl.trim())
   const hasPackages = pendingPackages.length > 0 || existingReleases.length > 0
 
-  const requiredPassed = hasName && hasValidSlug && hasCategory && hasTagline && hasIcon && hasPackages
+  // 基础档案和应用图标具备即可保存与上架，安装包支持首发即附带或上架后随时通过快捷发布补充
+  const requiredPassed = hasName && hasValidSlug && hasCategory && hasIcon
 
   const missingRequiredList: string[] = []
   if (!hasName) missingRequiredList.push('软件名称')
   if (!hasValidSlug) missingRequiredList.push(isSlugDuplicate ? 'Slug 唯一性' : 'Slug 标识')
   if (!hasCategory) missingRequiredList.push('所属分类')
-  if (!hasTagline) missingRequiredList.push(tagline.trim().length > 40 ? 'Tagline 字数 ≤40' : '一句话介绍')
   if (!hasIcon) missingRequiredList.push('软件图标')
-  if (!hasPackages) missingRequiredList.push('安装包 (至少 1 个)')
 
   async function performSave(targetStatus: 'active' | 'draft') {
     if (!name.trim()) {
-      toast.error('请填写软件名称')
+      toast.error('请填写【软件名称】')
       setCurrentStep(1)
       return
     }
     if (!slug.trim()) {
-      toast.error('请填写软件标识 (Slug)')
+      toast.error('请填写【Slug 标识】')
       setCurrentStep(1)
       return
     }
     if (isSlugDuplicate) {
-      toast.error(`软件标识 ${slug.trim()} 已被占用，请更改`)
+      toast.error(`软件标识 ${slug.trim()} 已被其它软件占用，请更改`)
       setCurrentStep(1)
       return
     }
-
-    if (targetStatus === 'active' && !requiredPassed) {
-      toast.error(`无法发布，缺少必填项：${missingRequiredList.join('、')}`)
+    if (targetStatus === 'active' && !iconUrl.trim()) {
+      toast.error('请在【媒体素材】中上传【应用图标】')
+      setCurrentStep(2)
       return
     }
 
@@ -259,7 +258,7 @@ export function useWizardForm(
         slug: slug.trim(),
         name: name.trim(),
         categoryId: categoryId || categories[0]?.id || 'tools',
-        tagline: tagline.trim(),
+        tagline: tagline.trim() || `${name.trim()} 官方下载`,
         description: description.trim(),
         requirements: requirements.trim(),
         developer: developer.trim(),
@@ -346,8 +345,15 @@ export function useWizardForm(
 
       queryClient.invalidateQueries({ queryKey: ['catalog'] })
       toast.success(
-        isDraft ? '草稿已保存（前台不可见）' : '软件已成功上架发布！'
+        isDraft
+          ? '草稿已保存（前台不可见）'
+          : pendingPackages.length > 0
+          ? `软件与 ${pendingPackages.length} 个安装包已成功上架发布！`
+          : '软件已成功上架发布！'
       )
+      if (!isDraft && pendingPackages.length === 0 && existingReleases.length === 0) {
+        toast.info('提示：当前尚未添加安装包，您可随时通过【快捷上传】补充安装包文件。', { duration: 6000 })
+      }
       navigate({ to: '/software' })
     } catch (err: any) {
       toast.error(`保存异常：${err.message}`)
@@ -415,6 +421,7 @@ export function useWizardForm(
     categoryModalOpen, setCategoryModalOpen,
     newCatName, setNewCatName,
     isCreatingCat,
+    isSlugDuplicate,
     requiredPassed,
     handleIconUpload,
     handleCoverUpload,

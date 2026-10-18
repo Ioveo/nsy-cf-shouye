@@ -34,6 +34,11 @@ interface WizardStepPublishProps {
   }
   featuredSoftwareList: Software[]
   onReorderFeatured?: (fromIdx: number, toIdx: number) => void
+  categoryName?: string
+  pendingPackagesCount?: number
+  existingReleasesCount?: number
+  isSlugDuplicate?: boolean
+  onJumpToStep?: (step: number) => void
 }
 
 export function WizardStepPublish({
@@ -49,6 +54,11 @@ export function WizardStepPublish({
   currentSoftware,
   featuredSoftwareList,
   onReorderFeatured,
+  categoryName,
+  pendingPackagesCount = 0,
+  existingReleasesCount = 0,
+  isSlugDuplicate = false,
+  onJumpToStep,
 }: WizardStepPublishProps) {
   return (
     <div className='grid gap-6 md:grid-cols-3 animate-in fade-in-50 duration-200'>
@@ -261,49 +271,151 @@ export function WizardStepPublish({
       {/* 右侧发布检查清单 */}
       <div className='space-y-6'>
         <div className='rounded-xl border border-border/60 bg-card/50 p-6 backdrop-blur-sm space-y-4'>
-          <h3 className='text-sm font-semibold'>发布前检查清单</h3>
-          <div className='space-y-3 text-xs'>
-            <div className='flex items-center gap-2'>
-              {currentSoftware.name ? (
-                <CheckCircle2 className='size-4 text-emerald-400 shrink-0' />
-              ) : (
-                <AlertCircle className='size-4 text-red-400 shrink-0' />
-              )}
-              <span>软件名称已填写 ({currentSoftware.name || '未填写'})</span>
+          <div className='flex items-center justify-between'>
+            <h3 className='text-sm font-semibold'>发布前检查清单</h3>
+            <span className='text-[10px] text-muted-foreground'>点击条目可快速跳转</span>
+          </div>
+          <div className='space-y-2 text-xs'>
+            {/* 1. 软件名称 */}
+            <div
+              onClick={() => onJumpToStep?.(1)}
+              className='flex items-center justify-between gap-2 p-2 -mx-2 rounded-lg hover:bg-muted/40 cursor-pointer transition-colors'
+            >
+              <div className='flex items-center gap-2 truncate'>
+                {currentSoftware.name ? (
+                  <CheckCircle2 className='size-4 text-emerald-400 shrink-0' />
+                ) : (
+                  <AlertCircle className='size-4 text-red-400 shrink-0' />
+                )}
+                <span className='truncate'>软件名称：{currentSoftware.name || '未填写 (必填)'}</span>
+              </div>
+              <span className='text-[10px] text-muted-foreground shrink-0'>第 1 步</span>
             </div>
-            <div className='flex items-center gap-2'>
-              {currentSoftware.slug ? (
-                <CheckCircle2 className='size-4 text-emerald-400 shrink-0' />
-              ) : (
-                <AlertCircle className='size-4 text-red-400 shrink-0' />
-              )}
-              <span>Slug 唯一标识已生成</span>
+
+            {/* 2. Slug 唯一标识 */}
+            <div
+              onClick={() => onJumpToStep?.(1)}
+              className='flex items-center justify-between gap-2 p-2 -mx-2 rounded-lg hover:bg-muted/40 cursor-pointer transition-colors'
+            >
+              <div className='flex items-center gap-2 truncate'>
+                {currentSoftware.slug && !isSlugDuplicate ? (
+                  <CheckCircle2 className='size-4 text-emerald-400 shrink-0' />
+                ) : (
+                  <AlertCircle className='size-4 text-red-400 shrink-0' />
+                )}
+                <span className='truncate font-mono text-[11px]'>
+                  {isSlugDuplicate ? `Slug ${currentSoftware.slug} 已冲突` : (currentSoftware.slug ? `slug: ${currentSoftware.slug}` : 'Slug 未生成 (必填)')}
+                </span>
+              </div>
+              <span className='text-[10px] text-muted-foreground shrink-0'>第 1 步</span>
             </div>
-            <div className='flex items-center gap-2'>
-              {currentSoftware.iconUrl ? (
-                <CheckCircle2 className='size-4 text-emerald-400 shrink-0' />
-              ) : (
-                <AlertCircle className='size-4 text-amber-400 shrink-0' />
-              )}
-              <span>已上传应用图标 (Icon)</span>
+
+            {/* 3. 所属分类 */}
+            <div
+              onClick={() => onJumpToStep?.(1)}
+              className='flex items-center justify-between gap-2 p-2 -mx-2 rounded-lg hover:bg-muted/40 cursor-pointer transition-colors'
+            >
+              <div className='flex items-center gap-2 truncate'>
+                {categoryName ? (
+                  <CheckCircle2 className='size-4 text-emerald-400 shrink-0' />
+                ) : (
+                  <AlertCircle className='size-4 text-amber-400 shrink-0' />
+                )}
+                <span className='truncate'>所属分类：{categoryName || '未设置'}</span>
+              </div>
+              <span className='text-[10px] text-muted-foreground shrink-0'>第 1 步</span>
             </div>
-            <div className='flex items-center gap-2'>
-              {currentSoftware.coverUrl ? (
-                <CheckCircle2 className='size-4 text-emerald-400 shrink-0' />
-              ) : (
-                <Circle className='size-4 text-muted-foreground shrink-0' />
-              )}
-              <span>16:9 封面推广大图 ({currentSoftware.coverUrl ? '已设置' : '可选'})</span>
+
+            {/* 4. 一句话介绍 */}
+            <div
+              onClick={() => onJumpToStep?.(1)}
+              className='flex items-center justify-between gap-2 p-2 -mx-2 rounded-lg hover:bg-muted/40 cursor-pointer transition-colors'
+            >
+              <div className='flex items-center gap-2 truncate'>
+                {currentSoftware.tagline ? (
+                  <CheckCircle2 className='size-4 text-emerald-400 shrink-0' />
+                ) : (
+                  <Circle className='size-4 text-muted-foreground shrink-0' />
+                )}
+                <span className='truncate'>一句话介绍：{currentSoftware.tagline ? '已设置' : '可自动兜底'}</span>
+              </div>
+              <span className='text-[10px] text-muted-foreground shrink-0'>第 1 步</span>
             </div>
-            <div className='flex items-center gap-2'>
-              {featured ? (
-                <CheckCircle2 className='size-4 text-cyan-400 shrink-0' />
-              ) : (
-                <Circle className='size-4 text-muted-foreground shrink-0' />
-              )}
-              <span>首屏主推状态 ({featured ? `已启用，权重 ${featuredOrder}` : '未启用'})</span>
+
+            {/* 5. 应用图标 */}
+            <div
+              onClick={() => onJumpToStep?.(2)}
+              className='flex items-center justify-between gap-2 p-2 -mx-2 rounded-lg hover:bg-muted/40 cursor-pointer transition-colors'
+            >
+              <div className='flex items-center gap-2 truncate'>
+                {currentSoftware.iconUrl ? (
+                  <CheckCircle2 className='size-4 text-emerald-400 shrink-0' />
+                ) : (
+                  <AlertCircle className='size-4 text-red-400 shrink-0' />
+                )}
+                <span className='truncate'>应用图标 (Icon)：{currentSoftware.iconUrl ? '已上传' : '未上传 (必填)'}</span>
+              </div>
+              <span className='text-[10px] text-muted-foreground shrink-0'>第 2 步</span>
+            </div>
+
+            {/* 6. 16:9 封面推广大图 */}
+            <div
+              onClick={() => onJumpToStep?.(2)}
+              className='flex items-center justify-between gap-2 p-2 -mx-2 rounded-lg hover:bg-muted/40 cursor-pointer transition-colors'
+            >
+              <div className='flex items-center gap-2 truncate'>
+                {currentSoftware.coverUrl ? (
+                  <CheckCircle2 className='size-4 text-emerald-400 shrink-0' />
+                ) : (
+                  <Circle className='size-4 text-muted-foreground shrink-0' />
+                )}
+                <span className='truncate'>16:9 封面推广大图：{currentSoftware.coverUrl ? '已设置' : '可选'}</span>
+              </div>
+              <span className='text-[10px] text-muted-foreground shrink-0'>第 2 步</span>
+            </div>
+
+            {/* 7. 安装包 */}
+            <div
+              onClick={() => onJumpToStep?.(3)}
+              className='flex items-center justify-between gap-2 p-2 -mx-2 rounded-lg hover:bg-muted/40 cursor-pointer transition-colors'
+            >
+              <div className='flex items-center gap-2 truncate'>
+                {pendingPackagesCount > 0 || existingReleasesCount > 0 ? (
+                  <CheckCircle2 className='size-4 text-emerald-400 shrink-0' />
+                ) : (
+                  <Circle className='size-4 text-cyan-400 shrink-0' />
+                )}
+                <span className='truncate'>
+                  {pendingPackagesCount > 0
+                    ? `待上传安装包 (${pendingPackagesCount} 个)`
+                    : existingReleasesCount > 0
+                    ? `已有 ${existingReleasesCount} 个版本包`
+                    : '安装包 (未添加，支持发布后随时上传)'}
+                </span>
+              </div>
+              <span className='text-[10px] text-muted-foreground shrink-0'>第 3 步</span>
+            </div>
+
+            {/* 8. 首屏主推状态 */}
+            <div className='flex items-center justify-between gap-2 p-2 -mx-2 rounded-lg'>
+              <div className='flex items-center gap-2 truncate'>
+                {featured ? (
+                  <CheckCircle2 className='size-4 text-cyan-400 shrink-0' />
+                ) : (
+                  <Circle className='size-4 text-muted-foreground shrink-0' />
+                )}
+                <span className='truncate'>首屏主推状态：{featured ? `已启用，权重 ${featuredOrder}` : '未启用'}</span>
+              </div>
+              <span className='text-[10px] text-muted-foreground shrink-0'>当前页</span>
             </div>
           </div>
+
+          {/* 友好说明 */}
+          {pendingPackagesCount === 0 && existingReleasesCount === 0 && (
+            <div className='rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 text-[11px] text-cyan-300/90 leading-relaxed'>
+              💡 提示：您尚未添加安装包文件。您可以直接点击【上架发布】生成软件档案与专属落地页，稍后通过【快捷上传】随时补充安装包。
+            </div>
+          )}
         </div>
       </div>
     </div>

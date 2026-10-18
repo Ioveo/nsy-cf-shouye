@@ -161,9 +161,9 @@ export function SoftwareWizard() {
           <Button
             type='button'
             size='sm'
-            disabled={!form.requiredPassed || form.isPublishing || form.isSavingDraft}
+            disabled={form.isPublishing || form.isSavingDraft}
             onClick={() => form.performSave('active')}
-            className='gap-1.5 bg-primary text-primary-foreground font-semibold shadow-sm'
+            className='gap-1.5 bg-primary text-primary-foreground font-semibold shadow-sm cursor-pointer'
           >
             {form.isPublishing ? <Loader2 className='size-3.5 animate-spin' /> : <CheckCircle2 className='size-3.5' />}
             上架发布
@@ -175,14 +175,20 @@ export function SoftwareWizard() {
       <div className='flex items-center justify-between rounded-xl border border-border/60 bg-card/60 p-2 backdrop-blur-sm'>
         {steps.map((st, idx) => {
           const isActive = currentStep === st.num
-          const isDone = currentStep > st.num
+          const isDone = st.num === 1
+            ? Boolean(form.name.trim() && form.slug.trim() && !form.isSlugDuplicate)
+            : st.num === 2
+            ? Boolean(form.iconUrl.trim())
+            : st.num === 3
+            ? Boolean(form.pendingPackages.length > 0 || form.existingReleases.length > 0)
+            : false
           return (
             <div key={st.num} className='flex-1 flex items-center'>
               <button
                 type='button'
                 onClick={() => setCurrentStep(st.num)}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all',
+                  'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all cursor-pointer',
                   isActive
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : isDone
@@ -285,6 +291,11 @@ export function SoftwareWizard() {
             coverUrl: form.coverUrl,
           }}
           featuredSoftwareList={featuredSoftwareList}
+          categoryName={categories.find((c) => c.id === form.categoryId)?.name || '未分类'}
+          pendingPackagesCount={form.pendingPackages.length}
+          existingReleasesCount={form.existingReleases.length}
+          isSlugDuplicate={form.isSlugDuplicate}
+          onJumpToStep={setCurrentStep}
         />
       )}
 
@@ -314,9 +325,9 @@ export function SoftwareWizard() {
               <Button
                 type='button'
                 size='sm'
-                disabled={!form.requiredPassed || form.isPublishing || form.isSavingDraft}
+                disabled={form.isPublishing || form.isSavingDraft}
                 onClick={() => form.performSave('active')}
-                className='bg-primary text-primary-foreground font-semibold shadow-sm'
+                className='bg-primary text-primary-foreground font-semibold shadow-sm cursor-pointer'
               >
                 {form.isPublishing ? <Loader2 className='size-3.5 animate-spin mr-1' /> : <CheckCircle2 className='size-3.5 mr-1' />}
                 上架发布
