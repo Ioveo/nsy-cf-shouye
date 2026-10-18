@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>音乐频道 - 天才猫音乐</title>
-    <meta name="description" content="天才猫音乐频道，提供今日主推、上新音乐、热门排行、精选标签和在线播放。" />
+    <meta name="description" content="天才猫音乐频道，提供今日主推、场景歌单、上新音乐、热门排行和在线播放。" />
     <link rel="icon" type="image/png" href="/logo.png?v=20260509" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/styles.css?v=20260510-premium-detail" />
     <link rel="stylesheet" href="/music.css?v=20260517-app-polish" />
+    <link rel="stylesheet" href="/css/music-v4.css?v=20261018-v4" />
     <link rel="stylesheet" href="/site-theme.css?v=20260517-raycast-site" />
   </head>
   <body class="music-page" data-landing-page="music">
@@ -21,15 +22,16 @@
         <span>天才猫音乐</span>
       </a>
       <nav class="music-sidebar__nav" aria-label="音乐频道导航">
-        <a class="is-active" href="#musicHero"><span class="material-symbols-outlined">home</span><span>首页</span></a>
+        <a class="is-active" href="/music.html"><span class="material-symbols-outlined">home</span><span>首页</span></a>
+        <a href="#scenePlaylists"><span class="material-symbols-outlined">queue_music</span><span>场景歌单</span></a>
         <a href="#musicCharts"><span class="material-symbols-outlined">local_fire_department</span><span>排行榜</span></a>
         <a href="#newMusic"><span class="material-symbols-outlined">new_releases</span><span>上新</span></a>
         <a href="#musicLibrary"><span class="material-symbols-outlined">library_music</span><span>曲库</span></a>
       </nav>
       <div class="music-sidebar__stats" aria-label="音乐数据">
         <article><span>曲库</span><strong id="statTracks">0</strong></article>
+        <article><span>歌单</span><strong id="statPlaylists">0</strong></article>
         <article><span>上新</span><strong id="statNew">0</strong></article>
-        <article><span>推荐</span><strong id="statFeatured">0</strong></article>
         <article><span>标签</span><strong id="statTags">0</strong></article>
       </div>
     </aside>
@@ -56,82 +58,165 @@
       </header>
 
       <main class="music-main">
-        <section class="music-hero" id="musicHero">
-          <img class="music-hero__image" id="heroCover" data-landing-src="heroImage" src="/logo.png" alt="" />
-          <div class="music-hero__shade"></div>
-          <div class="music-hero__content">
-            <p class="music-kicker">Today's Pick</p>
-            <h1 data-landing="heroTitle">今天听点新的</h1>
-            <p class="music-hero__lead" data-landing="heroSubtitle">为直播、剪辑和夜间工作准备的音乐频道。</p>
-            <div class="music-hero__track">
-              <strong id="heroTitle">等待音乐上架</strong>
-              <span id="heroArtist">后台发布后自动展示</span>
-            </div>
-            <div class="music-hero__actions">
-              <button type="button" id="heroPlay" data-landing="ctaText"><span class="material-symbols-outlined">play_arrow</span>播放主推</button>
-              <a href="#newMusic"><span class="material-symbols-outlined">new_releases</span>查看上新</a>
-            </div>
-          </div>
-        </section>
+        <!-- Playlist Detail View (shown when ?playlist=<id>) -->
+        <section class="playlist-detail-view" id="playlistDetailView" hidden></section>
 
-        <section class="music-layout">
-          <aside class="music-panel" id="musicCharts">
+        <!-- Main Home Content (hidden when playlist detail view is active) -->
+        <div id="musicMainHome">
+          <section class="music-hero" id="musicHero">
+            <img class="music-hero__image" id="heroCover" data-landing-src="heroImage" src="/logo.png" alt="" />
+            <div class="music-hero__shade"></div>
+            <div class="music-hero__content">
+              <p class="music-kicker" id="heroKicker">Today's Pick</p>
+              <h1 id="heroHeadline" data-landing="heroTitle">今天听点新的</h1>
+              <p class="music-hero__lead" id="heroLead" data-landing="heroSubtitle">为直播、剪辑和夜间工作准备的音乐频道。</p>
+              <div class="music-hero__track">
+                <strong id="heroTitle">等待音乐上架</strong>
+                <span id="heroArtist">后台发布后自动展示</span>
+              </div>
+              <div class="music-hero__actions">
+                <button type="button" id="heroPlay" data-landing="ctaText"><span class="material-symbols-outlined">play_arrow</span>播放主推</button>
+                <a href="#scenePlaylists"><span class="material-symbols-outlined">queue_music</span>浏览歌单</a>
+              </div>
+            </div>
+          </section>
+
+          <!-- Scene Playlists Section -->
+          <section class="scene-playlists-section music-panel" id="scenePlaylists">
             <div class="music-section-head">
               <div>
-                <p class="music-kicker">Trending</p>
-                <h2>热门排行</h2>
+                <p class="music-kicker">Curated Channels</p>
+                <h2>场景歌单频道</h2>
               </div>
-              <a href="#musicLibrary">全部</a>
             </div>
-            <div class="chart-list" id="chartList"></div>
-          </aside>
+            <div class="scene-tabs" id="sceneTabs"></div>
+            <div class="scene-playlists-grid" id="scenePlaylistsGrid"></div>
+          </section>
 
-          <div class="music-content">
-            <section class="music-panel" id="newMusic">
+          <section class="music-layout">
+            <aside class="music-panel" id="musicCharts">
               <div class="music-section-head">
                 <div>
-                  <p class="music-kicker">New Releases</p>
-                  <h2>最新发布</h2>
+                  <p class="music-kicker">Trending</p>
+                  <h2>热门排行</h2>
                 </div>
+                <a href="#musicLibrary">全部</a>
               </div>
-              <div class="new-release" id="newRelease"></div>
-              <div class="release-list" id="newReleaseList"></div>
-            </section>
+              <div class="chart-list" id="chartList"></div>
+            </aside>
 
-            <section class="music-panel" id="musicLibrary">
-              <div class="music-section-head">
-                <div>
-                  <p class="music-kicker">Explore Genres</p>
-                  <h2>精选标签</h2>
+            <div class="music-content">
+              <section class="music-panel" id="newMusic">
+                <div class="music-section-head">
+                  <div>
+                    <p class="music-kicker">New Releases</p>
+                    <h2>最新发布</h2>
+                  </div>
                 </div>
-                <button id="clearMusicSearch" type="button">清空</button>
-              </div>
-              <div class="tag-strip" id="tagStrip"></div>
-              <div class="music-grid" id="musicGrid"></div>
-            </section>
-          </div>
-        </section>
+                <div class="new-release" id="newRelease"></div>
+                <div class="release-list" id="newReleaseList"></div>
+              </section>
+
+              <section class="music-panel" id="musicLibrary">
+                <div class="music-section-head">
+                  <div>
+                    <p class="music-kicker">Explore Genres</p>
+                    <h2>精选标签</h2>
+                  </div>
+                  <button id="clearMusicSearch" type="button">清空</button>
+                </div>
+                <div class="tag-strip" id="tagStrip"></div>
+                <div class="music-grid" id="musicGrid"></div>
+              </section>
+            </div>
+          </section>
+        </div>
       </main>
     </div>
 
-    <aside class="music-player" id="musicPlayer" hidden>
-      <div class="music-player__progress"><input id="playerProgress" type="range" min="0" max="100" value="0" /></div>
-      <div class="music-player__body">
-        <img id="playerCover" src="/logo.png" alt="" />
-        <div>
+    <!-- Bottom Floating Capsule Player -->
+    <aside class="capsule-player" id="musicPlayer" hidden>
+      <div class="capsule-track-left">
+        <div class="capsule-cover-wrap" id="capsuleCoverWrap">
+          <img id="playerCover" src="/logo.png" alt="" />
+        </div>
+        <div class="capsule-info">
           <strong id="playerTitle">未选择音乐</strong>
           <span id="playerArtist">选择一首歌开始播放</span>
         </div>
-        <div class="music-player__controls">
-          <button type="button" aria-label="上一首"><span class="material-symbols-outlined">skip_previous</span></button>
-          <button id="playerPlay" type="button">播放</button>
-          <button type="button" aria-label="下一首"><span class="material-symbols-outlined">skip_next</span></button>
+      </div>
+
+      <div class="capsule-center">
+        <div class="capsule-controls">
+          <button type="button" class="capsule-btn-icon" id="playerPrev" title="上一首">
+            <span class="material-symbols-outlined">skip_previous</span>
+          </button>
+          <button type="button" class="capsule-btn-play" id="playerPlay" title="播放/暂停">
+            <span class="material-symbols-outlined" id="playerPlayIcon">play_arrow</span>
+          </button>
+          <button type="button" class="capsule-btn-icon" id="playerNext" title="下一首">
+            <span class="material-symbols-outlined">skip_next</span>
+          </button>
+        </div>
+        <div class="capsule-progress-bar">
+          <span class="capsule-time" id="playerCurrentTime">00:00</span>
+          <input id="playerProgress" class="capsule-slider" type="range" min="0" max="100" value="0" />
+          <span class="capsule-time" id="playerDuration">00:00</span>
         </div>
       </div>
+
+      <div class="capsule-right">
+        <div class="capsule-vol-wrap">
+          <button type="button" class="capsule-btn-icon" id="playerVolumeBtn" title="静音/恢复">
+            <span class="material-symbols-outlined" id="playerVolumeIcon">volume_up</span>
+          </button>
+          <input id="playerVolume" class="capsule-vol-slider" type="range" min="0" max="100" value="85" />
+        </div>
+        <button type="button" class="capsule-btn-icon capsule-badge-btn" id="playerQueueBtn" title="播放队列">
+          <span class="material-symbols-outlined">queue_music</span>
+          <span class="capsule-pill-badge" id="playerQueueBadge">0</span>
+        </button>
+        <button type="button" class="capsule-btn-icon" id="playerLyricsBtn" title="歌词秀">
+          <span class="material-symbols-outlined">lyrics</span>
+        </button>
+      </div>
+
       <audio id="playerAudio" preload="metadata"></audio>
     </aside>
 
-    <script src="/music.js?v=20260517-app-polish" type="module"></script>
+    <!-- Floating Queue Drawer -->
+    <div class="floating-queue-panel" id="playerQueueDrawer" hidden>
+      <div class="floating-panel__header">
+        <h3 class="floating-panel__title">
+          <span class="material-symbols-outlined" style="font-size:18px;">queue_music</span>
+          播放队列 (<span id="queueCount">0</span>)
+        </h3>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button type="button" class="floating-panel__close" id="clearQueueBtn" style="font-size:11px;padding:2px 8px;">清空</button>
+          <button type="button" class="floating-panel__close" id="closeQueueBtn">
+            <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+          </button>
+        </div>
+      </div>
+      <div class="floating-queue__body" id="playerQueueList"></div>
+    </div>
+
+    <!-- Floating Lyrics Panel -->
+    <div class="floating-lyrics-panel" id="playerLyricsPanel" hidden>
+      <div class="floating-panel__header">
+        <h3 class="floating-panel__title">
+          <span class="material-symbols-outlined" style="font-size:18px;">lyrics</span>
+          <span id="lyricsHeaderTitle">歌词秀</span>
+        </h3>
+        <button type="button" class="floating-panel__close" id="closeLyricsBtn">
+          <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+        </button>
+      </div>
+      <div class="floating-lyrics__body" id="playerLyricsBody"></div>
+    </div>
+
+    <script src="/js/promotions.js?v=20261018"></script>
+    <script src="/music.js?v=20261018-v4" type="module"></script>
     <script src="/js/landing-bind.js?v=20261017"></script>
   </body>
 </html>

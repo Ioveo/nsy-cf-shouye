@@ -24,6 +24,7 @@ import { Route as AuthenticatedContentArticlesRouteImport } from './routes/_auth
 import { Route as AuthenticatedContentGalleryRouteImport } from './routes/_authenticated/content/gallery'
 import { Route as AuthenticatedContentMusicRouteImport } from './routes/_authenticated/content/music'
 import { Route as AuthenticatedContentPhotoWallRouteImport } from './routes/_authenticated/content/photo-wall'
+import { Route as AuthenticatedContentPlaylistsRouteImport } from './routes/_authenticated/content/playlists'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
 import { Route as AuthenticatedHotupdateIndexRouteImport } from './routes/_authenticated/hotupdate/index'
 import { Route as AuthenticatedLandingIndexRouteImport } from './routes/_authenticated/landing/index'
@@ -118,6 +119,12 @@ const AuthenticatedContentPhotoWallRoute =
     path: '/content/photo-wall',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedContentPlaylistsRoute =
+  AuthenticatedContentPlaylistsRouteImport.update({
+    id: '/content/playlists',
+    path: '/content/playlists',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedErrorsErrorRoute =
   AuthenticatedErrorsErrorRouteImport.update({
     id: '/errors/$error',
@@ -203,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/content/gallery': typeof AuthenticatedContentGalleryRoute
   '/content/music': typeof AuthenticatedContentMusicRoute
   '/content/photo-wall': typeof AuthenticatedContentPhotoWallRoute
+  '/content/playlists': typeof AuthenticatedContentPlaylistsRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/site/carousel': typeof AuthenticatedSiteCarouselRoute
   '/site/navigation': typeof AuthenticatedSiteNavigationRoute
@@ -231,6 +239,7 @@ export interface FileRoutesByTo {
   '/content/gallery': typeof AuthenticatedContentGalleryRoute
   '/content/music': typeof AuthenticatedContentMusicRoute
   '/content/photo-wall': typeof AuthenticatedContentPhotoWallRoute
+  '/content/playlists': typeof AuthenticatedContentPlaylistsRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/site/carousel': typeof AuthenticatedSiteCarouselRoute
   '/site/navigation': typeof AuthenticatedSiteNavigationRoute
@@ -261,6 +270,7 @@ export interface FileRoutesById {
   '/_authenticated/content/gallery': typeof AuthenticatedContentGalleryRoute
   '/_authenticated/content/music': typeof AuthenticatedContentMusicRoute
   '/_authenticated/content/photo-wall': typeof AuthenticatedContentPhotoWallRoute
+  '/_authenticated/content/playlists': typeof AuthenticatedContentPlaylistsRoute
   '/_authenticated/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/_authenticated/site/carousel': typeof AuthenticatedSiteCarouselRoute
   '/_authenticated/site/navigation': typeof AuthenticatedSiteNavigationRoute
@@ -291,6 +301,7 @@ export interface FileRouteTypes {
     | '/content/gallery'
     | '/content/music'
     | '/content/photo-wall'
+    | '/content/playlists'
     | '/errors/$error'
     | '/site/carousel'
     | '/site/navigation'
@@ -319,6 +330,7 @@ export interface FileRouteTypes {
     | '/content/gallery'
     | '/content/music'
     | '/content/photo-wall'
+    | '/content/playlists'
     | '/errors/$error'
     | '/site/carousel'
     | '/site/navigation'
@@ -348,6 +360,7 @@ export interface FileRouteTypes {
     | '/_authenticated/content/gallery'
     | '/_authenticated/content/music'
     | '/_authenticated/content/photo-wall'
+    | '/_authenticated/content/playlists'
     | '/_authenticated/errors/$error'
     | '/_authenticated/site/carousel'
     | '/_authenticated/site/navigation'
@@ -481,6 +494,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContentPhotoWallRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/content/playlists': {
+      id: '/_authenticated/content/playlists'
+      path: '/content/playlists'
+      fullPath: '/content/playlists'
+      preLoaderRoute: typeof AuthenticatedContentPlaylistsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/errors/$error': {
       id: '/_authenticated/errors/$error'
       path: '/errors/$error'
@@ -575,6 +595,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedContentGalleryRoute: typeof AuthenticatedContentGalleryRoute
   AuthenticatedContentMusicRoute: typeof AuthenticatedContentMusicRoute
   AuthenticatedContentPhotoWallRoute: typeof AuthenticatedContentPhotoWallRoute
+  AuthenticatedContentPlaylistsRoute: typeof AuthenticatedContentPlaylistsRoute
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
   AuthenticatedSiteCarouselRoute: typeof AuthenticatedSiteCarouselRoute
   AuthenticatedSiteNavigationRoute: typeof AuthenticatedSiteNavigationRoute
@@ -599,6 +620,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedContentGalleryRoute: AuthenticatedContentGalleryRoute,
   AuthenticatedContentMusicRoute: AuthenticatedContentMusicRoute,
   AuthenticatedContentPhotoWallRoute: AuthenticatedContentPhotoWallRoute,
+  AuthenticatedContentPlaylistsRoute: AuthenticatedContentPlaylistsRoute,
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
   AuthenticatedSiteCarouselRoute: AuthenticatedSiteCarouselRoute,
   AuthenticatedSiteNavigationRoute: AuthenticatedSiteNavigationRoute,

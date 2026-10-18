@@ -14,6 +14,7 @@ import {
   Compass,
   Sparkles,
   FolderTree,
+  Disc3,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -73,6 +74,11 @@ export const sidebarData: SidebarData = {
           title: '音乐频道',
           url: '/content/music',
           icon: Music,
+        },
+        {
+          title: '歌单管理',
+          url: '/content/playlists',
+          icon: Disc3,
         },
         {
           title: '画廊相册',
