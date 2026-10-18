@@ -602,3 +602,365 @@
   padding: 2px 6px;
   border-radius: 4px;
 }
+
+/* 7. 生态闭环：正文嵌入软件卡片 (.article-embed-software) */
+.article-embed-software {
+  margin: 28px 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(229, 169, 60, 0.04) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.article-embed-software:hover {
+  border-color: rgba(229, 169, 60, 0.4);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+  transform: translateY(-2px);
+}
+
+.article-embed-software__icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.article-embed-software__icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.article-embed-software__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.article-embed-software__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.article-embed-software__name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.3;
+}
+
+.article-embed-software__badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(229, 169, 60, 0.15);
+  border: 1px solid rgba(229, 169, 60, 0.3);
+  color: #e5a93c;
+  line-height: 1;
+}
+
+.article-embed-software__desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.article-embed-software__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.article-embed-software__btn {
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.article-embed-software__btn--outline {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+}
+
+.article-embed-software__btn--outline:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.article-embed-software__btn--primary {
+  background: linear-gradient(135deg, #e5a93c 0%, #d97706 100%);
+  border: 1px solid rgba(229, 169, 60, 0.6);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(229, 169, 60, 0.3);
+}
+
+.article-embed-software__btn--primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(229, 169, 60, 0.45);
+}
+
+/* 紧凑版软件小条 */
+.article-embed-software--compact {
+  padding: 10px 16px;
+  gap: 12px;
+}
+
+.article-embed-software--compact .article-embed-software__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  padding: 0;
+}
+
+.article-embed-software--compact .article-embed-software__name {
+  font-size: 14px;
+}
+
+.article-embed-software--compact .article-embed-software__desc {
+  font-size: 12px;
+}
+
+/* 8. 生态闭环：正文嵌入音乐卡片 (.article-embed-music) */
+.article-embed-music {
+  margin: 28px 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.045) 0%, rgba(56, 189, 248, 0.035) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.article-embed-music:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+}
+
+.article-embed-music.is-playing {
+  border-color: rgba(229, 169, 60, 0.5);
+  box-shadow: 0 12px 36px rgba(229, 169, 60, 0.2);
+}
+
+.article-embed-music__cover-wrap {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  background: #090d16;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.article-embed-music__cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.article-embed-music__play-btn {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  border: none;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(2px);
+}
+
+.article-embed-music__play-btn:hover {
+  background: rgba(0, 0, 0, 0.65);
+  transform: scale(1.08);
+}
+
+.article-embed-music__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.article-embed-music__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.article-embed-music__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.article-embed-music__badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+  line-height: 1.2;
+}
+
+.article-embed-music__sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.article-embed-music__artist {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 音频跳动声波 */
+.article-embed-music__wave {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2.5px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.article-embed-music__wave span {
+  width: 2.5px;
+  height: 3px;
+  background: #94a3b8;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.article-embed-music.is-playing .article-embed-music__wave span {
+  background: #e5a93c;
+}
+
+.article-embed-music.is-playing .article-embed-music__wave span:nth-child(1) {
+  animation: musicWave 0.8s ease-in-out infinite;
+}
+.article-embed-music.is-playing .article-embed-music__wave span:nth-child(2) {
+  animation: musicWave 0.95s ease-in-out infinite 0.15s;
+}
+.article-embed-music.is-playing .article-embed-music__wave span:nth-child(3) {
+  animation: musicWave 0.75s ease-in-out infinite 0.3s;
+}
+.article-embed-music.is-playing .article-embed-music__wave span:nth-child(4) {
+  animation: musicWave 1.05s ease-in-out infinite 0.1s;
+}
+
+@keyframes musicWave {
+  0%, 100% { height: 3px; }
+  50% { height: 12px; }
+}
+
+.article-embed-music__actions {
+  flex-shrink: 0;
+}
+
+.article-embed-music__link {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-decoration: none;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.article-embed-music__link:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* 黑胶唱片款 */
+.article-embed-music--vinyl .article-embed-music__vinyl-disc {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  background: #111;
+  border: 2px solid #222;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+}
+
+.article-embed-music--vinyl.is-playing .article-embed-music__vinyl-disc {
+  animation: vinylRotate 8s linear infinite;
+}
+
+@keyframes vinylRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 响应式适配 */
+@media (max-width: 640px) {
+  .article-embed-software {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .article-embed-software__actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .article-embed-software__btn {
+    flex: 1;
+    text-align: center;
+  }
+}
+

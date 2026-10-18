@@ -50,6 +50,7 @@ function renderArticle(article, software) {
   const bottomWidget = renderArticleBottomWidget(software);
   root.innerHTML = `<section class="article-cover article-cover--pro">${article.coverUrl ? `<img src="${escapeAttr(article.coverUrl)}" alt="">` : ""}<div><p class="eyebrow">${escapeHtml(article.category || "Article")}</p><h1>${escapeHtml(article.title)}</h1><p>${escapeHtml(article.summary || "")}</p><div class="article-meta"><span>${formatDate(article.publishedAt || article.createdAt)}</span><span>${countWords(article.content)} 字阅读</span>${tags}</div></div></section><section class="article-body article-body--pro"><article>${rendered.html}${bottomWidget}</article>${renderAside(rendered.headings, software)}</section>`;
   bindArticleImages();
+  bindArticleAudio();
 }
 
 function initReadingTools() {
@@ -73,6 +74,59 @@ function bindArticleImages() {
     img.addEventListener("keydown", event => {
       if (event.key === "Enter" || event.key === " ") openImageLightbox(img.src);
     });
+  });
+}
+
+function bindArticleAudio() {
+  document.querySelectorAll(".article-embed-music").forEach(card => {
+    const audio = card.querySelector("audio");
+    const playBtn = card.querySelector(".article-embed-music__play-btn");
+    const icon = card.querySelector(".article-embed-music__play-icon");
+    if (!playBtn) return;
+
+    playBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isCurrentlyPlaying = card.classList.contains("is-playing");
+      if (!isCurrentlyPlaying) {
+        // 暂停其它正在播放的嵌入音乐
+        document.querySelectorAll(".article-embed-music").forEach(other => {
+          if (other !== card && other.classList.contains("is-playing")) {
+            const oAudio = other.querySelector("audio");
+            try { oAudio?.pause(); } catch {}
+            other.classList.remove("is-playing");
+            const oIcon = other.querySelector(".article-embed-music__play-icon");
+            if (oIcon) oIcon.textContent = "▶";
+          }
+        });
+        card.classList.add("is-playing");
+        if (icon) icon.textContent = "⏸";
+        if (audio) {
+          try { audio.play().catch(() => {}); } catch {}
+        }
+      } else {
+        card.classList.remove("is-playing");
+        if (icon) icon.textContent = "▶";
+        if (audio) {
+          try { audio.pause(); } catch {}
+        }
+      }
+    });
+
+    if (audio) {
+      audio.addEventListener("ended", () => {
+        card.classList.remove("is-playing");
+        if (icon) icon.textContent = "▶";
+      });
+      audio.addEventListener("pause", () => {
+        card.classList.remove("is-playing");
+        if (icon) icon.textContent = "▶";
+      });
+      audio.addEventListener("play", () => {
+        card.classList.add("is-playing");
+        if (icon) icon.textContent = "⏸";
+      });
+    }
   });
 }
 
@@ -272,7 +326,7 @@ function sanitizeArticleHtml(html) {
     "A", "P", "BR", "STRONG", "B", "EM", "I", "U", "S", "DEL", "MARK", "HR",
     "UL", "OL", "LI", "BLOCKQUOTE", "H1", "H2", "H3", "H4", "IMG", "FIGURE", "FIGCAPTION",
     "AUDIO", "SOURCE", "TABLE", "THEAD", "TBODY", "TR", "TH", "TD", "PRE", "CODE",
-    "DIV", "SPAN", "SECTION"
+    "DIV", "SPAN", "SECTION", "BUTTON"
   ]);
   const allowedAttrs = {
     A: new Set(["href", "target", "rel", "class"]),
@@ -292,6 +346,7 @@ function sanitizeArticleHtml(html) {
     DIV: new Set(["class", "style"]),
     SPAN: new Set(["class", "style"]),
     SECTION: new Set(["class", "style"]),
+    BUTTON: new Set(["class", "type", "style", "aria-label", "aria-hidden"]),
     P: new Set(["class", "style"]),
     BLOCKQUOTE: new Set(["class", "style"]),
     MARK: new Set(["class", "style"]),
@@ -309,7 +364,7 @@ function sanitizeArticleHtml(html) {
     if (node.nodeType !== Node.ELEMENT_NODE) return;
     if (!allowedTags.has(node.tagName)) { node.replaceWith(...Array.from(node.childNodes)); return; }
     for (const attr of Array.from(node.attributes)) {
-      const allowed = allowedAttrs[node.tagName]?.has(attr.name);
+      const allowed = allowedAttrs[node.tagName]?.has(attr.name) || attr.name.startsWith("data-") || attr.name.startsWith("aria-");
       if (!allowed || attr.name.startsWith("on") || attr.value.startsWith("javascript:")) node.removeAttribute(attr.name);
     }
     if (node.tagName === "A") {

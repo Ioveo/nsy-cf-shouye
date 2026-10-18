@@ -10,6 +10,7 @@ import {
   Sliders,
   Loader2,
   Package,
+  FolderOpen,
 } from 'lucide-react'
 import { toast } from 'sonner'
 // @ts-ignore
@@ -27,6 +28,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import { useConfig, type ArticleTaxonomyConfig, type Software } from '@/lib/queries'
+import { R2AssetPickerDialog } from './r2-asset-picker-dialog'
 
 interface WorkbenchPropertiesProps {
   open: boolean
@@ -81,6 +83,7 @@ export function WorkbenchProperties({
   const categories = taxonomyConfig?.categories || []
 
   const [isUploadingCover, setIsUploadingCover] = useState(false)
+  const [r2PickerOpen, setR2PickerOpen] = useState(false)
   const coverInputRef = useRef<HTMLInputElement>(null)
 
   async function handleCoverFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -210,17 +213,29 @@ export function WorkbenchProperties({
           <div className='space-y-2'>
             <div className='flex items-center justify-between'>
               <Label className='text-xs font-semibold'>封面图片</Label>
-              <Button
-                type='button'
-                variant='outline'
-                size='sm'
-                disabled={isUploadingCover}
-                className='h-6 text-[11px] gap-1'
-                onClick={() => coverInputRef.current?.click()}
-              >
-                {isUploadingCover ? <Loader2 className='size-3 animate-spin' /> : <Upload className='size-3' />}
-                <span>上传到 R2</span>
-              </Button>
+              <div className='flex items-center gap-1.5'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  className='h-6 text-[11px] gap-1'
+                  onClick={() => setR2PickerOpen(true)}
+                >
+                  <FolderOpen className='size-3 text-primary' />
+                  <span>从 R2 选择</span>
+                </Button>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  disabled={isUploadingCover}
+                  className='h-6 text-[11px] gap-1'
+                  onClick={() => coverInputRef.current?.click()}
+                >
+                  {isUploadingCover ? <Loader2 className='size-3 animate-spin' /> : <Upload className='size-3' />}
+                  <span>上传新图</span>
+                </Button>
+              </div>
               <input
                 ref={coverInputRef}
                 type='file'
@@ -344,6 +359,19 @@ export function WorkbenchProperties({
             </div>
           </div>
         </div>
+
+        {/* Cover R2 Asset Picker Dialog */}
+        <R2AssetPickerDialog
+          open={r2PickerOpen}
+          onClose={() => setR2PickerOpen(false)}
+          onSelect={(url) => {
+            onCoverUrlChange(url)
+            toast.success('已设为文章封面')
+          }}
+          title='从 R2 媒体库选择封面图片'
+          description='挑选已存放在 Cloudflare R2 存储中的精美图片设为本文主视觉封面。'
+          selectButtonText='设为封面'
+        />
       </SheetContent>
     </Sheet>
   )

@@ -11,12 +11,16 @@ import {
   Quote,
   List,
   ListOrdered,
-  Image,
+  Image as ImageIcon,
   Sparkles,
   Minus,
   Palette,
   Loader2,
   ChevronDown,
+  Package,
+  Music,
+  FolderOpen,
+  Upload,
 } from 'lucide-react'
 import { toast } from 'sonner'
 // @ts-ignore
@@ -31,6 +35,9 @@ import {
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu'
 import { WECHAT_TEMPLATES, type WechatTemplate } from './types'
+import { R2AssetPickerDialog } from './r2-asset-picker-dialog'
+import { EmbedSoftwareDialog } from './embed-software-dialog'
+import { EmbedMusicDialog } from './embed-music-dialog'
 
 interface WorkbenchToolbarProps {
   onInsertWrap: (prefix: string, suffix: string, defaultText: string) => void
@@ -53,6 +60,11 @@ export function WorkbenchToolbar({
 }: WorkbenchToolbarProps) {
   const [isUploading, setIsUploading] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
+
+  // Dialog states for Eco-System Closed Loop
+  const [r2PickerOpen, setR2PickerOpen] = useState(false)
+  const [softwareEmbedOpen, setSoftwareEmbedOpen] = useState(false)
+  const [musicEmbedOpen, setMusicEmbedOpen] = useState(false)
 
   async function handleImageFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -81,246 +93,339 @@ export function WorkbenchToolbar({
     toast.success(`已插入「${tpl.name}」公众号样式卡片`)
   }
 
+  function handleInsertR2Image(url: string, name?: string) {
+    const title = name ? name.replace(/\.[^.]+$/, '') : '插图'
+    onInsertText(`\n\n![${title}](${url})\n\n`)
+    toast.success('已从 R2 媒体库插入图片')
+  }
+
   return (
-    <div className='border-b border-border bg-muted/30 px-4 py-1.5 flex items-center gap-1 flex-wrap sticky top-0 z-20 backdrop-blur-sm select-none'>
-      {/* 1. 标题组 */}
-      <div className='flex items-center gap-0.5 border-r border-border/70 pr-2 mr-1'>
-        <Button
-          type='button'
-          variant='ghost'
-          size='sm'
-          className='h-7 w-7 p-0'
-          onClick={() => onInsertHeading('# ')}
-          title='一级大标题 (H1)'
-        >
-          <Heading1 className='size-3.5' />
-        </Button>
-        <Button
-          type='button'
-          variant='ghost'
-          size='sm'
-          className='h-7 w-7 p-0'
-          onClick={() => onInsertHeading('## ')}
-          title='二级分类标题 (H2)'
-        >
-          <Heading2 className='size-3.5' />
-        </Button>
-        <Button
-          type='button'
-          variant='ghost'
-          size='sm'
-          className='h-7 w-7 p-0'
-          onClick={() => onInsertHeading('### ')}
-          title='三级小标题 (H3)'
-        >
-          <Heading3 className='size-3.5' />
-        </Button>
-      </div>
+    <>
+      <div className='border-b border-border bg-muted/30 px-3 sm:px-4 py-1.5 flex items-center gap-1 flex-wrap sticky top-0 z-20 backdrop-blur-sm select-none'>
+        {/* 1. 标题组 */}
+        <div className='flex items-center gap-0.5 border-r border-border/70 pr-2 mr-1'>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='h-7 w-7 p-0'
+            onClick={() => onInsertHeading('# ')}
+            title='一级大标题 (H1)'
+          >
+            <Heading1 className='size-3.5' />
+          </Button>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='h-7 w-7 p-0'
+            onClick={() => onInsertHeading('## ')}
+            title='二级分类标题 (H2)'
+          >
+            <Heading2 className='size-3.5' />
+          </Button>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='h-7 w-7 p-0'
+            onClick={() => onInsertHeading('### ')}
+            title='三级小标题 (H3)'
+          >
+            <Heading3 className='size-3.5' />
+          </Button>
+        </div>
 
-      {/* 2. 行内排版组 */}
-      <div className='flex items-center gap-0.5 border-r border-border/70 pr-2 mr-1'>
-        <Button
-          type='button'
-          variant='ghost'
-          size='sm'
-          className='h-7 w-7 p-0'
-          onClick={() => onInsertWrap('**', '**', '加粗文字')}
-          title='加粗 (Ctrl+B)'
-        >
-          <Bold className='size-3.5' />
-        </Button>
-        <Button
-          type='button'
-          variant='ghost'
-          size='sm'
-          className='h-7 w-7 p-0'
-          onClick={() => onInsertWrap('*', '*', '斜体文字')}
-          title='斜体 (Ctrl+I)'
-        >
-          <Italic className='size-3.5' />
-        </Button>
-        <Button
-          type='button'
-          variant='ghost'
-          size='sm'
-          className='h-7 w-7 p-0'
-          onClick={() => onInsertWrap('<u>', '</u>', '下划线文字')}
-          title='下划线 (<u>)'
-        >
-          <UnderlineIcon className='size-3.5' />
-        </Button>
-        <Button
-          type='button'
-          variant='ghost'
-          size='sm'
-          className='h-7 w-7 p-0'
-          onClick={() => onInsertWrap('~~', '~~', '删除线文字')}
-          title='删除线 (~~)'
-        >
-          <Strikethrough className='size-3.5' />
-        </Button>
-        <Button
-          type='button'
-          variant='ghost'
-          size='sm'
-          className='h-7 w-7 p-0'
-          onClick={() => onInsertWrap('`', '`', '行内代码')}
-          title='行内代码 (`code`)'
-        >
-          <Code className='size-3.5' />
-        </Button>
-      </div>
+        {/* 2. 行内排版组 */}
+        <div className='flex items-center gap-0.5 border-r border-border/70 pr-2 mr-1'>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='h-7 w-7 p-0'
+            onClick={() => onInsertWrap('**', '**', '加粗文字')}
+            title='加粗 (Ctrl+B)'
+          >
+            <Bold className='size-3.5' />
+          </Button>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='h-7 w-7 p-0'
+            onClick={() => onInsertWrap('*', '*', '斜体文字')}
+            title='斜体 (Ctrl+I)'
+          >
+            <Italic className='size-3.5' />
+          </Button>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='h-7 w-7 p-0'
+            onClick={() => onInsertWrap('<u>', '</u>', '下划线文字')}
+            title='下划线 (<u>)'
+          >
+            <UnderlineIcon className='size-3.5' />
+          </Button>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='h-7 w-7 p-0'
+            onClick={() => onInsertWrap('~~', '~~', '删除线文字')}
+            title='删除线 (~~)'
+          >
+            <Strikethrough className='size-3.5' />
+          </Button>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='h-7 w-7 p-0'
+            onClick={() => onInsertWrap('`', '`', '行内代码')}
+            title='行内代码 (`code`)'
+          >
+            <Code className='size-3.5' />
+          </Button>
+        </div>
 
-      {/* 3. 颜色高亮组 */}
-      <div className='flex items-center gap-0.5 border-r border-border/70 pr-2 mr-1'>
+        {/* 3. 颜色高亮组 */}
+        <div className='flex items-center gap-0.5 border-r border-border/70 pr-2 mr-1'>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                className='h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground'
+                title='设置文字颜色'
+              >
+                <Palette className='size-3.5 text-primary' />
+                <span className='text-[11px] hidden sm:inline'>文字色</span>
+                <ChevronDown className='size-2.5 opacity-60' />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='start' className='w-48'>
+              <DropdownMenuLabel className='text-[11px] text-muted-foreground'>选择品牌强调色</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {COLOR_PRESETS.map((color) => (
+                <DropdownMenuItem
+                  key={color.value}
+                  onClick={() =>
+                    onInsertWrap(
+                      `<span style="color: ${color.value}; font-weight: 600;">`,
+                      '</span>',
+                      '高亮文字'
+                    )
+                  }
+                  className='flex items-center gap-2 cursor-pointer text-xs'
+                >
+                  <span className={`size-3 rounded-full ${color.bg}`} />
+                  <span>{color.name}</span>
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => onInsertWrap('<mark class="article-mark">', '</mark>', '标记重点')}
+                className='flex items-center gap-2 cursor-pointer text-xs'
+              >
+                <span className='px-1.5 py-0.2 bg-amber-400/20 text-amber-300 rounded text-[10px] font-mono'>MARK</span>
+                <span>荧光马克笔底色</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* 4. 段落与结构组 */}
+        <div className='flex items-center gap-0.5 border-r border-border/70 pr-2 mr-1'>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='h-7 w-7 p-0'
+            onClick={() => onInsertWrap('> ', '', '在这里输入引言...')}
+            title='引用段落 (>)'
+          >
+            <Quote className='size-3.5' />
+          </Button>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='h-7 w-7 p-0'
+            onClick={() => onInsertWrap('- ', '', '列表条目')}
+            title='无序列表 (-)'
+          >
+            <List className='size-3.5' />
+          </Button>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='h-7 w-7 p-0'
+            onClick={() => onInsertWrap('1. ', '', '有序条目')}
+            title='有序列表 (1.)'
+          >
+            <ListOrdered className='size-3.5' />
+          </Button>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='h-7 w-7 p-0'
+            onClick={() => onInsertText('\n<hr class="article-divider" />\n')}
+            title='插入微光分割线'
+          >
+            <Minus className='size-3.5' />
+          </Button>
+        </div>
+
+        {/* 5. 图片管理（支持 R2 图片库选择 + 本地直传 R2） */}
+        <div className='flex items-center gap-0.5 border-r border-border/70 pr-2 mr-1'>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                disabled={isUploading}
+                className='h-7 px-2 text-xs gap-1 text-foreground'
+                title='插入图片 (支持从 R2 媒体库调用或本地上传)'
+              >
+                {isUploading ? (
+                  <Loader2 className='size-3.5 animate-spin' />
+                ) : (
+                  <ImageIcon className='size-3.5 text-primary' />
+                )}
+                <span className='text-[11px] font-medium'>插图</span>
+                <ChevronDown className='size-2.5 opacity-60' />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='start' className='w-48'>
+              <DropdownMenuItem
+                onClick={() => setR2PickerOpen(true)}
+                className='flex items-center gap-2 cursor-pointer text-xs font-medium'
+              >
+                <FolderOpen className='size-3.5 text-primary' />
+                <span>从 R2 媒体库选择</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => imageInputRef.current?.click()}
+                className='flex items-center gap-2 cursor-pointer text-xs'
+              >
+                <Upload className='size-3.5 text-muted-foreground' />
+                <span>本地上传并存入 R2</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <input
+            ref={imageInputRef}
+            type='file'
+            accept='image/*'
+            className='hidden'
+            onChange={handleImageFile}
+          />
+        </div>
+
+        {/* 6. 生态闭环：引用软件中心 */}
+        <div className='flex items-center gap-0.5 border-r border-border/70 pr-2 mr-1'>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            onClick={() => setSoftwareEmbedOpen(true)}
+            className='h-7 px-2 text-xs gap-1 text-foreground hover:text-primary transition-colors'
+            title='在正文中引用自研软件卡片（闭环下载转化）'
+          >
+            <Package className='size-3.5 text-primary' />
+            <span className='text-[11px] font-medium'>引用软件</span>
+          </Button>
+        </div>
+
+        {/* 7. 生态闭环：引用音乐频道 */}
+        <div className='flex items-center gap-0.5 border-r border-border/70 pr-2 mr-1'>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            onClick={() => setMusicEmbedOpen(true)}
+            className='h-7 px-2 text-xs gap-1 text-foreground hover:text-primary transition-colors'
+            title='在正文中引用音乐频道歌曲（边听边读）'
+          >
+            <Music className='size-3.5 text-primary' />
+            <span className='text-[11px] font-medium'>引用音乐</span>
+          </Button>
+        </div>
+
+        {/* 8. 微信公众号经典排版样式库 (一键插入卡片) */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               type='button'
-              variant='ghost'
+              variant='secondary'
               size='sm'
-              className='h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground'
-              title='设置文字颜色'
+              className='h-7 px-2.5 text-xs gap-1.5 font-medium bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20'
             >
-              <Palette className='size-3.5 text-primary' />
-              <span className='text-[11px] hidden sm:inline'>文字色</span>
-              <ChevronDown className='size-2.5 opacity-60' />
+              <Sparkles className='size-3.5' />
+              <span className='hidden sm:inline'>公众号样式模板</span>
+              <span className='sm:hidden'>样式库</span>
+              <ChevronDown className='size-3 opacity-70' />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align='start' className='w-48'>
-            <DropdownMenuLabel className='text-[11px] text-muted-foreground'>选择品牌强调色</DropdownMenuLabel>
+          <DropdownMenuContent align='start' className='w-72'>
+            <DropdownMenuLabel className='text-xs font-semibold flex items-center justify-between'>
+              <span>微信公众号排版样式库</span>
+              <span className='text-[10px] text-muted-foreground font-normal'>点击一键插入</span>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {COLOR_PRESETS.map((color) => (
+            {WECHAT_TEMPLATES.map((tpl) => (
               <DropdownMenuItem
-                key={color.value}
-                onClick={() =>
-                  onInsertWrap(
-                    `<span style="color: ${color.value}; font-weight: 600;">`,
-                    '</span>',
-                    '高亮文字'
-                  )
-                }
-                className='flex items-center gap-2 cursor-pointer text-xs'
+                key={tpl.id}
+                onClick={() => handleSelectTemplate(tpl)}
+                className='flex flex-col items-start gap-0.5 py-2 cursor-pointer'
               >
-                <span className={`size-3 rounded-full ${color.bg}`} />
-                <span>{color.name}</span>
+                <div className='font-medium text-xs flex items-center gap-1.5 text-foreground'>
+                  <span>{tpl.name}</span>
+                </div>
+                <p className='text-[11px] text-muted-foreground leading-snug line-clamp-1'>
+                  {tpl.description}
+                </p>
               </DropdownMenuItem>
             ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => onInsertWrap('<mark class="article-mark">', '</mark>', '标记重点')}
-              className='flex items-center gap-2 cursor-pointer text-xs'
-            >
-              <span className='px-1.5 py-0.2 bg-amber-400/20 text-amber-300 rounded text-[10px] font-mono'>MARK</span>
-              <span>荧光马克笔底色</span>
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
-      {/* 4. 段落与结构组 */}
-      <div className='flex items-center gap-0.5 border-r border-border/70 pr-2 mr-1'>
-        <Button
-          type='button'
-          variant='ghost'
-          size='sm'
-          className='h-7 w-7 p-0'
-          onClick={() => onInsertWrap('> ', '', '在这里输入引言...')}
-          title='引用段落 (>)'
-        >
-          <Quote className='size-3.5' />
-        </Button>
-        <Button
-          type='button'
-          variant='ghost'
-          size='sm'
-          className='h-7 w-7 p-0'
-          onClick={() => onInsertWrap('- ', '', '列表条目')}
-          title='无序列表 (-)'
-        >
-          <List className='size-3.5' />
-        </Button>
-        <Button
-          type='button'
-          variant='ghost'
-          size='sm'
-          className='h-7 w-7 p-0'
-          onClick={() => onInsertWrap('1. ', '', '有序条目')}
-          title='有序列表 (1.)'
-        >
-          <ListOrdered className='size-3.5' />
-        </Button>
-        <Button
-          type='button'
-          variant='ghost'
-          size='sm'
-          className='h-7 w-7 p-0'
-          onClick={() => onInsertText('\n<hr class="article-divider" />\n')}
-          title='插入微光分割线'
-        >
-          <Minus className='size-3.5' />
-        </Button>
-      </div>
+      {/* R2 Image Picker Dialog */}
+      <R2AssetPickerDialog
+        open={r2PickerOpen}
+        onClose={() => setR2PickerOpen(false)}
+        onSelect={handleInsertR2Image}
+        title='从 R2 媒体库调用图片'
+        selectButtonText='插入正文'
+      />
 
-      {/* 5. 图片上传 */}
-      <div className='flex items-center gap-0.5 border-r border-border/70 pr-2 mr-1'>
-        <Button
-          type='button'
-          variant='ghost'
-          size='sm'
-          disabled={isUploading}
-          onClick={() => imageInputRef.current?.click()}
-          className='h-7 px-2 text-xs gap-1'
-          title='上传并插入图片至光标处'
-        >
-          {isUploading ? <Loader2 className='size-3.5 animate-spin' /> : <Image className='size-3.5 text-primary' />}
-          <span className='text-[11px] hidden sm:inline'>插图</span>
-        </Button>
-        <input
-          ref={imageInputRef}
-          type='file'
-          accept='image/*'
-          className='hidden'
-          onChange={handleImageFile}
-        />
-      </div>
+      {/* Software Embed Dialog */}
+      <EmbedSoftwareDialog
+        open={softwareEmbedOpen}
+        onClose={() => setSoftwareEmbedOpen(false)}
+        onInsert={(snippet) => {
+          onInsertText(snippet)
+          toast.success('已插入自研软件互动推荐卡片')
+        }}
+      />
 
-      {/* 6. 微信公众号经典排版样式库 (一键插入卡片) */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type='button'
-            variant='secondary'
-            size='sm'
-            className='h-7 px-2.5 text-xs gap-1.5 font-medium bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20'
-          >
-            <Sparkles className='size-3.5' />
-            <span>公众号样式模板</span>
-            <ChevronDown className='size-3 opacity-70' />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align='start' className='w-72'>
-          <DropdownMenuLabel className='text-xs font-semibold flex items-center justify-between'>
-            <span>微信公众号排版样式库</span>
-            <span className='text-[10px] text-muted-foreground font-normal'>点击一键插入</span>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {WECHAT_TEMPLATES.map((tpl) => (
-            <DropdownMenuItem
-              key={tpl.id}
-              onClick={() => handleSelectTemplate(tpl)}
-              className='flex flex-col items-start gap-0.5 py-2 cursor-pointer'
-            >
-              <div className='font-medium text-xs flex items-center gap-1.5 text-foreground'>
-                <span>{tpl.name}</span>
-              </div>
-              <p className='text-[11px] text-muted-foreground leading-snug line-clamp-1'>
-                {tpl.description}
-              </p>
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+      {/* Music Embed Dialog */}
+      <EmbedMusicDialog
+        open={musicEmbedOpen}
+        onClose={() => setMusicEmbedOpen(false)}
+        onInsert={(snippet) => {
+          onInsertText(snippet)
+          toast.success('已插入音乐播放卡片')
+        }}
+      />
+    </>
   )
 }
