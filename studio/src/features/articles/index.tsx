@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ArticleTable } from './article-table'
 import { ArticleCards } from './article-cards'
-import { ArticleEditorDialog } from './article-editor-dialog'
+import { ArticleWorkbench } from './workbench/article-workbench'
 
 export function ArticlesFeature() {
   const queryClient = useQueryClient()
@@ -157,10 +157,9 @@ export function ArticlesFeature() {
         />
       )}
 
-      {/* 文章编辑对话框 */}
+      {/* 沉浸式全屏文章创作排版工作台 */}
       {editorOpen && (
-        <ArticleEditorDialog
-          open={editorOpen}
+        <ArticleWorkbench
           article={editingArticle}
           softwareList={softwareList}
           articlesCount={articlesList.length}

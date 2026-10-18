@@ -268,16 +268,41 @@ function renderContent(content) {
 function sanitizeArticleHtml(html) {
   const template = document.createElement("template");
   template.innerHTML = String(html || "");
-  const allowedTags = new Set(["A", "P", "BR", "STRONG", "B", "EM", "I", "UL", "OL", "LI", "BLOCKQUOTE", "H2", "H3", "IMG", "FIGURE", "FIGCAPTION", "AUDIO", "SOURCE", "TABLE", "THEAD", "TBODY", "TR", "TH", "TD", "PRE", "CODE"]);
+  const allowedTags = new Set([
+    "A", "P", "BR", "STRONG", "B", "EM", "I", "U", "S", "DEL", "MARK", "HR",
+    "UL", "OL", "LI", "BLOCKQUOTE", "H1", "H2", "H3", "H4", "IMG", "FIGURE", "FIGCAPTION",
+    "AUDIO", "SOURCE", "TABLE", "THEAD", "TBODY", "TR", "TH", "TD", "PRE", "CODE",
+    "DIV", "SPAN", "SECTION"
+  ]);
   const allowedAttrs = {
-    A: new Set(["href", "target", "rel"]),
-    IMG: new Set(["src", "alt", "loading"]),
-    AUDIO: new Set(["src", "controls", "preload"]),
+    A: new Set(["href", "target", "rel", "class"]),
+    IMG: new Set(["src", "alt", "loading", "class"]),
+    AUDIO: new Set(["src", "controls", "preload", "class"]),
     SOURCE: new Set(["src", "type"]),
     FIGURE: new Set(["class"]),
+    FIGCAPTION: new Set(["class"]),
     CODE: new Set(["class"]),
     PRE: new Set(["class"]),
-    TABLE: new Set(["class"])
+    TABLE: new Set(["class"]),
+    THEAD: new Set(["class"]),
+    TBODY: new Set(["class"]),
+    TR: new Set(["class"]),
+    TH: new Set(["class"]),
+    TD: new Set(["class"]),
+    DIV: new Set(["class", "style"]),
+    SPAN: new Set(["class", "style"]),
+    SECTION: new Set(["class", "style"]),
+    P: new Set(["class", "style"]),
+    BLOCKQUOTE: new Set(["class", "style"]),
+    MARK: new Set(["class", "style"]),
+    HR: new Set(["class"]),
+    H1: new Set(["class", "style"]),
+    H2: new Set(["class", "style"]),
+    H3: new Set(["class", "style"]),
+    H4: new Set(["class", "style"]),
+    UL: new Set(["class"]),
+    OL: new Set(["class"]),
+    LI: new Set(["class"])
   };
   const cleanNode = node => {
     if (node.nodeType === Node.COMMENT_NODE) { node.remove(); return; }

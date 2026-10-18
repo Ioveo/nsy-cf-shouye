@@ -448,3 +448,157 @@
     justify-content: center;
   }
 }
+
+/* 5. 微信公众号级高级排版组件库 (WeChat Style Blocks) */
+.article-callout {
+  margin: 24px 0;
+  padding: 16px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.article-callout__header {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.article-callout p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: inherit;
+  opacity: 0.95;
+}
+
+.article-callout--tip {
+  background: rgba(229, 169, 60, 0.08);
+  border-color: rgba(229, 169, 60, 0.25);
+  border-left: 4px solid #e5a93c;
+  color: #fef3c7;
+}
+.article-callout--tip .article-callout__header {
+  color: #e5a93c;
+}
+
+.article-callout--warning {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
+  border-left: 4px solid #f59e0b;
+  color: #fed7aa;
+}
+.article-callout--warning .article-callout__header {
+  color: #f59e0b;
+}
+
+.article-callout--info {
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.25);
+  border-left: 4px solid #38bdf8;
+  color: #e0f2fe;
+}
+.article-callout--info .article-callout__header {
+  color: #38bdf8;
+}
+
+.article-quote-card {
+  margin: 32px auto;
+  max-width: 90%;
+  padding: 24px 28px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(229, 169, 60, 0.06) 100%);
+  border: 1px solid rgba(229, 169, 60, 0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  text-align: center;
+  position: relative;
+}
+
+.article-quote-card__mark {
+  font-size: 36px;
+  line-height: 1;
+  color: #e5a93c;
+  font-family: Georgia, serif;
+  opacity: 0.8;
+  margin-bottom: 6px;
+}
+
+.article-quote-card__text {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.8;
+  color: #f8fafc;
+  font-style: italic;
+  margin: 0 0 12px;
+}
+
+.article-quote-card__author {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.article-step-card {
+  margin: 28px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.article-step-card__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.article-step-card__num {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(229, 169, 60, 0.15);
+  border: 1px solid rgba(229, 169, 60, 0.4);
+  color: #e5a93c;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: monospace;
+}
+
+.article-step-card__body h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.article-step-card__body p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #94a3b8;
+}
+
+.article-divider {
+  height: 1px;
+  border: none;
+  background: linear-gradient(90deg, transparent, rgba(229, 169, 60, 0.5), transparent);
+  margin: 36px 0;
+}
+
+.article-mark {
+  background: rgba(251, 191, 36, 0.22);
+  color: #fef08a;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
