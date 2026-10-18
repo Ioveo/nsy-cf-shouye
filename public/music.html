@@ -1,222 +1,241 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>音乐频道 - 天才猫音乐</title>
-    <meta name="description" content="天才猫音乐频道，提供今日主推、场景歌单、上新音乐、热门排行和在线播放。" />
-    <link rel="icon" type="image/png" href="/logo.png?v=20260509" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles.css?v=20260510-premium-detail" />
-    <link rel="stylesheet" href="/music.css?v=20260517-app-polish" />
-    <link rel="stylesheet" href="/css/music-v4.css?v=20261018-v4" />
-    <link rel="stylesheet" href="/site-theme.css?v=20260517-raycast-site" />
-  </head>
-  <body class="music-page" data-landing-page="music">
-    <aside class="music-sidebar">
-      <a class="music-sidebar__brand" href="/music.html">
-        <img src="/logo.png" alt="" />
-        <span>天才猫音乐</span>
-      </a>
-      <nav class="music-sidebar__nav" aria-label="音乐频道导航">
-        <a class="is-active" href="/music.html"><span class="material-symbols-outlined">home</span><span>首页</span></a>
-        <a href="#scenePlaylists"><span class="material-symbols-outlined">queue_music</span><span>场景歌单</span></a>
-        <a href="#musicCharts"><span class="material-symbols-outlined">local_fire_department</span><span>排行榜</span></a>
-        <a href="#newMusic"><span class="material-symbols-outlined">new_releases</span><span>上新</span></a>
-        <a href="#musicLibrary"><span class="material-symbols-outlined">library_music</span><span>曲库</span></a>
-      </nav>
-      <div class="music-sidebar__stats" aria-label="音乐数据">
-        <article><span>曲库</span><strong id="statTracks">0</strong></article>
-        <article><span>歌单</span><strong id="statPlaylists">0</strong></article>
-        <article><span>上新</span><strong id="statNew">0</strong></article>
-        <article><span>标签</span><strong id="statTags">0</strong></article>
-      </div>
-    </aside>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天才猫音乐 · 白夜十五境 Cinema 音乐频道</title>
+  <meta name="description" content="十五首曲子，十五个世界。一张用眼睛听的电子专辑。天才猫音乐频道提供氛围电子、合成器浪潮与视听沉浸体验。" />
+  <link rel="icon" type="image/png" href="/logo.png?v=20260509" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/music-cinema.css?v=20261018-cinema">
+</head>
+<body>
 
-    <div class="music-app">
-      <header class="music-topbar">
-        <a class="music-mobile-brand" href="/music.html">
-          <img src="/logo.png" alt="" />
-          <span>天才猫音乐</span>
+<!-- 顶栏导航 -->
+<nav id="topnav">
+  <a class="logo" href="/music.html">
+    <img src="/logo.png" alt="" style="width: 22px; height: 22px; border-radius: 6px; object-fit: cover;" />
+    <span>白夜<b>·</b>WHITE NIGHT</span>
+  </a>
+  <div class="links">
+    <a href="#chart">排行</a>
+    <a href="#albums">专辑</a>
+    <a href="#genres">分类</a>
+    <a href="#tracks">曲目</a>
+    <a href="#tour">巡演</a>
+  </div>
+  <div class="site-switch">
+    <a href="/" title="返回天才猫主站">主站</a>
+    <a href="/download.html" title="软件中心">软件下载</a>
+    <a href="/articles.html" title="文章与教程">文章教程</a>
+    <a href="/gallery.html" title="视觉画廊">画廊</a>
+  </div>
+</nav>
+
+<!-- Preloader 优雅加载条 -->
+<div id="loader">
+  <div class="t">白夜 WHITE NIGHT</div>
+  <div class="n" id="loadN">00</div>
+  <div class="bar"><i id="loadB"></i></div>
+  <div class="t" style="letter-spacing: 0.3em;">十五境 LOADING</div>
+</div>
+
+<!-- 胶片颗粒与顶底暗带 -->
+<div class="grain"></div>
+<div id="prog"></div>
+
+<!-- 1. HERO 巨幕首屏 -->
+<header class="hero">
+  <div class="orb o1"></div>
+  <div class="orb o2"></div>
+  <div class="orb o3"></div>
+
+  <div class="hero-grid">
+    <div class="hero-in">
+      <div class="hero-chip" id="heroChip">NEW ALBUM · 新专辑上线</div>
+      <h1 id="heroH1"></h1>
+      <div class="hero-en" id="heroEn">FIFTEEN REALMS</div>
+      <p class="hero-sub" id="heroSub">十五首曲子，十五个世界。<br>一张用眼睛听的电子专辑。</p>
+
+      <div class="cta-row">
+        <a class="btn btn-p" id="heroBtnPrimary" href="#tracks">
+          <span class="eq"><i></i><i></i><i></i><i></i><i></i></span>
+          <span>播放专辑</span>
         </a>
-        <div class="music-search">
-          <span class="material-symbols-outlined">search</span>
-          <input id="musicSearch" placeholder="搜索歌曲、歌手、标签" />
-        </div>
-        <nav aria-label="主导航" data-nav>
-          <a href="/">首页</a>
-          <a href="/download.html">软件下载</a>
-          <a href="/photo-wall.html">照片墙</a>
-          <a href="/gallery.html">图片画廊</a>
-          <a href="/music.html">音乐频道</a>
-          <a href="/articles.html">文章教程</a>
-          <a href="/license.html">授权购买</a>
-        </nav>
-      </header>
+        <a class="btn btn-g" id="heroBtnSecondary" href="#tour">巡演日程</a>
+      </div>
 
-      <main class="music-main">
-        <!-- Playlist Detail View (shown when ?playlist=<id>) -->
-        <section class="playlist-detail-view" id="playlistDetailView" hidden></section>
-
-        <!-- Main Home Content (hidden when playlist detail view is active) -->
-        <div id="musicMainHome">
-          <section class="music-hero" id="musicHero">
-            <img class="music-hero__image" id="heroCover" data-landing-src="heroImage" src="/logo.png" alt="" />
-            <div class="music-hero__shade"></div>
-            <div class="music-hero__content">
-              <p class="music-kicker" id="heroKicker">Today's Pick</p>
-              <h1 id="heroHeadline" data-landing="heroTitle">今天听点新的</h1>
-              <p class="music-hero__lead" id="heroLead" data-landing="heroSubtitle">为直播、剪辑和夜间工作准备的音乐频道。</p>
-              <div class="music-hero__track">
-                <strong id="heroTitle">等待音乐上架</strong>
-                <span id="heroArtist">后台发布后自动展示</span>
-              </div>
-              <div class="music-hero__actions">
-                <button type="button" id="heroPlay" data-landing="ctaText"><span class="material-symbols-outlined">play_arrow</span>播放主推</button>
-                <a href="#scenePlaylists"><span class="material-symbols-outlined">queue_music</span>浏览歌单</a>
-              </div>
-            </div>
-          </section>
-
-          <!-- Scene Playlists Section -->
-          <section class="scene-playlists-section music-panel" id="scenePlaylists">
-            <div class="music-section-head">
-              <div>
-                <p class="music-kicker">Curated Channels</p>
-                <h2>场景歌单频道</h2>
-              </div>
-            </div>
-            <div class="scene-tabs" id="sceneTabs"></div>
-            <div class="scene-playlists-grid" id="scenePlaylistsGrid"></div>
-          </section>
-
-          <section class="music-layout">
-            <aside class="music-panel" id="musicCharts">
-              <div class="music-section-head">
-                <div>
-                  <p class="music-kicker">Trending</p>
-                  <h2>热门排行</h2>
-                </div>
-                <a href="#musicLibrary">全部</a>
-              </div>
-              <div class="chart-list" id="chartList"></div>
-            </aside>
-
-            <div class="music-content">
-              <section class="music-panel" id="newMusic">
-                <div class="music-section-head">
-                  <div>
-                    <p class="music-kicker">New Releases</p>
-                    <h2>最新发布</h2>
-                  </div>
-                </div>
-                <div class="new-release" id="newRelease"></div>
-                <div class="release-list" id="newReleaseList"></div>
-              </section>
-
-              <section class="music-panel" id="musicLibrary">
-                <div class="music-section-head">
-                  <div>
-                    <p class="music-kicker">Explore Genres</p>
-                    <h2>精选标签</h2>
-                  </div>
-                  <button id="clearMusicSearch" type="button">清空</button>
-                </div>
-                <div class="tag-strip" id="tagStrip"></div>
-                <div class="music-grid" id="musicGrid"></div>
-              </section>
-            </div>
-          </section>
-        </div>
-      </main>
+      <div class="hero-stats" id="heroStats">
+        <div><b>15</b><span>曲目 TRACKS</span></div>
+        <div><b>04</b><span>专辑 ALBUMS</span></div>
+        <div><b>40+</b><span>巡演 SHOWS</span></div>
+      </div>
     </div>
 
-    <!-- Bottom Floating Capsule Player -->
-    <aside class="capsule-player" id="musicPlayer" hidden>
-      <div class="capsule-track-left">
-        <div class="capsule-cover-wrap" id="capsuleCoverWrap">
-          <img id="playerCover" src="/logo.png" alt="" />
+    <!-- 浮动媒体卡片（支持视频与图片动态无损切换） -->
+    <div class="hero-media rv">
+      <div class="hero-vcard floaty">
+        <div id="heroMediaContainer" style="position: absolute; inset: 0; width: 100%; height: 100%;">
+          <video src="https://muse.ai/files/1331075203424773/1432998841610842/xq500iv9v5g5t769vpxqq7gw/noir.mp4" autoplay muted loop playsinline></video>
         </div>
-        <div class="capsule-info">
-          <strong id="playerTitle">未选择音乐</strong>
-          <span id="playerArtist">选择一首歌开始播放</span>
-        </div>
-      </div>
-
-      <div class="capsule-center">
-        <div class="capsule-controls">
-          <button type="button" class="capsule-btn-icon" id="playerPrev" title="上一首">
-            <span class="material-symbols-outlined">skip_previous</span>
-          </button>
-          <button type="button" class="capsule-btn-play" id="playerPlay" title="播放/暂停">
-            <span class="material-symbols-outlined" id="playerPlayIcon">play_arrow</span>
-          </button>
-          <button type="button" class="capsule-btn-icon" id="playerNext" title="下一首">
-            <span class="material-symbols-outlined">skip_next</span>
-          </button>
-        </div>
-        <div class="capsule-progress-bar">
-          <span class="capsule-time" id="playerCurrentTime">00:00</span>
-          <input id="playerProgress" class="capsule-slider" type="range" min="0" max="100" value="0" />
-          <span class="capsule-time" id="playerDuration">00:00</span>
+        <div class="hv-now">
+          <span class="eq"><i></i><i></i><i></i><i></i><i></i></span>
+          <div class="hv-t">
+            <b id="heroNowTitle">霓虹雨夜</b>
+            <span id="heroNowSub">Neon Rain · 主打单曲</span>
+          </div>
+          <button type="button" class="hv-play" onclick="playTrack(0)" aria-label="去播放器">▶</button>
         </div>
       </div>
+      <div class="hero-sticker" id="heroSticker">15<br>TRACKS</div>
+    </div>
+  </div>
 
-      <div class="capsule-right">
-        <div class="capsule-vol-wrap">
-          <button type="button" class="capsule-btn-icon" id="playerVolumeBtn" title="静音/恢复">
-            <span class="material-symbols-outlined" id="playerVolumeIcon">volume_up</span>
-          </button>
-          <input id="playerVolume" class="capsule-vol-slider" type="range" min="0" max="100" value="85" />
-        </div>
-        <button type="button" class="capsule-btn-icon capsule-badge-btn" id="playerQueueBtn" title="播放队列">
-          <span class="material-symbols-outlined">queue_music</span>
-          <span class="capsule-pill-badge" id="playerQueueBadge">0</span>
-        </button>
-        <button type="button" class="capsule-btn-icon" id="playerLyricsBtn" title="歌词秀">
-          <span class="material-symbols-outlined">lyrics</span>
-        </button>
+  <!-- 底部交互式音频频谱画布 -->
+  <canvas id="spec"></canvas>
+</header>
+
+<!-- 2. 跑马灯 Strip -->
+<div class="strip">
+  <div class="strip-in" id="stripIn"></div>
+</div>
+
+<!-- 3. 宣言卡片 (Manifesto) -->
+<section class="mani">
+  <div class="mani-card rv">
+    <div class="burst">NEW<br>ALBUM</div>
+    <div class="mani-chip" id="maniChip">MANIFESTO · 宣言</div>
+    <h2 id="maniTitle">十五首曲子，<br><span class="hl">十五个世界。</span></h2>
+    <p id="maniDesc">从霓虹雨夜到云海日出，从深海到星云——这是一张<b>用眼睛听</b>的专辑。每一个画面，都是一段旋律的形状。</p>
+    <div class="mani-stats" id="maniStats">
+      <div class="mstat s1"><b>15</b><span>曲目 TRACKS</span></div>
+      <div class="mstat s2"><b>15</b><span>世界 WORLDS</span></div>
+      <div class="mstat s3"><b>76</b><span>分钟 MINUTES</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. 新歌排行 (Chart) -->
+<section id="chart">
+  <div class="sec-head rv">
+    <div>
+      <div class="en">CHART · 实时热度</div>
+      <h2>新歌排行</h2>
+    </div>
+    <div class="en">横向滑动 · TOP 10</div>
+  </div>
+  <div id="chartRows"></div>
+</section>
+
+<!-- 5. 专辑库 (Albums) -->
+<section id="albums">
+  <div class="sec-head rv">
+    <div>
+      <div class="en">DISCOGRAPHY</div>
+      <h2>专辑</h2>
+    </div>
+    <div class="en">录音室精选专辑与 EP</div>
+  </div>
+  <div class="agrid" id="albumGrid"></div>
+</section>
+
+<!-- 6. 音乐流派分类 (Genres) -->
+<section id="genres">
+  <div class="sec-head rv">
+    <div>
+      <div class="en">GENRES</div>
+      <h2>分类</h2>
+    </div>
+    <div class="en" id="genreNote">点击卡片筛选排行</div>
+  </div>
+  <div class="ggrid" id="genreGrid"></div>
+</section>
+
+<!-- 7. 曲目章节与视听舞台 (Tracks & Stage) -->
+<section id="tracks">
+  <div class="giant-outline go-tracks" aria-hidden="true">十五境</div>
+  <div class="trk-head">
+    <div>
+      <div class="en">TRACKLIST · 15 CHAPTERS</div>
+      <h2>曲目</h2>
+    </div>
+    <div class="en">滚动切换 · 每一首都有一片海</div>
+  </div>
+  <div class="trk-body">
+    <!-- 曲目列表 -->
+    <div class="trk-list" id="trkList"></div>
+
+    <!-- 粘性舞台窗口 (Sticky Stage) -->
+    <div class="stage rv" id="stage">
+      <video id="stgA" muted loop playsinline preload="none"></video>
+      <video id="stgB" muted loop playsinline preload="none"></video>
+      <div class="vinyl" id="vinyl"><span class="np">NOW PLAYING</span></div>
+      <div class="pulse" id="stagePulse"></div>
+      <div class="cap">
+        <div class="t" id="capT">01 · 霓虹雨夜</div>
+        <div class="e" id="capE">Neon Rain — 4:12</div>
       </div>
+    </div>
+  </div>
+</section>
 
-      <audio id="playerAudio" preload="metadata"></audio>
-    </aside>
+<!-- 8. 巡演日程 (Tour) -->
+<section id="tour">
+  <div class="tour-in">
+    <div class="en rv">ON TOUR · 2026</div>
+    <h2 class="rv">巡演日程</h2>
+    <div id="tourRows"></div>
+  </div>
+</section>
 
-    <!-- Floating Queue Drawer -->
-    <div class="floating-queue-panel" id="playerQueueDrawer" hidden>
-      <div class="floating-panel__header">
-        <h3 class="floating-panel__title">
-          <span class="material-symbols-outlined" style="font-size:18px;">queue_music</span>
-          播放队列 (<span id="queueCount">0</span>)
-        </h3>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <button type="button" class="floating-panel__close" id="clearQueueBtn" style="font-size:11px;padding:2px 8px;">清空</button>
-          <button type="button" class="floating-panel__close" id="closeQueueBtn">
-            <span class="material-symbols-outlined" style="font-size:18px;">close</span>
-          </button>
-        </div>
+<!-- 9. 关于白夜 (About) -->
+<section id="about">
+  <div class="about-in">
+    <div class="rv">
+      <div class="en" style="margin-bottom: 20px;">ABOUT</div>
+      <h2 id="aboutTitle">关于白夜</h2>
+      <p id="aboutP1"><b>白夜</b>，电子音乐制作人。以电影感的氛围电子见长，作品游走于合成器浪潮、环境音乐与东方意象之间。</p>
+      <p id="aboutP2">《十五境》是她的第三张录音室专辑——<b>十五首曲子，十五个自然与梦境</b>。从霓虹雨夜的合成器，到云海日出的弦乐，每一轨都配有一部视觉短片。</p>
+      <div class="astats" id="aboutStats">
+        <div class="astat"><b>3</b><span>录音室专辑</span></div>
+        <div class="astat"><b>27</b><span>单曲</span></div>
+        <div class="astat"><b>40+</b><span>巡演场次</span></div>
       </div>
-      <div class="floating-queue__body" id="playerQueueList"></div>
+    </div>
+    <div></div>
+  </div>
+</section>
+
+<!-- 10. 底部巨幕 CTA (Final) -->
+<section id="final">
+  <div class="final-card rv">
+    <div class="orb fo"></div>
+    <div class="en">白夜 WHITE NIGHT</div>
+    <h2 id="finalTitle">在云海之上<br>听见日出。</h2>
+    <p id="finalSub">订阅获取新专辑、巡演预售与未公开曲目</p>
+
+    <div class="cta-row" style="justify-content: center;">
+      <a class="btn btn-p" href="#">订阅邮件</a>
+      <a class="btn btn-g" href="#tracks" style="background: rgba(255, 255, 255, 0.08) !important; color: #fff !important; border-color: rgba(255, 255, 255, 0.2);">重听专辑</a>
     </div>
 
-    <!-- Floating Lyrics Panel -->
-    <div class="floating-lyrics-panel" id="playerLyricsPanel" hidden>
-      <div class="floating-panel__header">
-        <h3 class="floating-panel__title">
-          <span class="material-symbols-outlined" style="font-size:18px;">lyrics</span>
-          <span id="lyricsHeaderTitle">歌词秀</span>
-        </h3>
-        <button type="button" class="floating-panel__close" id="closeLyricsBtn">
-          <span class="material-symbols-outlined" style="font-size:18px;">close</span>
-        </button>
-      </div>
-      <div class="floating-lyrics__body" id="playerLyricsBody"></div>
+    <div class="socs" id="finalSocs">
+      <a href="https://music.163.com" target="_blank" rel="noopener">网易云音乐</a>
+      <a href="https://y.qq.com" target="_blank" rel="noopener">QQ 音乐</a>
+      <a href="https://spotify.com" target="_blank" rel="noopener">Spotify</a>
+      <a href="https://music.apple.com" target="_blank" rel="noopener">Apple Music</a>
+      <a href="https://bilibili.com" target="_blank" rel="noopener">Bilibili</a>
     </div>
 
-    <script src="/js/promotions.js?v=20261018"></script>
-    <script src="/music.js?v=20261018-v4" type="module"></script>
-    <script src="/js/landing-bind.js?v=20261017"></script>
-  </body>
+    <div class="copy" id="finalCopy">© 2026 白夜 WHITE NIGHT · 天才猫音乐频道</div>
+  </div>
+</section>
+
+<!-- 音频播放引擎 -->
+<audio id="audioEngine" preload="none"></audio>
+
+<script src="/music.js?v=20261018-cinema"></script>
+</body>
 </html>

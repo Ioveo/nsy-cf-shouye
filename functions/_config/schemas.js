@@ -34,6 +34,90 @@ export const DEFAULTS = {
   },
   "playlists": {
     items: []
+  },
+  "music-portal": {
+    hero: {
+      chip: "NEW ALBUM · 新专辑上线",
+      title: "白夜",
+      titleEn: "FIFTEEN REALMS",
+      subtitle: "十五首曲子，十五个世界。\n一张用眼睛听的电子专辑。",
+      ctaPrimaryText: "播放专辑",
+      ctaPrimaryHref: "#tracks",
+      ctaSecondaryText: "巡演日程",
+      ctaSecondaryHref: "#tour",
+      mediaType: "video",
+      mediaUrl: "https://muse.ai/files/1331075203424773/1432998841610842/xq500iv9v5g5t769vpxqq7gw/noir.mp4",
+      nowPlayingTitle: "霓虹雨夜",
+      nowPlayingSub: "Neon Rain · 主打单曲",
+      stickerText: "15\nTRACKS",
+      stats: [
+        { label: "曲目 TRACKS", value: "15" },
+        { label: "专辑 ALBUMS", value: "04" },
+        { label: "巡演 SHOWS", value: "40+" }
+      ]
+    },
+    marquee: {
+      text: "十五境 FIFTEEN REALMS ◆ 白夜 WHITE NIGHT ◆"
+    },
+    manifesto: {
+      show: true,
+      chip: "MANIFESTO · 宣言",
+      badge: "NEW\nALBUM",
+      title: "十五首曲子，",
+      highlight: "十五个世界。",
+      description: "从霓虹雨夜到云海日出，从深海到星云——这是一张用眼睛听的专辑。每一个画面，都是一段旋律的形状。",
+      stats: [
+        { label: "曲目 TRACKS", value: "15" },
+        { label: "世界 WORLDS", value: "15" },
+        { label: "分钟 MINUTES", value: "76" }
+      ]
+    },
+    albums: [
+      { id: "alb_1", name: "霓虹雨夜", nameEn: "NEON RAIN", year: "2026 · EP", color1: "#57e6ff", color2: "#a855f7", coverUrl: "", trackIds: [0, 4, 13] },
+      { id: "alb_2", name: "万物有声", nameEn: "WILD", year: "2025", color1: "#4ade80", color2: "#bfe3ff", coverUrl: "", trackIds: [2, 9, 10, 11] },
+      { id: "alb_3", name: "东方既白", nameEn: "ORIENT", year: "2024", color1: "#3ddc84", color2: "#f0a840", coverUrl: "", trackIds: [12, 7, 6, 8] },
+      { id: "alb_4", name: "深渊", nameEn: "ABYSS", year: "2023", color1: "#3d7bff", color2: "#8a7cff", coverUrl: "", trackIds: [5, 1, 3, 14] }
+    ],
+    genres: [
+      { id: "gen_1", name: "电子舞曲", nameEn: "ELECTRONIC", color: "#a855f7", tags: ["INDUSTRIAL", "DARK TECHNO", "LIQUID DNB", "UPLIFTING"] },
+      { id: "gen_2", name: "环境氛围", nameEn: "AMBIENT", color: "#4ade80", tags: ["AMBIENT", "DEEP AMBIENT", "DOWNTEMPO"] },
+      { id: "gen_3", name: "合成器浪潮", nameEn: "SYNTHWAVE", color: "#57e6ff", tags: ["SYNTHWAVE", "EPIC"] },
+      { id: "gen_4", name: "世界融合", nameEn: "WORLD", color: "#f0a840", tags: ["WORLD", "FOLKTRONICA"] },
+      { id: "gen_5", name: "电影管弦", nameEn: "CINEMATIC", color: "#bfe3ff", tags: ["CINEMATIC", "ORCHESTRAL"] },
+      { id: "gen_6", name: "独立流行", nameEn: "INDIE", color: "#ff8fb3", tags: ["LO-FI", "ART POP"] }
+    ],
+    tours: [
+      { id: "tour_1", date: "2026.11.08", city: "上海", venue: "Modern Sky Lab", status: "hot", statusLabel: "余票" },
+      { id: "tour_2", date: "2026.11.15", city: "北京", venue: "愚公移山", status: "hot", statusLabel: "余票" },
+      { id: "tour_3", date: "2026.11.22", city: "深圳", venue: "B10 Live", status: "sold", statusLabel: "售罄" },
+      { id: "tour_4", date: "2026.11.29", city: "成都", venue: "正火艺术中心", status: "soon", statusLabel: "待售" },
+      { id: "tour_5", date: "2026.12.06", city: "杭州", venue: "酒球会", status: "soon", statusLabel: "待售" }
+    ],
+    about: {
+      title: "关于白夜",
+      text1: "白夜，电子音乐制作人。以电影感的氛围电子见长，作品游走于合成器浪潮、环境音乐与东方意象之间。",
+      text2: "《十五境》是她的第三张录音室专辑——十五首曲子，十五个自然与梦境。从霓虹雨夜的合成器，到云海日出的弦乐，每一轨都配有一部视觉短片。",
+      stats: [
+        { label: "录音室专辑", value: "3" },
+        { label: "单曲", value: "27" },
+        { label: "巡演场次", value: "40+" }
+      ]
+    },
+    footer: {
+      title: "在云海之上\n听见日出。",
+      subtitle: "订阅获取新专辑、巡演预售与未公开曲目",
+      subscribeText: "订阅邮件",
+      subscribeHref: "#",
+      replayText: "重听专辑",
+      socialLinks: [
+        { label: "网易云音乐", href: "https://music.163.com" },
+        { label: "QQ 音乐", href: "https://y.qq.com" },
+        { label: "Spotify", href: "https://spotify.com" },
+        { label: "Apple Music", href: "https://music.apple.com" },
+        { label: "Bilibili", href: "https://bilibili.com" }
+      ],
+      copyright: "© 2026 白夜 WHITE NIGHT · 天才猫音乐频道"
+    }
   }
 };
 
@@ -214,5 +298,114 @@ export const VALIDATORS = {
     }).filter(Boolean);
 
     return { items };
+  },
+
+  "music-portal": function validateMusicPortal(raw) {
+    const data = raw && typeof raw === "object" ? raw : {};
+    const d = DEFAULTS["music-portal"];
+
+    const heroRaw = data.hero && typeof data.hero === "object" ? data.hero : {};
+    const marqueeRaw = data.marquee && typeof data.marquee === "object" ? data.marquee : {};
+    const manifestoRaw = data.manifesto && typeof data.manifesto === "object" ? data.manifesto : {};
+    const aboutRaw = data.about && typeof data.about === "object" ? data.about : {};
+    const footerRaw = data.footer && typeof data.footer === "object" ? data.footer : {};
+
+    const hero = {
+      chip: String(heroRaw.chip || d.hero.chip).trim().slice(0, 100),
+      title: String(heroRaw.title || d.hero.title).trim().slice(0, 50),
+      titleEn: String(heroRaw.titleEn || d.hero.titleEn).trim().slice(0, 100),
+      subtitle: String(heroRaw.subtitle || d.hero.subtitle).trim().slice(0, 500),
+      ctaPrimaryText: String(heroRaw.ctaPrimaryText || d.hero.ctaPrimaryText).trim().slice(0, 50),
+      ctaPrimaryHref: String(heroRaw.ctaPrimaryHref || d.hero.ctaPrimaryHref).trim().slice(0, 200),
+      ctaSecondaryText: String(heroRaw.ctaSecondaryText || d.hero.ctaSecondaryText).trim().slice(0, 50),
+      ctaSecondaryHref: String(heroRaw.ctaSecondaryHref || d.hero.ctaSecondaryHref).trim().slice(0, 200),
+      mediaType: heroRaw.mediaType === "image" ? "image" : "video",
+      mediaUrl: String(heroRaw.mediaUrl || d.hero.mediaUrl).trim().slice(0, 500),
+      nowPlayingTitle: String(heroRaw.nowPlayingTitle || d.hero.nowPlayingTitle).trim().slice(0, 100),
+      nowPlayingSub: String(heroRaw.nowPlayingSub || d.hero.nowPlayingSub).trim().slice(0, 100),
+      stickerText: String(heroRaw.stickerText || d.hero.stickerText).trim().slice(0, 50),
+      stats: Array.isArray(heroRaw.stats)
+        ? heroRaw.stats.slice(0, 5).map(s => ({ label: String(s?.label || "").trim().slice(0, 50), value: String(s?.value || "").trim().slice(0, 50) }))
+        : d.hero.stats
+    };
+
+    const marquee = {
+      text: String(marqueeRaw.text || d.marquee.text).trim().slice(0, 500)
+    };
+
+    const manifesto = {
+      show: manifestoRaw.show !== false,
+      chip: String(manifestoRaw.chip || d.manifesto.chip).trim().slice(0, 100),
+      badge: String(manifestoRaw.badge || d.manifesto.badge).trim().slice(0, 50),
+      title: String(manifestoRaw.title || d.manifesto.title).trim().slice(0, 100),
+      highlight: String(manifestoRaw.highlight || d.manifesto.highlight).trim().slice(0, 100),
+      description: String(manifestoRaw.description || d.manifesto.description).trim().slice(0, 500),
+      stats: Array.isArray(manifestoRaw.stats)
+        ? manifestoRaw.stats.slice(0, 5).map(s => ({ label: String(s?.label || "").trim().slice(0, 50), value: String(s?.value || "").trim().slice(0, 50) }))
+        : d.manifesto.stats
+    };
+
+    const rawAlbums = Array.isArray(data.albums) ? data.albums : d.albums;
+    const albums = rawAlbums.slice(0, 30).map((a, i) => {
+      if (!a || typeof a !== "object") return null;
+      return {
+        id: String(a.id || `alb_${Date.now()}_${i}`).trim().slice(0, 50),
+        name: String(a.name || "").trim().slice(0, 100),
+        nameEn: String(a.nameEn || "").trim().slice(0, 100),
+        year: String(a.year || "").trim().slice(0, 50),
+        color1: String(a.color1 || "#57e6ff").trim().slice(0, 30),
+        color2: String(a.color2 || "#a855f7").trim().slice(0, 30),
+        coverUrl: String(a.coverUrl || "").trim().slice(0, 500),
+        trackIds: Array.isArray(a.trackIds) ? a.trackIds.slice(0, 50) : []
+      };
+    }).filter(Boolean);
+
+    const rawGenres = Array.isArray(data.genres) ? data.genres : d.genres;
+    const genres = rawGenres.slice(0, 30).map((g, i) => {
+      if (!g || typeof g !== "object") return null;
+      return {
+        id: String(g.id || `gen_${Date.now()}_${i}`).trim().slice(0, 50),
+        name: String(g.name || "").trim().slice(0, 100),
+        nameEn: String(g.nameEn || "").trim().slice(0, 100),
+        color: String(g.color || "#57e6ff").trim().slice(0, 30),
+        tags: Array.isArray(g.tags) ? g.tags.map(String).map(s => s.trim().slice(0, 50)).filter(Boolean).slice(0, 20) : []
+      };
+    }).filter(Boolean);
+
+    const rawTours = Array.isArray(data.tours) ? data.tours : d.tours;
+    const tours = rawTours.slice(0, 50).map((t, i) => {
+      if (!t || typeof t !== "object") return null;
+      return {
+        id: String(t.id || `tour_${Date.now()}_${i}`).trim().slice(0, 50),
+        date: String(t.date || "").trim().slice(0, 50),
+        city: String(t.city || "").trim().slice(0, 50),
+        venue: String(t.venue || "").trim().slice(0, 100),
+        status: ["hot", "sold", "soon"].includes(t.status) ? t.status : "hot",
+        statusLabel: String(t.statusLabel || "余票").trim().slice(0, 20)
+      };
+    }).filter(Boolean);
+
+    const about = {
+      title: String(aboutRaw.title || d.about.title).trim().slice(0, 100),
+      text1: String(aboutRaw.text1 || d.about.text1).trim().slice(0, 500),
+      text2: String(aboutRaw.text2 || d.about.text2).trim().slice(0, 500),
+      stats: Array.isArray(aboutRaw.stats)
+        ? aboutRaw.stats.slice(0, 5).map(s => ({ label: String(s?.label || "").trim().slice(0, 50), value: String(s?.value || "").trim().slice(0, 50) }))
+        : d.about.stats
+    };
+
+    const footer = {
+      title: String(footerRaw.title || d.footer.title).trim().slice(0, 100),
+      subtitle: String(footerRaw.subtitle || d.footer.subtitle).trim().slice(0, 200),
+      subscribeText: String(footerRaw.subscribeText || d.footer.subscribeText).trim().slice(0, 50),
+      subscribeHref: String(footerRaw.subscribeHref || d.footer.subscribeHref).trim().slice(0, 200),
+      replayText: String(footerRaw.replayText || d.footer.replayText).trim().slice(0, 50),
+      socialLinks: Array.isArray(footerRaw.socialLinks)
+        ? footerRaw.socialLinks.slice(0, 10).map(l => ({ label: String(l?.label || "").trim().slice(0, 50), href: String(l?.href || "").trim().slice(0, 200) }))
+        : d.footer.socialLinks,
+      copyright: String(footerRaw.copyright || d.footer.copyright).trim().slice(0, 200)
+    };
+
+    return { hero, marquee, manifesto, albums, genres, tours, about, footer };
   }
 };
