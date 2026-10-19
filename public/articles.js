@@ -94,6 +94,7 @@ let CATS = ["全部", "旅行", "自然", "文化", "科学", "城市", "海洋"
 let curCat = "全部", query = "", showBmk = false;
 let bmk = new Set(JSON.parse(localStorage.getItem('wf_bmk') || '[]'));
 let portalConfig = null;
+let gridViewMode = localStorage.getItem('folio_grid_mode') || 'cards';
 
 function avColor(name) {
   let h = 0;
@@ -443,7 +444,7 @@ function initCinemaReel() {
   }, 7000);
 }
 
-// 渲染全部文章列表 (杂志索引行 AROW)
+// 渲染全部文章列表 (杂志四列高定卡片 / 双列精美列表)
 function renderGrid() {
   const box = $('grid');
   if (!box) return;
@@ -464,53 +465,107 @@ function renderGrid() {
   if ($('clearFilter')) $('clearFilter').style.display = (curCat !== '全部' || query || showBmk) ? '' : 'none';
 
   if (!list.length) {
+    box.className = '';
     box.innerHTML = '<div class="empty">没有找到相关文章，换个关键词或分类试试</div>';
     return;
   }
 
-  box.innerHTML = list.map(o => {
-    const a = o.a;
-    const m = META[a.v] || { author: '编辑部', role: '特稿', date: '2026-10-18', reads: '1.2万', c1: '#3b5bff', c2: '#8a7cff' };
-    const isOn = bmk.has(a.v);
-    const thumbImg = m.cover_image ? `<img src="${m.cover_image}" alt="" />` : '';
+  if (gridViewMode === 'cards') {
+    box.className = 'grid-cards';
+    box.innerHTML = list.map(o => {
+      const a = o.a;
+      const m = META[a.v] || { author: '编辑部', role: '特稿', date: '2026-10-18', reads: '1.2万', c1: '#3b5bff', c2: '#8a7cff' };
+      const isOn = bmk.has(a.v);
+      const covMedia = m.cover_image ? `<img src="${m.cover_image}" alt="" />` : '';
+      const idxStr = (o.i < 9 ? '0' : '') + (o.i + 1);
 
-    return `
-      <div class="arow rv" data-i="${o.i}" style="--c1:${m.c1}; --c2:${m.c2};">
-        <div class="idx">${o.i < 9 ? '0' : ''}${o.i + 1}</div>
-        <div class="thumb">
-          ${thumbImg}
-          <span class="tag">${a.tag}</span>
-        </div>
-        <div class="mid">
-          <h3>${a.cn}</h3>
-          <div class="sum">${a.sum}</div>
-        </div>
-        <div class="meta">
-          <div class="who">
-            <span class="avatar" style="background:${avColor(m.author)}; width:26px; height:26px; font-size:12px; flex-basis:26px">
-              ${(m.author || '白')[0]}
-            </span>
-            <span>${m.author} · ${m.date.slice(5)}</span>
+      return `
+        <article class="folio-card rv" data-i="${o.i}" style="--c1:${m.c1}; --c2:${m.c2};">
+          <div class="fc-cov">
+            ${covMedia}
+            <div class="fc-mesh"></div>
+            <span class="fc-tag">${a.tag}</span>
+            <button type="button" class="fc-bmk ${isOn ? 'on' : ''}" data-v="${a.v}" aria-label="收藏">
+              ${isOn ? '★' : '☆'}
+            </button>
+            <span class="fc-idx">${idxStr}</span>
           </div>
-          <div class="tm">${(a.time || '').replace('阅读约 ', '')} · ${m.reads} 阅读</div>
-          <div style="display:flex; gap:10px; align-items:center;">
+          <div class="fc-body">
+            <div class="fc-meta-top">
+              <span>${(a.time || '').replace('阅读约 ', '')}</span>
+              <span>${m.date}</span>
+            </div>
+            <h3 class="fc-title">${a.cn}</h3>
+            <p class="fc-sum">${a.sum}</p>
+            <div class="fc-foot">
+              <div class="fc-author">
+                <span class="avatar" style="background:${avColor(m.author)}; width:24px; height:24px; font-size:11px; flex:0 0 24px;">
+                  ${(m.author || '白')[0]}
+                </span>
+                <span class="author-name">${m.author}</span>
+                <span class="author-role">${m.role}</span>
+              </div>
+              <div class="fc-reads">
+                <span>${m.reads} 阅读</span>
+                <span class="fc-arrow">→</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    box.querySelectorAll('.folio-card').forEach(card => {
+      card.onclick = () => openReader(+card.dataset.i);
+    });
+    box.querySelectorAll('.fc-bmk').forEach(b => {
+      b.onclick = (e) => toggleBmk(b.dataset.v, e);
+    });
+  } else {
+    box.className = 'grid-list';
+    box.innerHTML = list.map(o => {
+      const a = o.a;
+      const m = META[a.v] || { author: '编辑部', role: '特稿', date: '2026-10-18', reads: '1.2万', c1: '#3b5bff', c2: '#8a7cff' };
+      const isOn = bmk.has(a.v);
+      const thumbImg = m.cover_image ? `<img src="${m.cover_image}" alt="" />` : '';
+
+      return `
+        <div class="arow rv" data-i="${o.i}" style="--c1:${m.c1}; --c2:${m.c2};">
+          <div class="idx">${o.i < 9 ? '0' : ''}${o.i + 1}</div>
+          <div class="thumb">
+            ${thumbImg}
+            <span class="tag">${a.tag}</span>
+          </div>
+          <div class="mid">
+            <h3>${a.cn}</h3>
+            <div class="sum">${a.sum}</div>
+            <div class="meta-line">
+              <div class="who">
+                <span class="avatar" style="background:${avColor(m.author)}; width:22px; height:22px; font-size:11px; flex-basis:22px">
+                  ${(m.author || '白')[0]}
+                </span>
+                <span>${m.author} · ${m.role}</span>
+              </div>
+              <div class="tm">${(a.time || '').replace('阅读约 ', '')} · ${m.reads} 阅读</div>
+            </div>
+          </div>
+          <div class="meta">
             <button type="button" class="bmk ${isOn ? 'on' : ''}" data-v="${a.v}" aria-label="收藏">
               ${isOn ? '★' : '☆'}
             </button>
             <span class="go">→</span>
           </div>
         </div>
-      </div>
-    `;
-  }).join('');
+      `;
+    }).join('');
 
-  box.querySelectorAll('.arow').forEach(row => {
-    row.onclick = () => openReader(+row.dataset.i);
-  });
-
-  box.querySelectorAll('.bmk').forEach(b => {
-    b.onclick = (e) => toggleBmk(b.dataset.v, e);
-  });
+    box.querySelectorAll('.arow').forEach(row => {
+      row.onclick = () => openReader(+row.dataset.i);
+    });
+    box.querySelectorAll('.bmk').forEach(b => {
+      b.onclick = (e) => toggleBmk(b.dataset.v, e);
+    });
+  }
 
   observeRv(box);
 }
@@ -567,9 +622,9 @@ function renderTrending() {
   });
 }
 
-// 渲染驻站作者 AUTHORS
+// 渲染驻站作者 AUTHORS (暗夜典藏艺廊 · 宽幅艺术卡片)
 function renderAuthors() {
-  const pic = $('teamPortrait'), chr = $('teamChar'), info = $('teamInfo'), box = $('teamAvatars');
+  const pic = $('teamPortrait'), chr = $('teamChar'), img = $('teamImg'), roleBadge = $('tpAuthorRole'), info = $('teamInfo'), box = $('teamAvatars');
   if (!pic || !box || !info) return;
 
   const authors = portalConfig?.authors?.items || [
@@ -586,19 +641,35 @@ function renderAuthors() {
     box.querySelectorAll('.team-avatar').forEach((b, j) => b.classList.toggle('active', i === j));
     pic.classList.remove('switching');
     void pic.offsetWidth;
-    pic.style.setProperty('--member', m.color);
-    if (chr) chr.textContent = (m.name || '白')[0];
+    pic.style.setProperty('--member', m.color || '#d97857');
+
+    const photoUrl = m.photo || m.avatar_image || m.image;
+    if (photoUrl) {
+      if (img) {
+        img.src = photoUrl;
+        img.style.display = 'block';
+      }
+      if (chr) chr.style.display = 'none';
+    } else {
+      if (img) img.style.display = 'none';
+      if (chr) {
+        chr.style.display = 'block';
+        chr.textContent = (m.name || '白')[0];
+      }
+    }
+
+    if (roleBadge) roleBadge.textContent = m.role || '特稿记者';
     pic.classList.add('switching');
 
     info.style.opacity = '0.15';
     info.style.transform = 'translateY(10px)';
     setTimeout(() => {
       info.innerHTML = `
+        <div class="role">${m.role || '特稿专栏'}</div>
         <h3>${m.name}</h3>
-        <div class="role">${m.role}</div>
         <p>${m.bio}</p>
-        <div class="cnt">${m.count} · 白卷驻站</div>
-        <button type="button" class="btn btn-g" id="teamMore">查看TA的文章 →</button>
+        <div class="cnt">${m.count || '白卷驻站'} · 驻站专栏</div>
+        <button type="button" class="btn-author-more" id="teamMore">浏览TA的专栏文章 →</button>
       `;
       info.style.transition = '0.35s';
       info.style.opacity = '1';
@@ -619,8 +690,8 @@ function renderAuthors() {
   }
 
   box.innerHTML = authors.map((m, i) => `
-    <button type="button" class="team-avatar ${i === 0 ? 'active' : ''}" style="--member:${m.color}" data-m="${i}" aria-label="${m.name}">
-      ${(m.name || '白')[0]}
+    <button type="button" class="team-avatar ${i === 0 ? 'active' : ''}" style="--member:${m.color || '#ffd166'}" data-m="${i}" aria-label="${m.name}">
+      ${m.avatar_thumb ? `<img src="${m.avatar_thumb}" alt="${m.name}" />` : (m.name || '白')[0]}
     </button>
   `).join('');
 
@@ -835,6 +906,31 @@ function bindGlobalEvents() {
       renderGrid();
       $('sec-grid')?.scrollIntoView({ behavior: 'smooth' });
       toast(showBmk ? '只看我的书签' : '已显示全部');
+    };
+  }
+
+  // 视图切换 (四列网格 / 双列紧凑)
+  const btnGrid = $('btnViewGrid');
+  const btnList = $('btnViewList');
+  if (btnGrid && btnList) {
+    btnGrid.classList.toggle('on', gridViewMode === 'cards');
+    btnList.classList.toggle('on', gridViewMode === 'list');
+
+    btnGrid.onclick = () => {
+      if (gridViewMode === 'cards') return;
+      gridViewMode = 'cards';
+      localStorage.setItem('folio_grid_mode', 'cards');
+      btnGrid.classList.add('on');
+      btnList.classList.remove('on');
+      renderGrid();
+    };
+    btnList.onclick = () => {
+      if (gridViewMode === 'list') return;
+      gridViewMode = 'list';
+      localStorage.setItem('folio_grid_mode', 'list');
+      btnList.classList.add('on');
+      btnGrid.classList.remove('on');
+      renderGrid();
     };
   }
 

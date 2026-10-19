@@ -111,9 +111,15 @@
   <div class="wrap">
     <div class="sec-head rv">
       <h2>全部文章<small id="gridCount">15 篇</small></h2>
-      <span class="more" id="clearFilter" style="display: none;">清除筛选 ✕</span>
+      <div style="display:inline-flex; align-items:center; gap:16px;">
+        <span class="more" id="clearFilter" style="display: none;">清除筛选 ✕</span>
+        <div class="view-switch" id="viewSwitch">
+          <button type="button" class="on" id="btnViewGrid" title="四列卡片网格">⊞ 网格</button>
+          <button type="button" id="btnViewList" title="双列紧凑列表">☰ 双列</button>
+        </div>
+      </div>
     </div>
-    <div id="grid"></div>
+    <div id="grid" class="grid-cards"></div>
   </div>
 </section>
 
@@ -145,7 +151,13 @@
     </div>
     <div class="team-show rv">
       <div class="team-portrait" id="teamPortrait" style="--member:#d97857">
+        <div class="tp-badge-top"><span class="dot"></span>RESIDENT COLUMNIST</div>
+        <img class="tp-img" id="teamImg" src="" alt="" style="display:none;" />
         <span class="tp-char" id="teamChar">陈</span>
+        <div class="tp-badge-bot">
+          <span id="tpAuthorRole">特稿记者</span>
+          <span>WHITE FOLIO SALON</span>
+        </div>
       </div>
       <div class="team-info" id="teamInfo"></div>
       <div class="team-avatars" id="teamAvatars"></div>

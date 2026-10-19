@@ -55,6 +55,7 @@ export function inferAssetKind(key = "", mimeType = "") {
   const type = String(mimeType || "").toLowerCase();
   if (lowerKey.startsWith("software/") || /\.(zip|7z|rar|exe|msi)$/i.test(lowerKey)) return "software";
   if (lowerKey.startsWith("site/") || lowerKey.includes("logo") || lowerKey.includes("qr") || lowerKey.includes("qrcode") || lowerKey.includes("pay-qr")) return "site";
+  if (type.startsWith("video/") || lowerKey.startsWith("media/video/") || /\.(mp4|webm|mov|m4v|ogv|mkv|avi)$/i.test(lowerKey)) return "video";
   if (type.startsWith("audio/") || lowerKey.startsWith("article-audio-") || lowerKey.startsWith("media/audio/") || /\.(mp3|m4a|aac|wav|ogg|oga|webm|flac)$/i.test(lowerKey)) return "audio";
   if (type.startsWith("image/") || lowerKey.startsWith("article-image-") || lowerKey.startsWith("media/images/") || /\.(png|jpe?g|gif|webp|avif|ico)$/i.test(lowerKey)) return "image";
   return "other";

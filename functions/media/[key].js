@@ -32,6 +32,8 @@ function isPublicMediaKey(key) {
     || key.startsWith("article-audio-")
     || key.startsWith("media/images/")
     || key.startsWith("media/audio/")
+    || key.startsWith("media/video/")
+    || key.startsWith("media/other/")
     || key.startsWith("site/");
 }
 

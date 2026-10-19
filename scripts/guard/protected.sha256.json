@@ -1,6 +1,6 @@
 {
-  "functions/_lib/asset-upload.js": "1bfbcbc0868cf1a59b19cbf12ee67117dda600e2ba649ed7ba3663cd4ad6630a",
-  "functions/_lib/assets-db.js": "e2564b165fa3f5f7002016aefc9234557f0076f13caad0735ca5ac4ef7e1fe3b",
+  "functions/_lib/asset-upload.js": "159cdc739fe648274cd5f71e2b4cc427b15bf8928bfd80e81d2f1dcd99e089cd",
+  "functions/_lib/assets-db.js": "aa19a02e263df37dcfe7083f7db0ab494252564b44c97e283ccbf93726f991e8",
   "functions/_lib/catalog.js": "c07078184fb2db6971de11f3fc27dc013d0e11ae686f7750adb434c6d892f2b1",
   "functions/_lib/crypto.js": "53bb408c56370dd58ee73a762b2792b3271c52e6c065578a4b3ad80f9402dea0",
   "functions/_lib/download-stats.js": "7b08473913ed66135190066ec47e7815cbb5a45256633ae53d724f7fc0c8277d",
@@ -36,10 +36,10 @@
   "functions/apps/[[path]].js": "4ca159fb26f4cd2d3d9ee1e8a24aa57de64edb248034d7a8e6855eaf21340420",
   "functions/download/[id].js": "e2a24dc55f1473cf221d55d936e4305d942fe7fa35829949035c10340308d76b",
   "functions/download/latest/[software].js": "b1308c427f9665d9a4fc7453b654dec1842703d89bb2b52a46333753ac7bc4e1",
-  "functions/media/[[key]].js": "c8634d734d80cdc4ef6f89acaf34e079094e220f8e761a2f106b61ab7815e9ae",
-  "functions/media/[key].js": "c25bebb8e3bd95acf98c40a1bdc8926360d7c3bb130685527be1fdcf1337af85",
+  "functions/media/[[key]].js": "868afd872b79cc6bd82ee1c5d08b77b1d97d0e70a2fbf66358bc3d0c1162dc54",
+  "functions/media/[key].js": "7e22d094352b66c8fe47df57bdc7c74d163d4b3acd9716a0460acf2c1c1c3aff",
   "functions/software/[[path]].js": "4ea6e4ee92c532fc0b3d6177924ea6bc4119024fe732b18cd1d779b243bd8aaf",
   "public/console/lib/r2-upload.js": "d77c6560edc498a5f9af00f44b38fa628a5e5f229b2ce46b3f3b4df9d31a53fb",
-  "scripts/guard/r2-regression.mjs": "272902347bb7d21d4540f6e4dbd830947272a90f4f97af9122058e113cfa5b77",
+  "scripts/guard/r2-regression.mjs": "2a0eba0fffb0180e94d7507f9684a38d9765fb4657ced4049ce514addd718208",
   "wrangler.toml": "926fd998fd265a3041461dcee2c12aa2a6cb78f866336c1dbdcb9e7192aea2f5"
 }

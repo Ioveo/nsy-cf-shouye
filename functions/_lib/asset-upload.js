@@ -6,10 +6,11 @@ import { MAX_MULTIPART_SIZE } from "./multipart.js";
 export const ASSET_LIMITS = {
   image: 8 * 1024 * 1024,
   audio: 50 * 1024 * 1024,
+  video: MAX_MULTIPART_SIZE,
   software: MAX_MULTIPART_SIZE,
   hotupdate: MAX_MULTIPART_SIZE,
   site: 8 * 1024 * 1024,
-  other: 30 * 1024 * 1024
+  other: 50 * 1024 * 1024
 };
 
 export function normalizeKind(kind, name, type) {
@@ -17,6 +18,7 @@ export function normalizeKind(kind, name, type) {
   if (String(type || "").toLowerCase() === "image/svg+xml" || ext === "svg") return "";
   if (kind === "image" && ["png", "jpg", "jpeg", "gif", "webp", "avif"].includes(ext)) return "image";
   if (kind === "audio" && ["mp3", "m4a", "aac", "wav", "ogg", "oga", "webm", "flac"].includes(ext)) return "audio";
+  if (kind === "video" && ["mp4", "webm", "mov", "m4v", "ogv", "mkv", "avi"].includes(ext)) return "video";
   if (kind === "software" && ["zip", "7z", "rar", "exe", "msi"].includes(ext)) return "software";
   if (kind === "hotupdate" && ["zip", "7z", "rar", "exe", "msi", "dll", "gz", "bin", "json"].includes(ext)) return "hotupdate";
   if (kind === "site" && ["png", "jpg", "jpeg", "gif", "webp", "avif", "ico"].includes(ext)) return "site";
@@ -32,6 +34,7 @@ export function keyFor(kind, folder, fileName) {
   if (kind === "hotupdate") return `apps/${slugify(folder || "desktop")}/${Date.now()}-${fileName}`;
   if (kind === "site") return `site/${safeFolder}/${Date.now()}-${fileName}`;
   if (kind === "audio") return `media/audio/${ym}/${id("audio")}-${fileName}`;
+  if (kind === "video") return `media/video/${ym}/${id("video")}-${fileName}`;
   if (kind === "image") return `media/images/${ym}/${id("image")}-${fileName}`;
   return `media/other/${ym}/${id("asset")}-${fileName}`;
 }
@@ -56,7 +59,13 @@ export function inferredContentType(name) {
     wav: "audio/wav",
     ogg: "audio/ogg",
     oga: "audio/ogg",
-    webm: "audio/webm",
+    webm: "video/webm",
+    mp4: "video/mp4",
+    m4v: "video/x-m4v",
+    mov: "video/quicktime",
+    mkv: "video/x-matroska",
+    ogv: "video/ogg",
+    avi: "video/x-msvideo",
     flac: "audio/flac",
     zip: "application/zip",
     "7z": "application/x-7z-compressed",

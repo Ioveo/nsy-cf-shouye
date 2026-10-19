@@ -101,6 +101,16 @@ check("/apps/* 路由能下载热更新文件", r.status === 200 && (await r.arr
 r = await apps.onRequestGet({ env, params: { path: [] }, request: new Request("https://x/apps"), next: async () => new Response("next") });
 check("/apps 空路径交回静态页面", (await r.text()) === "next");
 
+// ---------- MP4 视频资源上传与 /media 访问 ----------
+let vidInit = await post("api/admin/assets/presign.js", { kind: "video", folder: "music", fileName: "promo.mp4", fileSize: file.length });
+check("MP4 视频 presign 初始化成功", vidInit.success && vidInit.fileKey?.startsWith("media/video/"), JSON.stringify(vidInit));
+let vidParts = await uploadParts(vidInit);
+let vidDone = await post("api/admin/assets/complete-upload.js", { ...vidInit, parts: vidParts, kind: "video", fileName: "promo.mp4", fileSize: file.length });
+check("MP4 视频分片合并成功", vidDone.success && same(vidInit.fileKey));
+const media = await imp("media/[[key]].js");
+r = await media.onRequest({ env, params: { key: vidInit.fileKey.split("/") }, request: new Request("https://x/" + vidInit.fileKey), next: async () => new Response("next") });
+check("/media/* 路由能播放视频并支持 Range", r.status === 200 && (await r.arrayBuffer()).byteLength === file.length);
+
 // ---------- 热更新发布接口 ----------
 const upd = await imp("api/update.js");
 r = await upd.onRequestPost({ env, request: new Request("https://x/api/update", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ app: "desktop", version: "9.9.10", patchUrl: "/" + init.fileKey, fullSetupUrl: `/download/${rel.id}` }) }) });
