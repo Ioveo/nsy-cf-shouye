@@ -66,6 +66,7 @@ export function ArticlesFeature() {
           setConfig({
             ...DEFAULT_ARTICLES_PORTAL_CONFIG,
             ...res.config,
+            pageTitle: res.config.pageTitle || DEFAULT_ARTICLES_PORTAL_CONFIG.pageTitle,
             brand: { ...DEFAULT_ARTICLES_PORTAL_CONFIG.brand, ...(res.config.brand || {}) },
             hero: { ...DEFAULT_ARTICLES_PORTAL_CONFIG.hero, ...(res.config.hero || {}) },
             bento: { ...DEFAULT_ARTICLES_PORTAL_CONFIG.bento, ...(res.config.bento || {}) },
@@ -341,8 +342,13 @@ export function ArticlesFeature() {
         {/* Tab 2: Hero 设置 */}
         <TabsContent value='hero'>
           <ArticleHeroTab
+            pageTitle={config.pageTitle || ''}
             brand={config.brand}
             hero={config.hero}
+            onChangePageTitle={(title) => {
+              setConfig({ ...config, pageTitle: title })
+              setHasChanges(true)
+            }}
             onChangeBrand={(b) => {
               setConfig({ ...config, brand: b })
               setHasChanges(true)

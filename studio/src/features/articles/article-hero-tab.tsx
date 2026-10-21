@@ -10,6 +10,7 @@ import {
   Layers,
   Tag,
   Eye,
+  Globe,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,15 +21,19 @@ import { uploadAssetFile } from '@r2'
 import { ArticlesHeroConfig } from './types'
 
 interface ArticleHeroTabProps {
+  pageTitle?: string
   brand: { logo: string; issue: string }
   hero: ArticlesHeroConfig
+  onChangePageTitle?: (val: string) => void
   onChangeBrand: (next: { logo: string; issue: string }) => void
   onChangeHero: (next: ArticlesHeroConfig) => void
 }
 
 export function ArticleHeroTab({
+  pageTitle = '',
   brand,
   hero,
+  onChangePageTitle,
   onChangeBrand,
   onChangeHero,
 }: ArticleHeroTabProps) {
@@ -82,6 +87,29 @@ export function ArticleHeroTab({
 
   return (
     <div className='space-y-6'>
+      {/* 0. 页面基础与浏览器标签页标题 */}
+      <div className='rounded-xl border bg-card p-5 space-y-3 shadow-xs'>
+        <div className='flex items-center justify-between border-b pb-3'>
+          <div className='space-y-0.5'>
+            <h3 className='font-semibold text-sm flex items-center gap-2'>
+              <Globe className='size-4 text-cyan-500' />
+              <span>文章杂志落地页浏览器标题 (Browser Tab Title / SEO)</span>
+            </h3>
+            <p className='text-xs text-muted-foreground'>
+              设置访问文章聚合杂志前台（/articles.html）时，浏览器顶栏标签页显示的标题（&lt;title&gt;）。
+            </p>
+          </div>
+        </div>
+        <div className='space-y-1.5'>
+          <Label className='text-xs font-medium'>网页顶栏标题 (Document Title)</Label>
+          <Input
+            value={pageTitle}
+            onChange={(e) => onChangePageTitle?.(e.target.value)}
+            placeholder='白卷 WHITE FOLIO · 用眼睛阅读的杂志 · 天才猫专栏'
+          />
+        </div>
+      </div>
+
       {/* 1. 杂志品牌与刊号 */}
       <div className='rounded-xl border bg-card p-5 space-y-4 shadow-xs'>
         <div className='border-b pb-3'>

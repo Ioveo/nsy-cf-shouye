@@ -263,6 +263,10 @@ async function loadPortalDataAndRender() {
 
     currentConfig = portalConfig;
 
+    if (portalConfig && portalConfig.pageTitle) {
+      document.title = portalConfig.pageTitle;
+    }
+
     // 如果后台有独立上传的曲目，则融合曲目列表
     if (catalog && Array.isArray(catalog.music) && catalog.music.length > 0) {
       mergeCatalogTracks(catalog.music);

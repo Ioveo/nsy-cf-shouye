@@ -103,6 +103,7 @@ export function useLanding() {
 }
 
 export interface SoftwareCenterConfig {
+  pageTitle?: string
   accent: 'cyan' | 'gold' | 'violet'
   hero: {
     mode: 'featured' | 'promotions'

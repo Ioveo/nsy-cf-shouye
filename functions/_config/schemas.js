@@ -13,6 +13,7 @@ export function validateUrl(url, fieldName = "链接") {
 
 export const DEFAULTS = {
   "software-center": {
+    pageTitle: "天才猫软件中心 · 官方生态与跨平台应用",
     accent: "cyan",
     hero: { mode: "featured", showSearch: true, autoplaySeconds: 6 },
     stats: { show: true, items: ["software", "downloads", "monthlyUpdates", "platforms"], hideBelow: 0 },
@@ -36,6 +37,7 @@ export const DEFAULTS = {
     items: []
   },
   "music-portal": {
+    pageTitle: "天才猫音乐 · 白夜十五境 Cinema 音乐频道",
     hero: {
       chip: "NEW ALBUM · 新专辑上线",
       title: "白夜",
@@ -120,6 +122,7 @@ export const DEFAULTS = {
     }
   },
   "articles-portal": {
+    pageTitle: "白卷 WHITE FOLIO · 用眼睛阅读的杂志 · 天才猫专栏",
     brand: {
       logo: "白卷",
       issue: "VOL.1"
@@ -333,6 +336,7 @@ export const VALIDATORS = {
       : DEFAULTS["software-center"].ranking.tabs;
 
     return {
+      pageTitle: String(data.pageTitle || DEFAULTS["software-center"].pageTitle || "").trim().slice(0, 150),
       accent: VALID_ACCENTS.includes(data.accent) ? data.accent : "cyan",
       hero: {
         mode: VALID_HERO_MODES.includes(heroRaw.mode) ? heroRaw.mode : "featured",
@@ -588,7 +592,8 @@ export const VALIDATORS = {
       copyright: String(footerRaw.copyright || d.footer.copyright).trim().slice(0, 200)
     };
 
-    return { hero, marquee, manifesto, albums, genres, tours, about, footer };
+    const pageTitle = String(data.pageTitle || d.pageTitle || "").trim().slice(0, 150);
+    return { pageTitle, hero, marquee, manifesto, albums, genres, tours, about, footer };
   },
   "articles-portal": function validateArticlesPortal(raw) {
     const data = raw && typeof raw === "object" ? raw : {};
@@ -749,6 +754,7 @@ export const VALIDATORS = {
       copyright: String(footerRaw.copyright || d.footer.copyright).trim().slice(0, 200)
     };
 
-    return { brand, hero, bento, cinema, theWire, trending, authors, knowledgeGraph, newsletter, footer };
+    const pageTitle = String(data.pageTitle || d.pageTitle || "").trim().slice(0, 150);
+    return { pageTitle, brand, hero, bento, cinema, theWire, trending, authors, knowledgeGraph, newsletter, footer };
   }
 };

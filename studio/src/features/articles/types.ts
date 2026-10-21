@@ -126,6 +126,7 @@ export interface ArticlesFooterConfig {
 }
 
 export interface ArticlesPortalConfig {
+  pageTitle: string
   brand: {
     logo: string
     issue: string
@@ -142,6 +143,7 @@ export interface ArticlesPortalConfig {
 }
 
 export const DEFAULT_ARTICLES_PORTAL_CONFIG: ArticlesPortalConfig = {
+  pageTitle: '白卷 WHITE FOLIO · 用眼睛阅读的杂志 · 天才猫专栏',
   brand: {
     logo: '白卷',
     issue: 'VOL.1',

@@ -33,6 +33,7 @@ export function navigationForMode(navigation, mode) {
 }
 
 export const DEFAULT_SITE = {
+  siteTitle: "天才猫 - 官方生态与灵动桌面工作台",
   siteMode: "portal",
   homeHeroKicker: "Tiancaimao Command Center",
   homeHeroTitle: "把直播运营入口，压缩成一次打开。",

@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { ConfigForm } from './config-form'
 
 const DEFAULT_CONFIG: SoftwareCenterConfig = {
+  pageTitle: "天才猫软件中心 · 官方生态与跨平台应用",
   accent: 'cyan',
   hero: { mode: 'featured', showSearch: true, autoplaySeconds: 6 },
   stats: { show: true, items: ['software', 'downloads', 'monthlyUpdates', 'platforms'], hideBelow: 0 },

@@ -27,6 +27,7 @@
 
   // 软件中心前台配置与推广位默认状态
   const DEFAULT_SC_CONFIG = {
+    pageTitle: "天才猫软件中心 · 官方生态与跨平台应用",
     accent: "cyan",
     hero: { mode: "featured", showSearch: true, autoplaySeconds: 6 },
     stats: { show: true, items: ["software", "downloads", "monthlyUpdates", "platforms"], hideBelow: 0 },
@@ -1186,6 +1187,7 @@
   function applyConfig(cfg) {
     if (!cfg || typeof cfg !== "object") return;
     scConfig = { ...DEFAULT_SC_CONFIG, ...cfg };
+    if (scConfig.pageTitle) { document.title = scConfig.pageTitle; }
     document.documentElement.setAttribute("data-accent", scConfig.accent || "cyan");
     currentPageSize = Math.max(1, Number(scConfig.pageSize) || 12);
 
@@ -1299,6 +1301,7 @@
         try {
           const remoteCfg = await cfgRes.value.json();
           scConfig = { ...DEFAULT_SC_CONFIG, ...remoteCfg };
+          if (scConfig.pageTitle) { document.title = scConfig.pageTitle; }
           localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify(remoteCfg));
         } catch (e) {}
       }

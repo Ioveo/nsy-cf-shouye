@@ -5,6 +5,7 @@ import {
   LayoutGrid,
   BarChart3,
   Megaphone,
+  Globe,
 } from 'lucide-react'
 import type { SoftwareCenterConfig } from '@/lib/queries'
 import { Label } from '@/components/ui/label'
@@ -51,6 +52,22 @@ export function ConfigForm({ config, onChange }: ConfigFormProps) {
 
         {/* 1. 外观设置 */}
         <TabsContent value='appearance' className='space-y-4 pt-2'>
+          <div className='rounded-lg border p-4 space-y-3 bg-card/40'>
+            <div>
+              <Label className='text-sm font-semibold flex items-center gap-2'>
+                <Globe className='size-4 text-cyan-500' />
+                <span>浏览器顶栏标题 (Browser Tab Title / SEO)</span>
+              </Label>
+              <p className='text-xs text-muted-foreground mt-0.5'>
+                设置访问 /download.html 软件中心前台时，浏览器顶栏标签页显示的标题（&lt;title&gt;）。
+              </p>
+            </div>
+            <Input
+              value={config.pageTitle || ''}
+              onChange={(e) => update({ pageTitle: e.target.value })}
+              placeholder='天才猫软件中心 · 官方生态与跨平台应用'
+            />
+          </div>
           <div className='rounded-lg border p-4 space-y-3 bg-card/40'>
             <div>
               <Label className='text-sm font-semibold'>强调主色 (Accent Color)</Label>

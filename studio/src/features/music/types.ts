@@ -75,6 +75,7 @@ export interface MusicFooterConfig {
 }
 
 export interface MusicPortalConfig {
+  pageTitle: string
   hero: MusicHeroConfig
   marquee: MusicMarqueeConfig
   manifesto: MusicManifestoConfig
@@ -86,6 +87,7 @@ export interface MusicPortalConfig {
 }
 
 export const DEFAULT_MUSIC_PORTAL_CONFIG: MusicPortalConfig = {
+  pageTitle: '天才猫音乐 · 白夜十五境 Cinema 音乐频道',
   hero: {
     chip: 'NEW ALBUM · 新专辑上线',
     title: '白夜',

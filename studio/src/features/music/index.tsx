@@ -70,6 +70,7 @@ export function MusicFeature() {
           setConfig({
             ...DEFAULT_MUSIC_PORTAL_CONFIG,
             ...res.config,
+            pageTitle: res.config.pageTitle || DEFAULT_MUSIC_PORTAL_CONFIG.pageTitle,
             hero: { ...DEFAULT_MUSIC_PORTAL_CONFIG.hero, ...(res.config.hero || {}) },
             marquee: { ...DEFAULT_MUSIC_PORTAL_CONFIG.marquee, ...(res.config.marquee || {}) },
             manifesto: { ...DEFAULT_MUSIC_PORTAL_CONFIG.manifesto, ...(res.config.manifesto || {}) },
@@ -297,12 +298,14 @@ export function MusicFeature() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab 1: 巨幕首屏 */}
+        {/* Tab 1: 巨幕首屏与页面设置 */}
         <TabsContent value='hero' className='pt-4'>
           <MusicHeroTab
+            pageTitle={config.pageTitle || ''}
             hero={config.hero}
             marquee={config.marquee}
             manifesto={config.manifesto}
+            onChangePageTitle={(val) => handleConfigChange('pageTitle', val)}
             onChangeHero={(next) => handleConfigChange('hero', next)}
             onChangeMarquee={(next) => handleConfigChange('marquee', next)}
             onChangeManifesto={(next) => handleConfigChange('manifesto', next)}

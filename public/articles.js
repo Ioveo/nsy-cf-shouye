@@ -150,6 +150,9 @@ async function loadData() {
 
     if (cfgRes.status === 'fulfilled' && cfgRes.value.ok) {
       portalConfig = await cfgRes.value.json();
+      if (portalConfig && portalConfig.pageTitle) {
+        document.title = portalConfig.pageTitle;
+      }
     }
 
     if (catRes.status === 'fulfilled' && catRes.value.ok) {

@@ -91,6 +91,7 @@ const MAX_CHUNKED_SIZE = 10 * 1024 * 1024 * 1024;
 const UPLOAD_CONCURRENCY = 8;
 const TOKEN_REFRESH_INTERVAL = 20 * 60 * 1000;
 const SITE_HOME_FIELDS = [
+  "siteTitle",
   "homeHeroKicker",
   "homeHeroTitle",
   "homeHeroDescription",

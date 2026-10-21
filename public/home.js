@@ -72,6 +72,7 @@ async function loadHomeData() {
 }
 
 function applySiteText(site) {
+  if (site && site.siteTitle) { document.title = site.siteTitle; }
   for (const element of document.querySelectorAll("[data-site-text]")) {
     const key = element.dataset.siteText;
     let val = site[key];

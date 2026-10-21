@@ -218,13 +218,13 @@ nav#topnav .site-switch a:hover {
 }
 
 .hero-grid {
-  max-width: 1240px;
+  max-width: 1720px;
   margin: 0 auto;
-  padding: 0 32px;
+  padding: 0 48px;
   width: 100%;
   display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: 64px;
+  grid-template-columns: 1.02fr 0.98fr;
+  gap: 88px;
   align-items: center;
   position: relative;
   z-index: 2;
@@ -400,7 +400,7 @@ nav#topnav .site-switch a:hover {
   overflow: hidden;
   border: 7px solid #fff;
   box-shadow: 0 50px 100px -34px rgba(20, 20, 22, 0.4);
-  aspect-ratio: 4 / 4.6;
+  aspect-ratio: 4 / 4.3;
   transform: rotate(2deg);
   background: #0a0a0e;
 }
@@ -648,8 +648,8 @@ nav#topnav .site-switch a:hover {
 
 /* 8. 宣言卡片 (Manifesto) */
 .mani {
-  padding: 130px 32px;
-  max-width: 1240px;
+  padding: 130px 48px;
+  max-width: 1720px;
   margin: 0 auto;
 }
 
@@ -815,9 +815,9 @@ nav#topnav .site-switch a:hover {
 
 /* 9. 新歌排行 (Chart) */
 .sec-head {
-  max-width: 1240px;
+  max-width: 1720px;
   margin: 0 auto;
-  padding: 110px 32px 34px;
+  padding: 110px 48px 34px;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -842,9 +842,9 @@ nav#topnav .site-switch a:hover {
 }
 
 #chartRows {
-  max-width: 1240px;
+  max-width: 1720px;
   margin: 0 auto;
-  padding: 8px 32px 34px;
+  padding: 8px 48px 34px;
   display: flex;
   gap: 18px;
   overflow-x: auto;
@@ -862,7 +862,7 @@ nav#topnav .site-switch a:hover {
 }
 
 .ccard {
-  flex: 0 0 228px;
+  flex: 0 0 260px;
   scroll-snap-align: start;
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -980,12 +980,12 @@ nav#topnav .site-switch a:hover {
 
 /* 10. 专辑库 (Albums) */
 .agrid {
-  max-width: 1240px;
+  max-width: 1720px;
   margin: 0 auto;
-  padding: 0 32px;
+  padding: 0 48px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 26px;
+  gap: 32px;
 }
 
 .acard {
@@ -1104,9 +1104,9 @@ nav#topnav .site-switch a:hover {
 
 /* 11. 音乐流派与分类 (Genres) */
 .ggrid {
-  max-width: 1240px;
+  max-width: 1720px;
   margin: 0 auto;
-  padding: 0 32px 20px;
+  padding: 0 48px 20px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 22px;
@@ -1205,9 +1205,9 @@ nav#topnav .site-switch a:hover {
 }
 
 .trk-head {
-  max-width: 1240px;
+  max-width: 1720px;
   margin: 0 auto;
-  padding: 100px 32px 30px;
+  padding: 100px 48px 30px;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -1234,12 +1234,12 @@ nav#topnav .site-switch a:hover {
 }
 
 .trk-body {
-  max-width: 1240px;
+  max-width: 1720px;
   margin: 0 auto;
-  padding: 0 32px 110px;
+  padding: 0 48px 110px;
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
-  gap: 50px;
+  gap: 72px;
   align-items: start;
   position: relative;
   z-index: 1;
@@ -1554,7 +1554,7 @@ nav#topnav .site-switch a:hover {
 .tour-in {
   position: relative;
   z-index: 2;
-  max-width: 1000px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 32px;
 }
@@ -1647,12 +1647,12 @@ nav#topnav .site-switch a:hover {
 .about-in {
   position: relative;
   z-index: 2;
-  max-width: 1240px;
+  max-width: 1720px;
   margin: 0 auto;
-  padding: 0 32px;
+  padding: 0 48px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 60px;
+  gap: 84px;
   align-items: center;
 }
 
@@ -1703,7 +1703,7 @@ nav#topnav .site-switch a:hover {
 
 .final-card {
   position: relative;
-  max-width: 1240px;
+  max-width: 1720px;
   margin: 0 auto;
   background: linear-gradient(140deg, #131316, #262633);
   border-radius: 40px;
