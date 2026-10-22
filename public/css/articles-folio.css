@@ -1190,9 +1190,9 @@ footer.folio-foot { border-top: 1px solid var(--line); margin-top: 120px; paddin
   border-bottom: 1px solid var(--line);
 }
 .reader-bar-in {
-  max-width: 920px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 0 32px;
+  padding: 0 36px;
   height: 68px;
   display: flex;
   align-items: center;
@@ -1215,8 +1215,177 @@ footer.folio-foot { border-top: 1px solid var(--line); margin-top: 120px; paddin
 .rback:hover { background: #141416; color: #fff; }
 .rprog { flex: 1; height: 4px; background: rgba(20, 20, 22, 0.1); border-radius: 2px; overflow: hidden; }
 .rprog i { display: block; height: 100%; width: 0; background: #141416; border-radius: 2px; }
-.rtitle { font-size: 14px; font-weight: 700; letter-spacing: 0.08em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px; }
-.reader-body { max-width: 920px; margin: 0 auto; padding: 64px 32px 130px; }
+.rtitle { font-size: 14px; font-weight: 700; letter-spacing: 0.08em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 420px; }
+.reader-body { max-width: 1440px; margin: 0 auto; padding: 48px 36px 140px; }
+
+/* 1440px 杂志双栏排版 */
+.reader-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 52px;
+  align-items: start;
+}
+
+.reader-main {
+  min-width: 0;
+}
+
+.reader-sidebar {
+  min-width: 0;
+}
+
+.reader-sidebar__sticky {
+  position: sticky;
+  top: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.reader-toc {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 24px 20px;
+  box-shadow: 0 10px 30px rgba(20, 20, 22, 0.05);
+}
+
+.reader-toc__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.reader-toc__head h3 {
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 0;
+}
+
+.reader-toc__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.reader-toc__item {
+  display: block;
+  font-size: 13.5px;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  line-height: 1.45;
+  transition: all 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reader-toc__item--h3 {
+  padding-left: 20px;
+  font-size: 12.5px;
+}
+
+.reader-toc__item:hover {
+  color: var(--ink);
+  background: rgba(20, 20, 22, 0.04);
+}
+
+.reader-toc__item.is-active {
+  color: #3b5bff;
+  background: rgba(59, 91, 255, 0.08);
+  font-weight: 700;
+}
+
+.reader-aside-block {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 10px 30px rgba(20, 20, 22, 0.05);
+}
+
+.reader-aside-block h3 {
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.reader-aside-rels {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reader-aside-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rtool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  background: rgba(20, 20, 22, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rtool-btn:hover {
+  background: #141416;
+  color: #fff;
+  border-color: #141416;
+}
+
+@media (max-width: 1100px) {
+  .reader-layout {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .reader-sidebar {
+    order: 2;
+  }
+  .reader-sidebar__sticky {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .reader-bar-in {
+    padding: 0 18px;
+  }
+  .reader-body {
+    padding: 32px 18px 80px;
+  }
+}
+
 .reader-body .tag {
   display: inline-block;
   font-size: 11px;

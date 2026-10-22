@@ -1,6 +1,8 @@
 // 白卷 WHITE FOLIO · 天才猫文章杂志排版引擎 (articles.js)
 // 纯 ESM 原生实现 · 动态配置驱动 · D1 文章全量适配 · 沉浸式阅读器
 
+import { renderContent, enhanceArticleContent, bindArticleAudio, bindCodeBlocks, escapeHtml, escapeAttr } from "/js/article-parser.js";
+
 const $ = id => document.getElementById(id);
 
 // 默认视频字典
@@ -757,7 +759,7 @@ function renderFooter() {
   if ($('footCopy') && f.copyright) $('footCopy').textContent = f.copyright;
 }
 
-// 沉浸式阅读器 DRAWER
+// 沉浸式阅读器 DRAWER (1440px 宽屏杂志级排版)
 function openReader(i) {
   const safeIdx = Math.max(0, Math.min(ARTICLES.length - 1, i));
   const a = ARTICLES[safeIdx];
@@ -768,10 +770,12 @@ function openReader(i) {
   const body = $('readerBody');
   if (!reader || !body) return;
 
+  const slugOrId = a.rawArticle?.slug || a.rawArticle?.id || a.v;
+  const fullPageUrl = `/article.html?slug=${encodeURIComponent(slugOrId)}`;
+
   if ($('rBarTitle')) $('rBarTitle').textContent = a.cn;
   if ($('rFullPageBtn')) {
-    const slugOrId = a.rawArticle?.slug || a.rawArticle?.id || a.v;
-    $('rFullPageBtn').href = `/article.html?slug=${encodeURIComponent(slugOrId)}`;
+    $('rFullPageBtn').href = fullPageUrl;
   }
 
   // 媒体封面：优先视频，其次图片
@@ -779,71 +783,208 @@ function openReader(i) {
   if (VURL[a.v]) {
     mediaHtml = `<div class="rvideo"><video src="${VURL[a.v]}" autoplay muted loop playsinline></video></div>`;
   } else if (m.cover_image) {
-    mediaHtml = `<div class="rvideo"><img src="${m.cover_image}" alt="" style="width:100%;object-fit:cover;" /></div>`;
+    mediaHtml = `<div class="rvideo"><img src="${escapeAttr(m.cover_image)}" alt="" style="width:100%;object-fit:cover;" /></div>`;
   }
 
-  // 正文渲染：支持标准 HTML 富文本与预设段落
+  // 正文渲染：全面支持 Markdown 解析、图片语法、标题提取
+  let headings = [];
   let contentHtml = '';
   if (a.isDbArticle && a.rawArticle?.content) {
-    contentHtml = `<div class="article-viewer">${a.rawArticle.content}</div>`;
+    const rendered = enhanceArticleContent(renderContent(a.rawArticle.content));
+    contentHtml = `<div class="article-viewer">${rendered.html}</div>`;
+    headings = rendered.headings || [];
   } else {
-    contentHtml = '<div class="article">';
+    let rawParagraphs = '';
     (a.body || []).forEach((p, k) => {
-      contentHtml += `<p class="${k === 0 ? 'lead' : ''}">${p}</p>`;
+      rawParagraphs += `<p class="${k === 0 ? 'lead' : ''}">${p}</p>`;
       if (k === 1 && a.quote) {
-        contentHtml += `<div class="pull"><blockquote>${a.quote[0]}</blockquote><cite>${a.quote[1]}</cite></div>`;
+        rawParagraphs += `<div class="pull"><blockquote>${a.quote[0]}</blockquote><cite>${a.quote[1]}</cite></div>`;
       }
     });
-    contentHtml += '</div>';
+    contentHtml = `<div class="article-viewer">${rawParagraphs}</div>`;
   }
 
   // 相关推荐列表
   const relIndices = ARTICLES.map((x, j) => j).filter(j => j !== safeIdx && ARTICLES[j].tag === a.tag);
-  while (relIndices.length < 2) {
+  while (relIndices.length < 3) {
     const r = Math.floor(Math.random() * ARTICLES.length);
     if (r !== safeIdx && !relIndices.includes(r)) relIndices.push(r);
   }
 
-  const relatedHtml = relIndices.slice(0, 2).map(j => {
+  const relatedHtml = relIndices.slice(0, 3).map(j => {
     const ra = ARTICLES[j];
     const rm = META[ra.v] || { author: '编辑部', time: '8分钟' };
     return `
       <div class="rel" data-i="${j}">
-        <b>${ra.cn}</b>
-        <span>${rm.author} · ${ra.time || '8分钟'}</span>
+        <b>${escapeHtml(ra.cn)}</b>
+        <span>${escapeHtml(rm.author || '编辑部')} · ${escapeHtml(ra.time || '8分钟')}</span>
       </div>
     `;
   }).join('');
 
-  body.innerHTML = `
-    <span class="tag">${a.tag}</span>
-    <h1>${a.cn}</h1>
-    <div class="enline">${a.en || ''}</div>
-    <div class="rmeta">
-      <span class="avatar" style="background:${avColor(m.author)}">${(m.author || '白')[0]}</span>
-      <span class="who"><b>${m.author}</b><span>${m.role || '专栏作者'}</span></span>
-      <span class="when">${m.date} · ${a.time || '阅读约 8 分钟'} · ${m.reads} 阅读</span>
-    </div>
-    ${mediaHtml}
-    ${contentHtml}
-    <div class="author-card">
-      <span class="avatar" style="background:${avColor(m.author)}">${(m.author || '白')[0]}</span>
-      <div>
-        <b>${m.author} · ${m.role || '专栏作者'}</b>
-        <p>白卷驻站作者，长期关注${a.tag}领域的现场报道与深度实践。</p>
+  // 目录导航 HTML
+  const tocHtml = headings.length ? `
+    <div class="reader-toc">
+      <div class="reader-toc__head">
+        <h3>文章目录</h3>
+        <span style="font-size:12px;color:var(--muted);">${headings.length} 节</span>
       </div>
+      <nav class="reader-toc__list" id="readerTocList">
+        ${headings.map(h => `
+          <a class="reader-toc__item reader-toc__item--${escapeAttr(h.level)}" href="#${escapeAttr(h.id)}" data-target="${escapeAttr(h.id)}">
+            ${escapeHtml(h.text)}
+          </a>
+        `).join('')}
+      </nav>
     </div>
-    <div class="rtags">
-      <span>#${a.tag}</span>
-      <span>#深度特稿</span>
-      <span>#白卷VOL.1</span>
-    </div>
-    <div class="related">
-      <h3>相关阅读</h3>
-      <div class="rel-grid">${relatedHtml}</div>
+  ` : '';
+
+  // 1440px 黄金双栏网格渲染
+  body.innerHTML = `
+    <div class="reader-layout">
+      <main class="reader-main">
+        <span class="tag">${escapeHtml(a.tag || '专栏特稿')}</span>
+        <h1>${escapeHtml(a.cn || a.title)}</h1>
+        <div class="enline">${escapeHtml(a.en || '')}</div>
+        <div class="rmeta">
+          <span class="avatar" style="background:${avColor(m.author)}">${escapeHtml((m.author || '白')[0])}</span>
+          <span class="who"><b>${escapeHtml(m.author)}</b><span>${escapeHtml(m.role || '专栏作者')}</span></span>
+          <span class="when">${escapeHtml(m.date || '')} · ${escapeHtml(a.time || '阅读约 8 分钟')} · ${escapeHtml(String(m.reads || ''))} 阅读</span>
+        </div>
+        ${mediaHtml}
+        ${contentHtml}
+        <div class="author-card">
+          <span class="avatar" style="background:${avColor(m.author)}">${escapeHtml((m.author || '白')[0])}</span>
+          <div>
+            <b>${escapeHtml(m.author)} · ${escapeHtml(m.role || '专栏作者')}</b>
+            <p>白卷驻站作者，长期关注${escapeHtml(a.tag || '技术')}领域的现场报道与深度实践。</p>
+          </div>
+        </div>
+        <div class="rtags">
+          <span>#${escapeHtml(a.tag || '专栏')}</span>
+          <span>#深度特稿</span>
+          <span>#白卷VOL.1</span>
+        </div>
+      </main>
+      <aside class="reader-sidebar">
+        <div class="reader-sidebar__sticky">
+          ${tocHtml}
+          <div class="reader-aside-block">
+            <h3>相关精选</h3>
+            <div class="reader-aside-rels">${relatedHtml}</div>
+          </div>
+          <div class="reader-aside-block">
+            <h3>阅读与分享</h3>
+            <div class="reader-aside-tools">
+              <button type="button" class="rtool-btn" id="readerCopyLink">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                <span>复制文章直达链接</span>
+              </button>
+              <a href="${escapeAttr(fullPageUrl)}" target="_blank" class="rtool-btn">
+                <span>↗ 独立全屏大页阅读</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </aside>
     </div>
   `;
 
+  // 1. 嵌入音频卡片交互绑定
+  bindArticleAudio(body);
+
+  // 2. 代码块复制与 macOS 控制条绑定
+  bindCodeBlocks(body, msg => toast(msg));
+
+  // 3. 正文图片放大灯箱绑定
+  body.querySelectorAll('.article-viewer img').forEach(img => {
+    img.tabIndex = 0;
+    img.role = 'button';
+    img.title = '点击放大预览';
+    img.onclick = () => openLightbox(img.src, img.alt);
+  });
+
+  // 4. 复制文章直达链接
+  const copyBtn = $('readerCopyLink');
+  if (copyBtn) {
+    copyBtn.onclick = async () => {
+      try {
+        const fullUrl = new URL(fullPageUrl, location.origin).href;
+        await navigator.clipboard.writeText(fullUrl);
+        toast('已复制文章直达链接');
+      } catch {
+        toast('复制失败');
+      }
+    };
+  }
+
+  // 5. 标题锚点点击复制直达链接并平滑滚动
+  body.querySelectorAll('.heading-anchor').forEach(anchor => {
+    anchor.onclick = async (e) => {
+      e.preventDefault();
+      const href = anchor.getAttribute('href') || '';
+      const targetId = href.replace(/^#/, '');
+      const targetElem = document.getElementById(targetId);
+      if (targetElem && reader) {
+        const targetTop = targetElem.offsetTop - 84;
+        reader.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+        try {
+          const fullUrl = new URL(fullPageUrl + href, location.origin).href;
+          await navigator.clipboard.writeText(fullUrl);
+          toast('已复制小节直达链接');
+        } catch {}
+      }
+    };
+  });
+
+  // 6. 目录滚动联动与点击精准定位
+  const tocLinks = Array.from(body.querySelectorAll('.reader-toc__item'));
+  if (tocLinks.length) {
+    tocLinks.forEach(link => {
+      link.onclick = (e) => {
+        e.preventDefault();
+        const targetId = link.getAttribute('data-target');
+        const targetElem = document.getElementById(targetId);
+        if (targetElem && reader) {
+          const targetTop = targetElem.offsetTop - 84;
+          reader.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+        }
+      };
+    });
+
+    const headingElems = Array.from(body.querySelectorAll('.article-viewer h2, .article-viewer h3'));
+    if (headingElems.length) {
+      let scrollTicking = false;
+      const updateTocSpy = () => {
+        const currentScroll = reader.scrollTop + 120;
+        let activeId = '';
+        for (let k = 0; k < headingElems.length; k++) {
+          if (headingElems[k].offsetTop <= currentScroll) {
+            activeId = headingElems[k].id;
+          } else {
+            break;
+          }
+        }
+        tocLinks.forEach(l => {
+          if (l.getAttribute('data-target') === activeId) {
+            l.classList.add('is-active');
+          } else {
+            l.classList.remove('is-active');
+          }
+        });
+        scrollTicking = false;
+      };
+
+      reader.addEventListener('scroll', () => {
+        if (!scrollTicking) {
+          window.requestAnimationFrame(updateTocSpy);
+          scrollTicking = true;
+        }
+      }, { passive: true });
+    }
+  }
+
+  // 7. 推荐点击切换文章
   body.querySelectorAll('.rel').forEach(r => {
     r.onclick = (e) => {
       e.stopPropagation();
@@ -857,8 +998,44 @@ function openReader(i) {
   reader.scrollTop = 0;
 }
 
+function openLightbox(src, caption = '') {
+  const lb = $('imageLightbox');
+  const img = $('imageLightboxImg');
+  const cap = $('imageLightboxCaption');
+  if (!lb || !img) return;
+  img.src = src;
+  if (cap) {
+    cap.textContent = caption || '';
+    cap.style.display = caption ? 'block' : 'none';
+  }
+  lb.hidden = false;
+}
+
+function closeLightbox() {
+  const lb = $('imageLightbox');
+  const img = $('imageLightboxImg');
+  if (!lb || !img) return;
+  lb.hidden = true;
+  img.removeAttribute('src');
+}
+
 // 全局交互事件
 function bindGlobalEvents() {
+  // 图片灯箱关闭
+  $('closeImageLightbox')?.addEventListener('click', closeLightbox);
+  $('imageLightbox')?.addEventListener('click', e => {
+    if (e.target.id === 'imageLightbox' || e.target.id === 'closeImageLightbox') closeLightbox();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeLightbox();
+      if ($('reader')?.classList.contains('open')) {
+        $('reader').classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    }
+  });
+
   // 阅读器返回
   if ($('rBack')) {
     $('rBack').onclick = () => {

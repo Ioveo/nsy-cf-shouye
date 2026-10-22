@@ -8,7 +8,8 @@
   <link rel="icon" type="image/png" href="/logo.png?v=20260509" />
   <link rel="apple-touch-icon" href="/logo.png?v=20260509" />
   <link rel="stylesheet" href="/css/articles.css?v=20261018-v4" />
-  <link rel="stylesheet" href="/css/articles-folio.css?v=20261018-folio" />
+  <link rel="stylesheet" href="/css/articles-folio.css?v=20261022-widescreen" />
+  <link rel="stylesheet" href="/css/articles-detail.css?v=20261022-v3" />
 </head>
 <body>
 
@@ -260,7 +261,14 @@
 <!-- 消息提示 TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- 全屏图片灯箱预览 -->
+<div class="image-lightbox" id="imageLightbox" hidden>
+  <button type="button" id="closeImageLightbox" aria-label="关闭图片预览">✕</button>
+  <img id="imageLightboxImg" alt="图片预览" />
+  <p id="imageLightboxCaption" class="image-lightbox__caption"></p>
+</div>
+
 <!-- 核心脚本 -->
-<script src="/articles.js?v=20261018-folio" type="module"></script>
+<script src="/articles.js?v=20261022-widescreen" type="module"></script>
 </body>
 </html>
