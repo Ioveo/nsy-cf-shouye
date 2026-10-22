@@ -991,3 +991,448 @@ body.article-page {
   transform: scale(1.08) !important;
 }
 
+/* ========================================================
+   Phase 3: 推荐流与生态闭环 (Recommendation & Ecosystem)
+   ======================================================== */
+
+/* 1. 底部互动与分享卡片 */
+.article-share-card {
+  margin: 36px 0 28px;
+  padding: 24px 28px;
+  background: var(--detail-bg-card);
+  border: 1px solid var(--detail-border);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.article-share-card__left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.article-like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--detail-border);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.article-like-btn svg {
+  color: var(--detail-muted);
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), fill 0.25s;
+}
+
+.article-like-btn:hover {
+  background: rgba(244, 63, 94, 0.12);
+  border-color: rgba(244, 63, 94, 0.35);
+  color: #fb7185;
+}
+
+.article-like-btn:hover svg {
+  transform: scale(1.2);
+  color: #f43f5e;
+}
+
+.article-like-btn.is-liked {
+  background: rgba(244, 63, 94, 0.16) !important;
+  border-color: rgba(244, 63, 94, 0.45) !important;
+  color: #f43f5e !important;
+}
+
+.article-like-btn.is-liked svg {
+  fill: #f43f5e;
+  color: #f43f5e;
+  transform: scale(1.15);
+}
+
+.article-share-card__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.share-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--detail-sub);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--detail-border);
+  padding: 8px 14px;
+  border-radius: 10px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.share-pill svg {
+  width: 15px;
+  height: 15px;
+}
+
+.share-pill:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--detail-border-hover);
+  transform: translateY(-2px);
+}
+
+.share-pill--weibo:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+.share-pill--wechat:hover {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+}
+
+/* 2. 上一篇 / 下一篇相邻文章导航 */
+.article-pagination {
+  margin: 28px 0 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.pagination-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 22px;
+  border-radius: 16px;
+  background: var(--detail-bg-card);
+  border: 1px solid var(--detail-border);
+  text-decoration: none;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pagination-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--detail-acc);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
+.pagination-card--next {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.pagination-card__dir {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--detail-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pagination-card:hover .pagination-card__dir {
+  color: var(--detail-acc);
+}
+
+.pagination-card__title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pagination-card--empty {
+  opacity: 0.45;
+  cursor: default;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--detail-muted);
+}
+
+.pagination-card--empty:hover {
+  transform: none;
+  border-color: var(--detail-border);
+  background: var(--detail-bg-card);
+  box-shadow: none;
+}
+
+/* 3. 巨幕相关推荐阅读流 (1440px) */
+.article-recommended {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 36px 80px;
+}
+
+.article-recommended__inner {
+  border-top: 1px solid var(--detail-border);
+  padding-top: 48px;
+}
+
+.article-recommended__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.article-recommended__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.article-recommended__title svg {
+  color: var(--detail-acc);
+}
+
+.article-recommended__title h2 {
+  font-size: clamp(20px, 2.2vw, 24px);
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.article-recommended__more {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--detail-acc);
+  text-decoration: none;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.article-recommended__more:hover {
+  opacity: 0.85;
+  transform: translateX(3px);
+}
+
+.article-recommended__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.recommended-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--detail-bg-card);
+  border: 1px solid var(--detail-border);
+  border-radius: 20px;
+  overflow: hidden;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.recommended-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--detail-border-hover);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+}
+
+.recommended-card__cover {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #090d16;
+  overflow: hidden;
+  position: relative;
+}
+
+.recommended-card__cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.recommended-card:hover .recommended-card__cover img {
+  transform: scale(1.06);
+}
+
+.recommended-card__body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.recommended-card__category {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--detail-gold);
+  background: var(--detail-gold-glow);
+  padding: 2px 8px;
+  border-radius: 999px;
+  width: fit-content;
+  margin-bottom: 8px;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.recommended-card__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.45;
+  margin: 0 0 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 0.2s;
+}
+
+.recommended-card:hover .recommended-card__title {
+  color: var(--detail-acc);
+}
+
+.recommended-card__summary {
+  font-size: 13px;
+  color: var(--detail-muted);
+  line-height: 1.6;
+  margin: 0 0 16px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.recommended-card__meta {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--detail-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--detail-sub);
+}
+
+/* 4. 微信二维码扫码弹窗 */
+.wechat-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.wechat-modal[hidden] {
+  display: none;
+}
+
+.wechat-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.wechat-modal__card {
+  position: relative;
+  background: #0d121c;
+  border: 1px solid var(--detail-border);
+  border-radius: 24px;
+  padding: 28px 24px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+  max-width: 320px;
+  width: 100%;
+  animation: zoomIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wechat-modal__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: var(--detail-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.wechat-modal__close:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.wechat-modal__card h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 6px;
+}
+
+.wechat-modal__card p {
+  font-size: 12.5px;
+  color: var(--detail-muted);
+  margin: 0 0 20px;
+}
+
+.wechat-modal__qr {
+  width: 180px;
+  height: 180px;
+  background: #fff;
+  padding: 10px;
+  border-radius: 14px;
+  margin: 0 auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.wechat-modal__qr img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 响应式适配 */
+@media (max-width: 960px) {
+  .article-recommended__grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .article-pagination {
+    grid-template-columns: 1fr;
+  }
+  .pagination-card--next {
+    text-align: left;
+    align-items: flex-start;
+  }
+}
+

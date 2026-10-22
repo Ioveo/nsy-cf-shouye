@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/styles.css?v=20260510-article-compact" />
     <link rel="stylesheet" href="/site-theme.css?v=20260517-raycast-site" />
     <link rel="stylesheet" href="/css/articles.css?v=20261017-v4" />
-    <link rel="stylesheet" href="/css/articles-detail.css?v=20261022-v2" />
+    <link rel="stylesheet" href="/css/articles-detail.css?v=20261022-v3" />
   </head>
   <body class="article-page">
     <div id="prog"></div>
@@ -71,6 +71,19 @@
       <p id="imageLightboxCaption" class="image-lightbox__caption"></p>
     </div>
 
+    <!-- 微信扫码分享弹窗 -->
+    <div class="wechat-modal" id="wechatModal" hidden>
+      <div class="wechat-modal__backdrop" id="wechatModalBackdrop"></div>
+      <div class="wechat-modal__card">
+        <button type="button" class="wechat-modal__close" id="closeWechatModal" aria-label="关闭微信分享">✕</button>
+        <h3>微信扫一扫</h3>
+        <p>扫码在手机微信中阅读或分享给好友</p>
+        <div class="wechat-modal__qr">
+          <img id="wechatQrImg" alt="微信二维码" />
+        </div>
+      </div>
+    </div>
+
     <footer class="detail-footer">
       <div class="detail-footer__inner">
         <span>© 2026 天才猫软件中心 · 独立精品工坊</span>
@@ -82,6 +95,6 @@
       </div>
     </footer>
 
-    <script src="/article.js?v=20261022-v2" type="module"></script>
+    <script src="/article.js?v=20261022-v3" type="module"></script>
   </body>
 </html>

@@ -13,7 +13,11 @@ async function loadArticle() {
       if (event.origin !== location.origin) return;
       if (event.data && event.data.type === "studio-preview" && event.data.article) {
         document.title = `${event.data.article.title || "文章预览"} - 天才猫软件中心`;
-        renderArticle(event.data.article, event.data.relatedSoftware || []);
+        renderArticle(event.data.article, event.data.relatedSoftware || [], {
+          prevArticle: event.data.prevArticle,
+          nextArticle: event.data.nextArticle,
+          relatedArticles: event.data.relatedArticles || []
+        });
       }
     });
     try { window.parent?.postMessage({ type: "preview-ready" }, location.origin); } catch {}
@@ -44,10 +48,14 @@ async function loadArticle() {
     type: "article"
   });
   setJsonLd(articleJsonLd(data.article));
-  renderArticle(data.article, data.relatedSoftware || []);
+  renderArticle(data.article, data.relatedSoftware || [], {
+    prevArticle: data.prevArticle,
+    nextArticle: data.nextArticle,
+    relatedArticles: data.relatedArticles || []
+  });
 }
 
-function renderArticle(article, software) {
+function renderArticle(article, software, extras = {}) {
   const root = document.getElementById("articleDetail");
   const rendered = enhanceArticleContent(renderContent(article.content));
   const bottomWidget = renderArticleBottomWidget(software);
@@ -119,6 +127,10 @@ function renderArticle(article, software) {
     </header>
   `;
 
+  const shareHtml = renderArticleShare(article);
+  const paginationHtml = renderArticlePagination(extras.prevArticle, extras.nextArticle);
+  const recommendedHtml = renderRecommendedArticles(extras.relatedArticles || []);
+
   // 1440px 黄金双栏网格
   const layoutHtml = `
     <div class="article-layout">
@@ -126,10 +138,13 @@ function renderArticle(article, software) {
         <article class="article-viewer">
           ${rendered.html}
           ${bottomWidget}
+          ${shareHtml}
+          ${paginationHtml}
         </article>
       </main>
       ${renderAside(rendered.headings, software)}
     </div>
+    ${recommendedHtml}
   `;
 
   root.innerHTML = heroHtml + layoutHtml;
@@ -137,6 +152,7 @@ function renderArticle(article, software) {
   bindArticleAudio();
   bindCodeBlocks();
   bindHeadingAnchors();
+  bindArticleShare(article);
   initTocScrollSpy();
   initMobileToc(rendered.headings);
 }
@@ -542,6 +558,211 @@ function renderArticleBottomWidget(software) {
       </div>
     `;
   }).join("");
+}
+
+function renderArticleShare(article) {
+  const slug = article.slug || article.id;
+  const initialLikes = getInitialLikeCount(slug);
+  const isLiked = isArticleLiked(slug);
+
+  return `
+    <div class="article-share-card">
+      <div class="article-share-card__left">
+        <button type="button" class="article-like-btn ${isLiked ? "is-liked" : ""}" id="articleLikeBtn" data-slug="${escapeAttr(slug)}" aria-label="赞赏或认可此文章">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          <span>点赞</span>
+          <span class="like-counter" id="likeCounter">${initialLikes}</span>
+        </button>
+      </div>
+      <div class="article-share-card__right">
+        <button type="button" class="share-pill" id="shareCopyLinkBtn" title="复制文章链接">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          <span>复制链接</span>
+        </button>
+        <button type="button" class="share-pill share-pill--weibo" id="shareWeiboBtn" title="分享至新浪微博">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M20.1 14.5c-.3 2.1-2.4 3.9-5.2 4.4-3.4.6-6.6-.7-7.2-2.9-.6-2.1 1.6-4.2 4.9-4.8 3.5-.7 6.8.6 7.5 3.3zm-3.8-1.5c-.4.1-.7 0-.8-.3-.1-.3.1-.6.5-.7.4-.1.7 0 .8.3.1.3-.1.6-.5.7zm2.4 1.1c-.8.3-1.6 0-1.8-.7-.2-.7.3-1.4 1.1-1.6.8-.2 1.6 0 1.8.7.2.7-.3 1.4-1.1 1.6zm4.1-6.1c-.5-.5-1.2-.7-1.9-.6-.4.1-.6.4-.6.7 0 .3.3.6.7.5.4 0 .7.1 1 .3.3.3.4.6.4 1 0 .4.3.6.7.6.3 0 .6-.3.6-.7 0-.7-.3-1.3-.9-1.8zm2.4-2.4c-1.1-1.1-2.6-1.7-4.1-1.5-.4 0-.7.4-.6.8 0 .4.4.6.8.6 1.1-.1 2.3.3 3.1 1.1.8.8 1.2 2 1.1 3.1 0 .4.3.8.7.8.4 0 .7-.3.8-.7.2-1.6-.5-3.1-1.8-4.2z"/></svg>
+          <span>微博分享</span>
+        </button>
+        <button type="button" class="share-pill share-pill--wechat" id="shareWechatBtn" title="微信扫码分享">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 4C4.4 4 1 6.9 1 10.5c0 2 1 3.8 2.7 5.1L3 18.5l3.2-1.6c.7.2 1.5.3 2.3.3 4.1 0 7.5-2.9 7.5-6.5C16 6.9 12.6 4 8.5 4zm-2 4.5c.6 0 1 .4 1 1s-.4 1-1 1-1-.4-1-1 .4-1 1-1zm4 0c.6 0 1 .4 1 1s-.4 1-1 1-1-.4-1-1 .4-1 1-1zm6 4c-.3 0-.6 0-.9.1 1.4 1 2.4 2.4 2.4 4 0 .6-.1 1.2-.4 1.7l1.9 1-1-1.7c1.2-.9 2-2.3 2-3.8 0-2.8-2.7-5-6-5zm-2 2.5c.4 0 .8.3.8.8s-.4.8-.8.8-.8-.4-.8-.8.4-.8.8-.8zm3.5 0c.4 0 .8.3.8.8s-.4.8-.8.8-.8-.4-.8-.8.4-.8.8-.8z"/></svg>
+          <span>微信扫码</span>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function bindArticleShare(article) {
+  const slug = article.slug || article.id;
+  const likeBtn = document.getElementById("articleLikeBtn");
+  const counter = document.getElementById("likeCounter");
+
+  if (likeBtn) {
+    likeBtn.addEventListener("click", () => {
+      const isLiked = isArticleLiked(slug);
+      let count = getInitialLikeCount(slug);
+      if (!isLiked) {
+        count += 1;
+        localStorage.setItem(`tm_liked_${slug}`, "1");
+        localStorage.setItem(`tm_likes_${slug}`, String(count));
+        likeBtn.classList.add("is-liked");
+        if (counter) counter.textContent = count;
+        showToast("感谢你的支持与认可！❤️");
+      } else {
+        count = Math.max(0, count - 1);
+        localStorage.removeItem(`tm_liked_${slug}`);
+        localStorage.setItem(`tm_likes_${slug}`, String(count));
+        likeBtn.classList.remove("is-liked");
+        if (counter) counter.textContent = count;
+        showToast("已取消点赞");
+      }
+    });
+  }
+
+  // 复制链接
+  document.getElementById("shareCopyLinkBtn")?.addEventListener("click", copyArticleLink);
+
+  // 微博分享
+  document.getElementById("shareWeiboBtn")?.addEventListener("click", () => {
+    const title = `${article.title} - 天才猫专栏`;
+    const shareUrl = `https://service.weibo.com/share/share.php?url=${encodeURIComponent(location.href)}&title=${encodeURIComponent(title)}`;
+    window.open(shareUrl, "_blank", "width=640,height=480,menubar=no,toolbar=no");
+  });
+
+  // 微信分享弹窗
+  const wechatBtn = document.getElementById("shareWechatBtn");
+  const wechatModal = document.getElementById("wechatModal");
+  const wechatClose = document.getElementById("closeWechatModal");
+  const wechatBackdrop = document.getElementById("wechatModalBackdrop");
+  const wechatImg = document.getElementById("wechatQrImg");
+
+  if (wechatBtn && wechatModal) {
+    wechatBtn.addEventListener("click", () => {
+      if (wechatImg && !wechatImg.src) {
+        wechatImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(location.href)}`;
+      }
+      wechatModal.hidden = false;
+      document.body.style.overflow = "hidden";
+    });
+
+    const closeWechat = () => {
+      wechatModal.hidden = true;
+      document.body.style.overflow = "";
+    };
+
+    wechatClose?.addEventListener("click", closeWechat);
+    wechatBackdrop?.addEventListener("click", closeWechat);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !wechatModal.hidden) closeWechat();
+    });
+  }
+}
+
+function isArticleLiked(slug) {
+  try {
+    return localStorage.getItem(`tm_liked_${slug}`) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function getInitialLikeCount(slug) {
+  try {
+    const stored = localStorage.getItem(`tm_likes_${slug}`);
+    if (stored) return parseInt(stored, 10) || 0;
+    let hash = 0;
+    for (let i = 0; i < slug.length; i++) {
+      hash = (hash << 5) - hash + slug.charCodeAt(i);
+      hash |= 0;
+    }
+    const seedLikes = 18 + Math.abs(hash % 50);
+    localStorage.setItem(`tm_likes_${slug}`, String(seedLikes));
+    return seedLikes;
+  } catch {
+    return 28;
+  }
+}
+
+function renderArticlePagination(prevArticle, nextArticle) {
+  if (!prevArticle && !nextArticle) return "";
+
+  const prevHtml = prevArticle ? `
+    <a href="/article.html?slug=${encodeURIComponent(prevArticle.slug || prevArticle.id)}" class="pagination-card pagination-card--prev">
+      <div class="pagination-card__dir">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        <span>上一篇</span>
+      </div>
+      <div class="pagination-card__title">${escapeHtml(prevArticle.title)}</div>
+    </a>
+  ` : `
+    <div class="pagination-card pagination-card--empty">
+      <span>已经是专栏最新一篇文章</span>
+    </div>
+  `;
+
+  const nextHtml = nextArticle ? `
+    <a href="/article.html?slug=${encodeURIComponent(nextArticle.slug || nextArticle.id)}" class="pagination-card pagination-card--next">
+      <div class="pagination-card__dir">
+        <span>下一篇</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </div>
+      <div class="pagination-card__title">${escapeHtml(nextArticle.title)}</div>
+    </a>
+  ` : `
+    <div class="pagination-card pagination-card--empty">
+      <span>已经是专栏第一篇文章</span>
+    </div>
+  `;
+
+  return `
+    <nav class="article-pagination" aria-label="相邻文章导航">
+      ${prevHtml}
+      ${nextHtml}
+    </nav>
+  `;
+}
+
+function renderRecommendedArticles(relatedArticles) {
+  if (!relatedArticles || !relatedArticles.length) return "";
+
+  return `
+    <section class="article-recommended" aria-label="推荐阅读">
+      <div class="article-recommended__inner">
+        <div class="article-recommended__header">
+          <div class="article-recommended__title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            <h2>推荐阅读 · 探索更多精选</h2>
+          </div>
+          <a href="/articles.html" class="article-recommended__more">浏览全部专栏 →</a>
+        </div>
+        <div class="article-recommended__grid">
+          ${relatedArticles.map(item => {
+            const articleUrl = `/article.html?slug=${encodeURIComponent(item.slug || item.id)}`;
+            const coverImg = item.coverUrl
+              ? `<div class="recommended-card__cover"><img src="${escapeAttr(item.coverUrl)}" alt="${escapeAttr(item.title)}" loading="lazy" /></div>`
+              : `<div class="recommended-card__cover" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0e1626 0%,#1e293b 100%);color:var(--detail-muted);font-size:26px;font-weight:800;">天才猫</div>`;
+            const dateStr = formatDate(item.publishedAt || Date.now());
+            const cat = item.category || "技术专栏";
+
+            return `
+              <a href="${escapeAttr(articleUrl)}" class="recommended-card">
+                ${coverImg}
+                <div class="recommended-card__body">
+                  <span class="recommended-card__category">${escapeHtml(cat)}</span>
+                  <h3 class="recommended-card__title">${escapeHtml(item.title)}</h3>
+                  <p class="recommended-card__summary">${escapeHtml(item.summary || "点击阅读完整文章深度解析与教程指南...")}</p>
+                  <div class="recommended-card__meta">
+                    <span>${dateStr}</span>
+                    <span>阅读全文 →</span>
+                  </div>
+                </div>
+              </a>
+            `;
+          }).join("")}
+        </div>
+      </div>
+    </section>
+  `;
 }
 
 function enhanceArticleContent(html) {
