@@ -1,5 +1,6 @@
 loadArticle();
 initReadingTools();
+initReadingProgress();
 
 async function loadArticle() {
   const params = new URLSearchParams(location.search);
@@ -20,7 +21,7 @@ async function loadArticle() {
   }
 
   if (!slug) {
-    root.innerHTML = "<section class='page-hero'><h1>文章不存在。</h1></section>";
+    root.innerHTML = "<section class='page-hero' style='text-align:center;padding:120px 24px;'><h1>文章不存在。</h1><p style='color:var(--detail-muted);margin-top:12px;'><a href='/articles.html' style='color:var(--detail-acc);'>返回文章专栏</a></p></section>";
     return;
   }
   const apiUrl = isPreview
@@ -28,7 +29,7 @@ async function loadArticle() {
     : `/api/article/${encodeURIComponent(slug)}`;
   const response = await fetch(apiUrl, { cache: "no-store" });
   if (!response.ok) {
-    root.innerHTML = "<section class='page-hero'><h1>文章不存在。</h1></section>";
+    root.innerHTML = "<section class='page-hero' style='text-align:center;padding:120px 24px;'><h1>文章不存在。</h1><p style='color:var(--detail-muted);margin-top:12px;'><a href='/articles.html' style='color:var(--detail-acc);'>返回文章专栏</a></p></section>";
     return;
   }
   const data = await response.json();
@@ -48,12 +49,187 @@ async function loadArticle() {
 
 function renderArticle(article, software) {
   const root = document.getElementById("articleDetail");
-  const tags = (article.tags || []).map(tag => `<span>${escapeHtml(tag)}</span>`).join("");
   const rendered = enhanceArticleContent(renderContent(article.content));
   const bottomWidget = renderArticleBottomWidget(software);
-  root.innerHTML = `<section class="article-cover article-cover--pro">${article.coverUrl ? `<img src="${escapeAttr(article.coverUrl)}" alt="">` : ""}<div><p class="eyebrow">${escapeHtml(article.category || "Article")}</p><h1>${escapeHtml(article.title)}</h1><p>${escapeHtml(article.summary || "")}</p><div class="article-meta"><span>${formatDate(article.publishedAt || article.createdAt)}</span><span>${countWords(article.content)} 字阅读</span>${tags}</div></div></section><section class="article-body article-body--pro"><article class="article-viewer">${rendered.html}${bottomWidget}</article>${renderAside(rendered.headings, software)}</section>`;
+
+  const words = countWords(article.content);
+  const readMinutes = Math.max(1, Math.ceil(words / 400));
+  const category = article.category || "技术教程";
+  const authorName = article.author || "天才猫官方";
+  const dateStr = formatDate(article.publishedAt || article.createdAt || Date.now());
+  const tagList = Array.isArray(article.tags) ? article.tags : [];
+  const tagsHtml = tagList.map(tag => `<span class="meta-chip meta-tag">#${escapeHtml(tag)}</span>`).join("");
+
+  // 同步顶栏吸顶标题
+  const navTitle = document.getElementById("navArticleTitle");
+  if (navTitle) {
+    navTitle.textContent = article.title || "";
+    navTitle.title = article.title || "";
+  }
+
+  // 大图封面
+  const coverHtml = article.coverUrl
+    ? `<div class="article-hero-cover"><img src="${escapeAttr(article.coverUrl)}" alt="${escapeAttr(article.title)}" loading="eager" /></div>`
+    : "";
+
+  // 摘要 / 导语
+  const leadHtml = article.summary
+    ? `<p class="article-lead">${escapeHtml(article.summary)}</p>`
+    : "";
+
+  // 杂志级大 Hero 头部
+  const heroHtml = `
+    <header class="article-hero">
+      <div class="article-hero__inner">
+        <nav class="article-breadcrumb" aria-label="面包屑导航">
+          <a href="/">首页</a>
+          <span class="sep">/</span>
+          <a href="/articles.html">文章专栏</a>
+          <span class="sep">/</span>
+          <span class="cat-tag">${escapeHtml(category)}</span>
+        </nav>
+        <h1 class="article-title">${escapeHtml(article.title)}</h1>
+        ${leadHtml}
+        <div class="article-byline">
+          <div class="article-byline__author">
+            <div class="author-avatar">${escapeHtml(authorName.slice(0, 1))}</div>
+            <div class="author-meta">
+              <span class="author-name">${escapeHtml(authorName)}</span>
+              <span class="author-role">专栏创作者 · Verified</span>
+            </div>
+          </div>
+          <div class="article-byline__chips">
+            <span class="meta-chip" title="预计阅读时间">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              约 ${readMinutes} 分钟
+            </span>
+            <span class="meta-chip" title="正文字数">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+              ${words} 字
+            </span>
+            <span class="meta-chip" title="发布日期">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              ${dateStr}
+            </span>
+            ${tagsHtml}
+          </div>
+        </div>
+        ${coverHtml}
+      </div>
+    </header>
+  `;
+
+  // 1440px 黄金双栏网格
+  const layoutHtml = `
+    <div class="article-layout">
+      <main class="article-main">
+        <article class="article-viewer">
+          ${rendered.html}
+          ${bottomWidget}
+        </article>
+      </main>
+      ${renderAside(rendered.headings, software)}
+    </div>
+  `;
+
+  root.innerHTML = heroHtml + layoutHtml;
   bindArticleImages();
   bindArticleAudio();
+  initTocScrollSpy();
+}
+
+function initReadingProgress() {
+  const progBar = document.getElementById("prog");
+  const navTitle = document.getElementById("navArticleTitle");
+
+  let ticking = false;
+  const onScroll = () => {
+    const winScroll = document.documentElement.scrollTop || document.body.scrollTop;
+    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    if (progBar) {
+      const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+      progBar.style.width = Math.min(100, Math.max(0, scrolled)) + "%";
+    }
+
+    if (navTitle) {
+      if (winScroll > 240) {
+        navTitle.classList.add("is-visible");
+      } else {
+        navTitle.classList.remove("is-visible");
+      }
+    }
+    ticking = false;
+  };
+
+  window.addEventListener("scroll", () => {
+    if (!ticking) {
+      window.requestAnimationFrame(onScroll);
+      ticking = true;
+    }
+  }, { passive: true });
+}
+
+function initTocScrollSpy() {
+  const tocLinks = Array.from(document.querySelectorAll(".article-toc__item"));
+  if (!tocLinks.length) return;
+
+  // 点击平滑滚动，并考虑吸顶导航高度偏移
+  tocLinks.forEach(link => {
+    link.addEventListener("click", e => {
+      const href = link.getAttribute("href") || "";
+      if (href.startsWith("#")) {
+        const targetId = href.slice(1);
+        const targetElem = document.getElementById(targetId);
+        if (targetElem) {
+          e.preventDefault();
+          const navOffset = 84;
+          const targetTop = targetElem.getBoundingClientRect().top + window.pageYOffset - navOffset;
+          window.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+          history.replaceState(null, "", `#${targetId}`);
+        }
+      }
+    });
+  });
+
+  // 滚动时高亮当前可视区对应的标题
+  const headingElements = Array.from(document.querySelectorAll(".article-viewer h2, .article-viewer h3"));
+  if (!headingElements.length) return;
+
+  let ticking = false;
+  const updateActiveToc = () => {
+    const scrollPos = window.scrollY + 120;
+    let currentId = "";
+    for (let i = 0; i < headingElements.length; i++) {
+      const h = headingElements[i];
+      if (h.offsetTop <= scrollPos) {
+        currentId = h.id;
+      } else {
+        break;
+      }
+    }
+    if (!currentId && headingElements.length > 0 && window.scrollY < 400) {
+      currentId = headingElements[0].id;
+    }
+
+    tocLinks.forEach(link => {
+      const target = (link.getAttribute("href") || "").replace(/^#/, "");
+      if (target && target === currentId) {
+        link.classList.add("is-active");
+      } else {
+        link.classList.remove("is-active");
+      }
+    });
+    ticking = false;
+  };
+
+  window.addEventListener("scroll", () => {
+    if (!ticking) {
+      window.requestAnimationFrame(updateActiveToc);
+      ticking = true;
+    }
+  }, { passive: true });
+
+  updateActiveToc();
 }
 
 function initReadingTools() {
@@ -69,7 +245,7 @@ function initReadingTools() {
 }
 
 function bindArticleImages() {
-  document.querySelectorAll(".article-body article img").forEach(img => {
+  document.querySelectorAll(".article-viewer img").forEach(img => {
     img.tabIndex = 0;
     img.role = "button";
     img.title = "点击放大图片";
@@ -134,20 +310,27 @@ function bindArticleAudio() {
 }
 
 async function copyArticleLink() {
+  const button = document.getElementById("copyArticleLink");
   try {
     await navigator.clipboard.writeText(location.href);
-    flashTool("copyArticleLink", "已复制");
+    if (button) {
+      const oldHtml = button.innerHTML;
+      button.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:#38bdf8;"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+      button.setAttribute("title", "已复制到剪贴板");
+      setTimeout(() => {
+        button.innerHTML = oldHtml;
+        button.setAttribute("title", "复制文章链接");
+      }, 1600);
+    }
   } catch {
-    flashTool("copyArticleLink", "复制失败");
+    if (button) {
+      const oldHtml = button.innerHTML;
+      button.innerHTML = "✕";
+      setTimeout(() => {
+        button.innerHTML = oldHtml;
+      }, 1600);
+    }
   }
-}
-
-function flashTool(id, text) {
-  const button = document.getElementById(id);
-  if (!button) return;
-  const original = button.textContent;
-  button.textContent = text;
-  window.setTimeout(() => { button.textContent = original; }, 1400);
 }
 
 function openImageLightbox(src) {
@@ -245,18 +428,61 @@ function absoluteUrl(value) {
 }
 
 function renderAside(headings, software) {
-  if (!headings.length && !software.length) return "";
-  return `<aside class="article-related article-related--download">${renderToc(headings)}${renderRelated(software)}</aside>`;
+  const hasHeadings = headings && headings.length > 0;
+  const hasSoftware = software && software.length > 0;
+  if (!hasHeadings && !hasSoftware) return "";
+
+  return `
+    <aside class="article-sidebar">
+      <div class="article-sidebar__sticky">
+        ${renderToc(headings)}
+        ${renderRelated(software)}
+      </div>
+    </aside>
+  `;
 }
 
 function renderToc(headings) {
-  if (!headings.length) return "";
-  return `<div class="article-toc"><p class="eyebrow">Contents</p><h2>文章目录</h2>${headings.map(item => `<a class="article-toc__item article-toc__item--${item.level}" href="#${escapeAttr(item.id)}">${escapeHtml(item.text)}</a>`).join("")}</div>`;
+  if (!headings || !headings.length) return "";
+  return `
+    <section class="article-toc" aria-label="目录索引">
+      <div class="article-toc__header">
+        <h3>目录导航</h3>
+        <span style="font-size: 11.5px; color: var(--detail-muted);">${headings.length} 节</span>
+      </div>
+      <nav class="article-toc__list">
+        ${headings.map(item => `
+          <a class="article-toc__item article-toc__item--${escapeAttr(item.level)}" href="#${escapeAttr(item.id)}" data-toc-target="${escapeAttr(item.id)}">
+            ${escapeHtml(item.text)}
+          </a>
+        `).join("")}
+      </nav>
+    </section>
+  `;
 }
 
 function renderRelated(software) {
-  if (!software.length) return "";
-  return `<div class="article-related__downloads"><p class="eyebrow">Download</p><h2>相关软件</h2>${software.map(item => `<a class="related-download" href="/download/latest/${encodeURIComponent(item.slug || item.id)}"><span class="related-download__icon">↓</span><span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.description || "下载最新版安装包")}</small></span><em>点击下载</em></a>`).join("")}</div>`;
+  if (!software || !software.length) return "";
+  return `
+    <section class="article-sidebar-download" aria-label="配套软件推荐">
+      <div class="article-sidebar-download__title">配套软件推荐</div>
+      <div class="article-sidebar-download__list">
+        ${software.map(item => {
+          const iconUrl = item.iconUrl || item.icon || "/logo.png";
+          const dlUrl = `/download/latest/${encodeURIComponent(item.slug || item.id)}`;
+          return `
+            <a class="sidebar-software-card" href="${escapeAttr(dlUrl)}">
+              <img src="${escapeAttr(iconUrl)}" alt="${escapeAttr(item.name)}" loading="lazy" />
+              <div>
+                <h4>${escapeHtml(item.name)}</h4>
+                <p>${escapeHtml(item.tagline || item.description || "点击直接下载最新稳定版")}</p>
+              </div>
+            </a>
+          `;
+        }).join("")}
+      </div>
+    </section>
+  `;
 }
 
 function renderArticleBottomWidget(software) {
@@ -319,7 +545,7 @@ function renderContent(content) {
   const value = String(content || "").trim();
   if (!value) return "<p>暂无正文。</p>";
 
-  // 1. 将 Markdown 图片语法统一转为标准的响应式 Figure/Img 结构，确保无论是纯文本还是 HTML 模板混排都能正确渲染
+  // 1. 将 Markdown 图片语法统一转为标准的响应式 Figure/Img 结构
   let html = value.replace(/!\[([^\]]*)\]\(((?:https?:\/\/|\/)[^\s)]+)\)/g, (match, alt, src) => {
     const cleanAlt = escapeHtml(alt.trim());
     const captionHtml = cleanAlt ? `<figcaption class="article-image-caption">${cleanAlt}</figcaption>` : "";
