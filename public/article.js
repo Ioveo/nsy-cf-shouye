@@ -135,7 +135,10 @@ function renderArticle(article, software) {
   root.innerHTML = heroHtml + layoutHtml;
   bindArticleImages();
   bindArticleAudio();
+  bindCodeBlocks();
+  bindHeadingAnchors();
   initTocScrollSpy();
+  initMobileToc(rendered.headings);
 }
 
 function initReadingProgress() {
@@ -237,10 +240,17 @@ function initReadingTools() {
   document.getElementById("backToTop")?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   document.getElementById("closeImageLightbox")?.addEventListener("click", closeImageLightbox);
   document.getElementById("imageLightbox")?.addEventListener("click", event => {
-    if (event.target.id === "imageLightbox") closeImageLightbox();
+    if (event.target.id === "imageLightbox" || event.target.id === "closeImageLightbox") closeImageLightbox();
   });
   document.addEventListener("keydown", event => {
-    if (event.key === "Escape") closeImageLightbox();
+    if (event.key === "Escape") {
+      closeImageLightbox();
+      const mobileDrawer = document.getElementById("mobileTocDrawer");
+      if (mobileDrawer && !mobileDrawer.hidden) {
+        mobileDrawer.hidden = true;
+        document.body.style.overflow = "";
+      }
+    }
   });
 }
 
@@ -248,10 +258,19 @@ function bindArticleImages() {
   document.querySelectorAll(".article-viewer img").forEach(img => {
     img.tabIndex = 0;
     img.role = "button";
-    img.title = "点击放大图片";
-    img.addEventListener("click", () => openImageLightbox(img.src));
+    img.title = "点击放大预览";
+
+    const figure = img.closest("figure");
+    const figcaption = figure ? figure.querySelector("figcaption") : null;
+    const captionText = figcaption ? figcaption.textContent.trim() : (img.alt || "");
+
+    const triggerOpen = () => openImageLightbox(img.src, captionText);
+    img.addEventListener("click", triggerOpen);
     img.addEventListener("keydown", event => {
-      if (event.key === "Enter" || event.key === " ") openImageLightbox(img.src);
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        triggerOpen();
+      }
     });
   });
 }
@@ -333,11 +352,16 @@ async function copyArticleLink() {
   }
 }
 
-function openImageLightbox(src) {
+function openImageLightbox(src, caption = "") {
   const lightbox = document.getElementById("imageLightbox");
   const image = document.getElementById("imageLightboxImg");
+  const captionElem = document.getElementById("imageLightboxCaption");
   if (!lightbox || !image) return;
   image.src = src;
+  if (captionElem) {
+    captionElem.textContent = caption;
+    captionElem.style.display = caption ? "block" : "none";
+  }
   lightbox.hidden = false;
   document.body.classList.add("is-lightbox-open");
 }
@@ -345,9 +369,11 @@ function openImageLightbox(src) {
 function closeImageLightbox() {
   const lightbox = document.getElementById("imageLightbox");
   const image = document.getElementById("imageLightboxImg");
+  const captionElem = document.getElementById("imageLightboxCaption");
   if (!lightbox || !image) return;
   lightbox.hidden = true;
   image.removeAttribute("src");
+  if (captionElem) captionElem.textContent = "";
   document.body.classList.remove("is-lightbox-open");
 }
 
@@ -533,8 +559,183 @@ function enhanceArticleContent(html) {
     used.add(id);
     heading.id = id;
     headings.push({ id, text, level: heading.tagName.toLowerCase() });
+
+    // 添加可复制标题直达锚点
+    const anchor = document.createElement("a");
+    anchor.className = "heading-anchor";
+    anchor.href = `#${id}`;
+    anchor.title = "复制小节直达链接";
+    anchor.setAttribute("aria-label", "复制小节直达链接");
+    anchor.textContent = "#";
+    heading.appendChild(anchor);
   }
   return { html: template.innerHTML, headings };
+}
+
+function bindCodeBlocks() {
+  const preElements = document.querySelectorAll(".article-viewer pre");
+  preElements.forEach(pre => {
+    if (pre.closest(".code-block-wrapper")) return;
+
+    const code = pre.querySelector("code");
+    const rawCode = code ? (code.innerText || code.textContent || "") : (pre.innerText || pre.textContent || "");
+
+    // 探测代码语言
+    let lang = "CODE";
+    if (code && code.className) {
+      const match = code.className.match(/(?:language-|lang-)([a-z0-9_-]+)/i);
+      if (match && match[1]) {
+        lang = match[1].toUpperCase();
+      }
+    }
+    if (lang === "CODE") {
+      const trimmed = rawCode.trim();
+      if (/^(?:npm|pnpm|yarn|bun|curl|git|sudo|cd|ls|mkdir|docker|cat|bash|sh)\s/m.test(trimmed)) {
+        lang = "BASH";
+      } else if (/^\{[\s\S]*\}$|^\[[\s\S]*\]$/m.test(trimmed)) {
+        lang = "JSON";
+      } else if (/^<(?:html|div|span|p|section|article|svg|template|table)/i.test(trimmed)) {
+        lang = "HTML";
+      } else if (/(?:const|let|var|function|export|import|=>|\.addEventListener)\b/.test(trimmed)) {
+        lang = "JAVASCRIPT";
+      } else if (/(?:def\s+\w+|import\s+\w+|from\s+\w+\s+import|if\s+__name__\s*==)/.test(trimmed)) {
+        lang = "PYTHON";
+      } else if (/(?:SELECT|INSERT|UPDATE|DELETE|CREATE TABLE)\b/i.test(trimmed)) {
+        lang = "SQL";
+      }
+    }
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "code-block-wrapper";
+
+    const header = document.createElement("div");
+    header.className = "code-block-header";
+    header.innerHTML = `
+      <div class="code-block-dots">
+        <span class="code-block-dot code-block-dot--red"></span>
+        <span class="code-block-dot code-block-dot--yellow"></span>
+        <span class="code-block-dot code-block-dot--green"></span>
+      </div>
+      <span class="code-block-lang">${escapeHtml(lang)}</span>
+      <button type="button" class="code-copy-btn" title="复制代码" aria-label="复制代码">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        <span>复制</span>
+      </button>
+    `;
+
+    const copyBtn = header.querySelector(".code-copy-btn");
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(rawCode);
+        copyBtn.classList.add("is-copied");
+        copyBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>已复制</span>
+        `;
+        showToast("代码已复制到剪贴板");
+        setTimeout(() => {
+          copyBtn.classList.remove("is-copied");
+          copyBtn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span>复制</span>
+          `;
+        }, 1800);
+      } catch (err) {
+        showToast("复制失败，请手动选取复制");
+      }
+    });
+
+    pre.parentNode.insertBefore(wrapper, pre);
+    wrapper.appendChild(header);
+    wrapper.appendChild(pre);
+  });
+}
+
+function bindHeadingAnchors() {
+  document.querySelectorAll(".article-viewer .heading-anchor").forEach(anchor => {
+    anchor.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const href = anchor.getAttribute("href") || "";
+      const targetId = href.replace(/^#/, "");
+      const targetElem = document.getElementById(targetId);
+      if (targetElem) {
+        const fullUrl = new URL(href, location.href).href;
+        try {
+          await navigator.clipboard.writeText(fullUrl);
+          showToast("已复制小节直达链接");
+        } catch {
+          // fallback
+        }
+        const navOffset = 84;
+        const targetTop = targetElem.getBoundingClientRect().top + window.pageYOffset - navOffset;
+        window.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+        history.replaceState(null, "", `#${targetId}`);
+      }
+    });
+  });
+}
+
+let toastTimer = null;
+function showToast(message) {
+  const toast = document.getElementById("detailToast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add("is-show");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.classList.remove("is-show");
+  }, 2200);
+}
+
+function initMobileToc(headings) {
+  const drawer = document.getElementById("mobileTocDrawer");
+  const list = document.getElementById("mobileTocList");
+  const openBtn = document.getElementById("mobileTocBtn");
+  const closeBtn = document.getElementById("closeMobileToc");
+  const backdrop = document.getElementById("mobileTocBackdrop");
+
+  if (!drawer || !list) return;
+
+  if (!headings || !headings.length) {
+    if (openBtn) openBtn.style.display = "none";
+    return;
+  }
+  if (openBtn) openBtn.style.display = "";
+
+  list.innerHTML = headings.map(item => `
+    <a class="mobile-toc-item mobile-toc-item--${escapeAttr(item.level)}" href="#${escapeAttr(item.id)}" data-toc-target="${escapeAttr(item.id)}">
+      ${escapeHtml(item.text)}
+    </a>
+  `).join("");
+
+  const closeDrawer = () => {
+    drawer.hidden = true;
+    document.body.style.overflow = "";
+  };
+
+  const openDrawer = () => {
+    drawer.hidden = false;
+    document.body.style.overflow = "hidden";
+  };
+
+  openBtn?.addEventListener("click", openDrawer);
+  closeBtn?.addEventListener("click", closeDrawer);
+  backdrop?.addEventListener("click", closeDrawer);
+
+  list.querySelectorAll(".mobile-toc-item").forEach(link => {
+    link.addEventListener("click", e => {
+      e.preventDefault();
+      closeDrawer();
+      const targetId = (link.getAttribute("href") || "").replace(/^#/, "");
+      const targetElem = document.getElementById(targetId);
+      if (targetElem) {
+        const navOffset = 84;
+        const targetTop = targetElem.getBoundingClientRect().top + window.pageYOffset - navOffset;
+        window.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+        history.replaceState(null, "", `#${targetId}`);
+      }
+    });
+  });
 }
 
 function slugifyHeading(value) {

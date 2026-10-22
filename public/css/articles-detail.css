@@ -642,3 +642,352 @@ body.article-page {
     gap: 12px;
   }
 }
+
+/* ========================================================
+   Phase 2: 交互深度体验 (Interactive Deep Experience)
+   ======================================================== */
+
+/* 1. 代码块容器与高级控制顶栏 */
+.code-block-wrapper {
+  margin: 28px 0 !important;
+  background: #090d16 !important;
+  border: 1px solid var(--detail-border) !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.code-block-wrapper:hover {
+  border-color: rgba(56, 189, 248, 0.3) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55) !important;
+}
+
+.code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.028);
+  border-bottom: 1px solid var(--detail-border);
+  user-select: none;
+}
+
+.code-block-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.code-block-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  opacity: 0.8;
+}
+
+.code-block-dot--red { background: #ef4444; }
+.code-block-dot--yellow { background: #f59e0b; }
+.code-block-dot--green { background: #10b981; }
+
+.code-block-lang {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--detail-muted);
+}
+
+.code-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--detail-sub);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--detail-border);
+  border-radius: 7px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.code-copy-btn:hover {
+  color: #fff;
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.35);
+  transform: translateY(-1px);
+}
+
+.code-copy-btn.is-copied {
+  color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+.code-block-wrapper pre {
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 18px 20px !important;
+}
+
+/* 2. 标题锚点直达链接 */
+.heading-anchor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72em;
+  color: var(--detail-acc);
+  opacity: 0;
+  margin-left: 10px;
+  text-decoration: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.article-viewer h2:hover .heading-anchor,
+.article-viewer h3:hover .heading-anchor {
+  opacity: 0.7;
+}
+
+.heading-anchor:hover {
+  opacity: 1 !important;
+  transform: scale(1.18);
+}
+
+/* 3. 悬浮通知 Toast */
+.detail-toast {
+  position: fixed;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--detail-border);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: 999px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1300;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.detail-toast.is-show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* 4. 移动端目录抽屉按钮 (仅在 <= 1100px 屏幕显示) */
+.mobile-toc-btn {
+  display: none !important;
+}
+
+@media (max-width: 1100px) {
+  .mobile-toc-btn {
+    display: flex !important;
+  }
+}
+
+/* 移动端抽屉目录弹窗 */
+.mobile-toc-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  transition: opacity 0.3s;
+}
+
+.mobile-toc-drawer[hidden] {
+  display: none;
+}
+
+.mobile-toc-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.mobile-toc-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 75vh;
+  background: #090d16;
+  border-top: 1px solid var(--detail-border);
+  border-radius: 24px 24px 0 0;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 24px 32px;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.6);
+  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.mobile-toc-sheet__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--detail-border);
+  margin-bottom: 14px;
+}
+
+.mobile-toc-sheet__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.mobile-toc-sheet__title svg {
+  color: var(--detail-acc);
+}
+
+.mobile-toc-sheet__close {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--detail-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.mobile-toc-sheet__close:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.mobile-toc-sheet__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  max-height: calc(75vh - 90px);
+  padding-bottom: 24px;
+}
+
+.mobile-toc-item {
+  display: block;
+  font-size: 14px;
+  color: var(--detail-sub);
+  text-decoration: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  line-height: 1.45;
+  transition: background 0.2s, color 0.2s;
+}
+
+.mobile-toc-item--h3 {
+  padding-left: 28px;
+  font-size: 13px;
+  color: var(--detail-muted);
+}
+
+.mobile-toc-item:active,
+.mobile-toc-item.is-active {
+  background: var(--detail-acc-glow);
+  color: var(--detail-acc);
+  font-weight: 600;
+}
+
+/* 5. 图片高级灯箱优化 */
+.image-lightbox {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1200 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 32px 24px !important;
+  background: rgba(4, 7, 12, 0.88) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.image-lightbox[hidden] {
+  display: none !important;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.image-lightbox img {
+  max-width: min(1200px, 92vw) !important;
+  max-height: 82vh !important;
+  border-radius: 18px !important;
+  border: 1px solid var(--detail-border) !important;
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.8) !important;
+  object-fit: contain !important;
+  animation: zoomIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes zoomIn {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.image-lightbox__caption {
+  margin-top: 16px;
+  font-size: 13.5px;
+  color: var(--detail-sub);
+  text-align: center;
+  max-width: 800px;
+}
+
+.image-lightbox button#closeImageLightbox {
+  position: absolute !important;
+  top: 24px !important;
+  right: 24px !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid var(--detail-border) !important;
+  color: #fff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 20px !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+}
+
+.image-lightbox button#closeImageLightbox:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.08) !important;
+}
+

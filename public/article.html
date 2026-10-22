@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/styles.css?v=20260510-article-compact" />
     <link rel="stylesheet" href="/site-theme.css?v=20260517-raycast-site" />
     <link rel="stylesheet" href="/css/articles.css?v=20261017-v4" />
-    <link rel="stylesheet" href="/css/articles-detail.css?v=20261022-v1" />
+    <link rel="stylesheet" href="/css/articles-detail.css?v=20261022-v2" />
   </head>
   <body class="article-page">
     <div id="prog"></div>
@@ -36,6 +36,9 @@
     <div class="article-detail" id="articleDetail"></div>
 
     <div class="article-tools" aria-label="阅读工具">
+      <button type="button" id="mobileTocBtn" class="mobile-toc-btn" title="查看文章目录" aria-label="查看文章目录">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+      </button>
       <button type="button" id="copyArticleLink" title="复制文章链接" aria-label="复制文章链接">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
       </button>
@@ -44,9 +47,28 @@
       </button>
     </div>
 
+    <!-- 移动端目录抽屉 -->
+    <div class="mobile-toc-drawer" id="mobileTocDrawer" hidden>
+      <div class="mobile-toc-backdrop" id="mobileTocBackdrop"></div>
+      <div class="mobile-toc-sheet">
+        <div class="mobile-toc-sheet__header">
+          <div class="mobile-toc-sheet__title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            <span>文章目录导航</span>
+          </div>
+          <button type="button" class="mobile-toc-sheet__close" id="closeMobileToc" aria-label="关闭目录">✕</button>
+        </div>
+        <nav class="mobile-toc-sheet__list" id="mobileTocList"></nav>
+      </div>
+    </div>
+
+    <!-- 悬浮通知 Toast -->
+    <div class="detail-toast" id="detailToast" role="status" aria-live="polite"></div>
+
     <div class="image-lightbox" id="imageLightbox" hidden>
-      <button type="button" id="closeImageLightbox" aria-label="关闭图片预览">×</button>
+      <button type="button" id="closeImageLightbox" aria-label="关闭图片预览">✕</button>
       <img id="imageLightboxImg" alt="图片预览" />
+      <p id="imageLightboxCaption" class="image-lightbox__caption"></p>
     </div>
 
     <footer class="detail-footer">
@@ -60,6 +82,6 @@
       </div>
     </footer>
 
-    <script src="/article.js?v=20261022-v1" type="module"></script>
+    <script src="/article.js?v=20261022-v2" type="module"></script>
   </body>
 </html>
